@@ -1,0 +1,25 @@
+##define values
+#set( $version = "latest" )
+#set( $s1 = "approved" )
+#set( $s2 = "rejected" )
+#set( $s3 = "auto-approved" )
+#set( $s4 = "auto-rejected" )
+
+##get latest items for dashboard with certain status
+{
+    "version" : "2017-02-28",
+    "operation" : "Scan",
+    "filter" : {
+        "expression" : "Version=:version and #s IN (:s1,:s2,:s3,:s4)",
+        "expressionValues" : {
+            ":version" : { "S" : "$version" },
+            ":s1":{"S" : "$s1"},
+            ":s2":{"S" : "$s2"},
+            ":s3":{"S" : "$s3"},
+            ":s4":{"S" : "$s4"}   
+        },
+        "expressionNames": {
+            "#s":"Status"
+        }
+    }
+}

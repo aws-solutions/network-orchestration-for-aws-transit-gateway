@@ -1,0 +1,142 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+type Mutation {
+ updateTransitNetworkOrchestratorTable(input: UpdateTransitNetworkOrchestratorTableInput!): UpdateTransitNetworkOrchestratorTable @aws_auth(cognito_groups : ["AdminGroup"])
+}
+
+type Query {
+  getActionItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
+  getDashboarItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
+  getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableVersionHistoryFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
+  }
+
+type Subscription {
+  onUpdateTransitNetworkOrchestratorTable(SubnetId: String, Version: String): UpdateTransitNetworkOrchestratorTable @aws_subscribe(mutations : ["updateTransitNetworkOrchestratorTable"])
+}
+
+type TransitNetworkOrchestratorTableConnection {
+  items: [TransitNetworkOrchestratorTableMoreFields]
+  nextToken: String
+}
+
+type TransitNetworkOrchestratorTableMoreFields {
+  AWSSpokeAccountId: String
+  Action: String
+  AdminAction: String
+  AvailabilityZone: String
+  Comment: String
+  RequestTimeStamp: String
+  ResponseTimeStamp: String
+  Status: String
+  SubnetId: String!
+  AssociationRouteTable: String
+  PropagationRouteTablesString: String
+  TagEventSource: String
+  TgwId: String
+  TimeToLive: Int
+  UserId: String
+  Version: String!
+  VpcCidr: String
+  VpcId: String
+}
+
+type UpdateTransitNetworkOrchestratorTable {
+  AWSSpokeAccountId: String
+  Action: String
+  AdminAction: String
+  AvailabilityZone: String
+  Comment: String
+  GraphQLTimeStamp: String
+  RequestTimeStamp: String
+  ResponseTimeStamp: String
+  Status: String
+  SubnetId: String!
+  AssociationRouteTable: String
+  PropagationRouteTablesString: String
+  TagEventSource: String
+  TgwId: String
+  TimeToLive: Int
+  UserId: String
+  Version: String!
+  VpcCidr: String
+  VpcId: String
+}
+
+input TableBooleanFilterInput {
+  eq: Boolean
+  ne: Boolean
+}
+
+input TableFloatFilterInput {
+  between: [Float]
+  contains: Float
+  eq: Float
+  ge: Float
+  gt: Float
+  le: Float
+  lt: Float
+  ne: Float
+  notContains: Float
+}
+
+input TableIDFilterInput {
+  beginsWith: ID
+  between: [ID]
+  contains: ID
+  eq: ID
+  ge: ID
+  gt: ID
+  le: ID
+  lt: ID
+  ne: ID
+  notContains: ID
+}
+
+input TableIntFilterInput {
+  between: [Int]
+  contains: Int
+  eq: Int
+  ge: Int
+  gt: Int
+  le: Int
+  lt: Int
+  ne: Int
+  notContains: Int
+}
+
+input TableStringFilterInput {
+  beginsWith: String
+  between: [String]
+  contains: String
+  eq: String
+  ge: String
+  gt: String
+  le: String
+  lt: String
+  ne: String
+  notContains: String
+}
+
+input TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput {
+  Status: TableStringFilterInput
+  Version: TableStringFilterInput
+}
+
+
+input TableTransitNetworkOrchestratorTableVersionHistoryFilterInput {
+  SubnetId: TableStringFilterInput
+  Version: TableStringFilterInput
+}
+
+input UpdateTransitNetworkOrchestratorTableInput {
+  AdminAction: String!
+  GraphQLTimeStamp: String!
+  Status: String!
+  SubnetId: String!
+  UserId: String!
+  Version: String!
+}

@@ -1,0 +1,48 @@
+{
+  "name": "aws-serverless-transit-network-orchestrator",
+  "version": "0.1.0",
+  "private": true,
+  "homepage": "https://s3.amazonaws.com/",
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.18",
+    "@fortawesome/free-brands-svg-icons": "^5.8.2",
+    "@fortawesome/free-solid-svg-icons": "^5.8.2",
+    "@fortawesome/react-fontawesome": "^0.1.4",
+    "ag-grid-community": "^20.2.0",
+    "ag-grid-react": "^20.2.0",
+    "aws-amplify": "^1.1.28",
+    "aws-amplify-react": "^2.3.8",
+    "bootstrap": "^4.3.1",
+    "jquery": "^3.4.1",
+    "react": "^16.8.6",
+    "react-bootstrap": "^1.0.0-beta.9",
+    "react-dom": "^16.8.6",
+    "react-icons": "^3.7.0",
+    "react-modal": "^3.8.1",
+    "react-router-dom": "^5.0.0",
+    "react-scripts": "3.2.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "install:clean": "rm -rf node_modules/ && rm -rf package-lock.json && npm install && npm start",
+    "fix-memory-limit": "cross-env LIMIT=2048 increase-memory-limit"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

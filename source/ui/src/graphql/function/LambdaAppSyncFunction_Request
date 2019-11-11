@@ -1,0 +1,6 @@
+{
+    "operation": "Invoke",
+    "payload": {
+    "data":  $util.toJson($context.prev.result)
+    }
+}

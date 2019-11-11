@@ -1,0 +1,191 @@
+# Copyright 2012-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License").
+# You may not use this file except in compliance with the License.
+# A copy of the License is located at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# or in the "license" file accompanying this file. This file is distributed
+# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing
+# permissions and limitations under the License.
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: (SO0058s) - The AWS CloudFormation template (Spoke) for deployment of the serverless-transit-network-orchestrator Solution. Version v1.0.0
+
+Parameters:
+  # Hub Account
+  HubAccount:
+    Description: Account Id for the network hub account, eg. 123456789012
+    Type: String
+    AllowedPattern: ^\d{12}$
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Account ID of the network account where Transit Gateway resides.
+        Parameters:
+          - HubAccount
+    ParameterLabels:
+      HubAccount:
+        default: Network (Hub) Account
+
+Mappings:
+  EventBridge:
+    Bus:
+      Name: "STNO-EventBridge"
+
+Conditions:
+  # Adding an EventBus as a target within an account is not allowed.
+  IsSpokeAccountEqualToHubAccount: !Not [!Equals [!Ref HubAccount, !Ref "AWS::AccountId"]]
+
+Resources:
+  # The following description enables the idempotency and CFN template will not rollback if the role
+  # already exist. Do not change the description below.
+  CustomServiceLinkedRole:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: 'transitgateway.amazonaws.com'
+      Description: Allows TGW and VPC Attachment operations.
+
+  #
+  # Serverless Transit Network Orchestrator Cloudwatch Event Rule
+  #
+  TagEventRule:
+    Condition: IsSpokeAccountEqualToHubAccount  # Adding an EventBus as a target within an account is not allowed.
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Serverless Transit Network Orchestrator - Spoke - Rule for tag on resource events
+      EventPattern:
+        {
+          "account": [
+            !Ref "AWS::AccountId"
+          ],
+          "source": [
+            "aws.tag"
+          ],
+          "detail-type": [
+            "Tag Change on Resource"
+          ],
+          "detail": {
+            "service": [
+              "ec2"
+            ],
+            "resource-type": [
+              "subnet",
+              "vpc"
+            ]
+          }
+        }
+      State: ENABLED
+      Targets:
+        - Arn: !Sub
+            - arn:aws:events:${AWS::Region}:${HubAccount}:event-bus/${EventBusName}
+            - {EventBusName: !FindInMap [EventBridge, Bus, Name]}
+          Id: SpokeSubnetTagEvent
+          RoleArn: !GetAtt TransitNetworkEventDeliveryRole.Arn
+
+  # IAM Role for Serverless Transit Network Orchestrator Execution in the Spoke account
+  TransitNetworkExecutionRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W28
+            reason: "The role name 'TransitNetworkExecutionRole-<AWS-REGION>' has to be defined to allow cross account access from the hub account to make network changes."
+          - id: W11
+            reason: "Allow * because it is required for making Describe and GetResourceShareInvitationsAPI calls as they don't support resource-level permissions and require you to choose All resources."
+    Properties:
+      RoleName: !Join ["-", ["TransitNetworkExecutionRole", Ref: "AWS::Region"]]
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Join ['', ['arn:aws:iam::', !Ref HubAccount, ':role/TransitNetworkOrchestratorSMLambdaRole', '-', !Ref 'AWS::Region']]
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: TransitNetworkExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:CreateTransitGatewayRoute
+                  - ec2:DeleteTransitGatewayRoute
+                  - ec2:ModifyTransitGatewayVpcAttachment
+                  - ec2:CreateTransitGatewayVpcAttachment
+                  - ec2:DeleteTransitGatewayVpcAttachment
+                  - ec2:CreateRoute
+                  - ec2:DeleteRoute
+                  - ec2:CreateTags
+                Resource:
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway-route-table/*
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway-attachment/*
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*
+                  - !Sub arn:aws:ec2:${AWS::Region}:${HubAccount}:transit-gateway/*
+              - Effect: Allow
+                Action:
+                  - ec2:CreateRoute
+                  - ec2:DeleteRoute
+                  - ec2:CreateTags
+                Resource:
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeTransitGatewayVpcAttachments
+                  - ec2:DescribeTransitGatewayAttachments
+                  - ec2:DescribeTransitGatewayRouteTables
+                  - ec2:DescribeVpcs
+                  - ec2:DescribeRegions
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeRouteTables
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ram:GetResourceShareInvitations
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ram:AcceptResourceShareInvitation
+                Resource: !Sub arn:aws:ram:${AWS::Region}:${HubAccount}:resource-share-invitation/*
+
+
+  # IAM Role for Event Rule in the Spoke account to invoke event bus in hub account
+  # This role is only needed if the spoke account belongs to an AWS Organization
+  TransitNetworkEventDeliveryRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+                Service: events.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: TransitNetworkEventBusDeliveryRolePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource: !Sub
+                  - arn:aws:events:${AWS::Region}:${HubAccount}:event-bus/${EventBusName}
+                  - {EventBusName: !FindInMap [EventBridge, Bus, Name]}
+
+Outputs:
+  SolutionVersion:
+    Description: Version Number
+    Value: v1.0.0

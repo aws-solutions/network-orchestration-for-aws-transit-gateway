@@ -1,0 +1,16 @@
+##define values
+#set( $subnetid = $context.arguments.filter.SubnetId.eq )
+#set( $version="latest") 
+
+##get version history given a subnetid
+{
+    "version" : "2017-02-28",
+    "operation" : "Scan",
+    "filter" : {
+        "expression" : "SubnetId = :subnetid AND Version <> :version",
+        "expressionValues" : {
+            ":subnetid" : { "S" : "$subnetid" },
+            ":version" : { "S" : "$version" } 
+        }
+    }
+}
