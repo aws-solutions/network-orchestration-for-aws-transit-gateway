@@ -1,20 +1,20 @@
-# AWS Serverless Transit Network Orchestrator
-The AWS Serverless Transit Network Orchestrator is a reference implementation that ... 
+# Serverless Transit Network Orchestrator
+The Serverless Transit Network Orchestrator (STNO) solution adds automation to AWS Transit Gateway. This solution provides the tools necessary to automate the process of setting up and managing transit networks in distributed AWS environments. A web interface is created to help control, audit, and approve (transit) network changes. STNO supports both AWS Organizations and standalone AWS account types.
  
 ## Getting Started 
-To get started with the AWS Serverless Transit Network Orchestrator, please review the solution documentation. https://aws.amazon.com/solutions/serverless-transit-network-orchestrator
+To get started with the Serverless Transit Network Orchestrator, please review the solution documentation. https://aws.amazon.com/solutions/serverless-transit-network-orchestrator
  
 ## Running unit tests for customization 
 * Clone the repository, then make the desired code changes 
 * Next, run unit tests to make sure added customization passes the tests 
 ``` 
 cd ./deployment 
-chmod +x ./run-unit-tests.sh  \n 
-./run-unit-tests.sh \n 
+chmod +x ./run-unit-tests.sh
+./run-unit-tests.sh
 ``` 
  
 ## Building distributable for customization 
-* Configure the bucket name of your target Amazon S3 distribution bucket 
+* Configure the solution name, version number and bucket name of your target Amazon S3 distribution bucket 
 ``` 
 export SOLUTION_NAME=my-solution-name # name of the solution
 export DIST_OUTPUT_BUCKET=my-bucket-name # bucket where customized code will reside 
@@ -24,18 +24,18 @@ _Note:_ You would have to create an S3 bucket with prefix 'my-bucket-name-<aws_r
  
 * Now build the distributable: 
 ``` 
-chmod +x ./build-s3-dist.sh \n 
-./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION \n 
+chmod +x ./build-s3-dist.sh
+./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
 ``` 
  
 * Deploy the distributable to an Amazon S3 bucket in your account. _Note:_ you must have the AWS Command Line Interface installed. 
 ``` 
-aws s3 cp ./dist/ s3://my-bucket-name/serverless-transit-network-orchestrator/<my-version>/ --recursive --exclude "*" --include "*.template" --include "*.json" --acl bucket-owner-full-control --profile aws-cred-profile-name \n 
-aws s3 cp ./dist/ s3://my-bucket-name-<aws_region>/serverless-transit-network-orchestrator/<my-version>/ --recursive --exclude "*" --include "*.zip" --acl bucket-owner-full-control --profile aws-cred-profile-name \n 
+aws s3 cp deployment/global-s3-assets/  s3://$TEMPLATE_OUTPUT_BUCKET/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control --profile aws-cred-profile-name 
+aws s3 cp deployment/regional-s3-assets/ s3://$BUILD_OUTPUT_BUCKET/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control --profile aws-cred-profile-name
 ``` 
  
-* Get the link of the serverless-transit-network-hub.template uploaded to your Amazon S3 bucket. 
-* Deploy the AWS Serverless Transit Network Orchestrator to your account by launching a new AWS CloudFormation stack using the link of the serverless-transit-network-hub.template. 
+* Get the link of the aws-transit-network-orchestrator-hub.template and aws-transit-network-orchestrator-spoke.template uploaded to your Amazon S3 bucket. 
+* Deploy the Serverless Transit Network Orchestrator to your account by launching a new AWS CloudFormation stack using the link of the aws-transit-network-orchestrator-hub.template and aws-transit-network-orchestrator-spoke.template
  
 *** 
  
