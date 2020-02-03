@@ -1,31 +1,21 @@
-# Copyright 2012-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License").
-# You may not use this file except in compliance with the License.
-# A copy of the License is located at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# or in the "license" file accompanying this file. This file is distributed
-# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-# express or implied. See the License for the specific language governing
-
-AWSTemplateFormatVersion: '2010-09-09'
-Description: (SO0058) - The AWS CloudFormation template (Hub) for deployment of the serverless-transit-network-orchestrator Solution. Version v1.0.0
-
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  (SO0058) - The AWS CloudFormation template (Hub) for deployment of the
+  serverless-transit-network-orchestrator Solution. Version v1.0.0
 Parameters:
   Principals:
     Type: CommaDelimitedList
-    Description: AWS account numbers eg. 123456789012 (comma seperated) OR the ARN of an Organization to share TGW with the principals eg. arn:aws:organizations::<ORG_MASTER_ACCOUNT_ID>:organization/o-exampleorgid.
-
+    Description: >-
+      AWS account numbers eg. 123456789012 (comma seperated) OR the ARN of an
+      Organization to share TGW with the principals eg.
+      arn:aws:organizations::<ORG_MASTER_ACCOUNT_ID>:organization/o-exampleorgid.
   PrincipalType:
     Type: String
     Description: Either provide list of accounts (comma seperated) or AWS Organizations ARN
-    Default: 'List of Accounts'
+    Default: List of Accounts
     AllowedValues:
-      - 'AWS Organization ARN'
-      - 'List of Accounts'
-
+      - AWS Organization ARN
+      - List of Accounts
   ApprovalNotification:
     Description: Do you want to send notification to the Network Admin for approval?
     AllowedValues:
@@ -33,39 +23,33 @@ Parameters:
       - 'No'
     Default: 'No'
     Type: String
-
   ApprovalNotificationEmail:
-    Type: 'String'
+    Type: String
     Description: Email for the network administrator(s)
-
   AuditTrailRetentionPeriod:
-    Description: Specifies the number of days you want to retain audit history in Amazon DynamoDB
+    Description: >-
+      Specifies the number of days you want to retain audit history in Amazon
+      DynamoDB
     Type: Number
     Default: 90
-    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
-
-  UserPoolUsernameForAdminUser:
-    Description: Cognito UserPool ADMIN username used in the solution. The ADMIN user has full read and write permissions.
-    Default: adminuser
-    Type: String
-    MinLength: 0
-    MaxLength: 20
-    AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
-
-  UserPoolUsernameForReadOnlyUser:
-    Description: Cognito UserPool READONLY username used in the solution. The READONLY user has only read permission.
-    Default: readonlyuser
-    Type: String
-    MinLength: 0
-    MaxLength: 20
-    AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
-
-  ConsoleLoginInformationEmail:
-    Description: Cognito user email where the temporary password will be sent. Please enter a valid and working email.
-    Type: String
-    MinLength: 1
-    AllowedPattern: '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
-
+    AllowedValues:
+      - 1
+      - 3
+      - 5
+      - 7
+      - 14
+      - 30
+      - 60
+      - 90
+      - 120
+      - 150
+      - 180
+      - 365
+      - 400
+      - 545
+      - 731
+      - 1827
+      - 3653
   AttachmentTag:
     Description: Custom tag key name to trigger the TGW VPC attachment workflow.
     Default: Attach-to-tgw
@@ -73,34 +57,36 @@ Parameters:
     MinLength: 0
     MaxLength: 20
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
-
   AssociationTag:
-    Description: Custom tag key name to trigger the TGW route table association with TGW attachment workflow.
+    Description: >-
+      Custom tag key name to trigger the TGW route table association with TGW
+      attachment workflow.
     Default: Associate-with
     Type: String
     MinLength: 0
     MaxLength: 20
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
-
   PropagationTag:
-    Description: Custom tag key name to trigger the route propagation to TGW route table(s) workflow.
+    Description: >-
+      Custom tag key name to trigger the route propagation to TGW route table(s)
+      workflow.
     Default: Propagate-to
     Type: String
     MinLength: 0
     MaxLength: 20
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
-
   DefaultRoute:
-    Description: Default/Static route(s) to Transit Gateway - spoke account route table associated with the tagged subnets.
-    Default: "All-Traffic (0/0)"
+    Description: >-
+      Default/Static route(s) to Transit Gateway - spoke account route table
+      associated with the tagged subnets.
+    Default: All-Traffic (0/0)
     Type: String
     AllowedValues:
-      - "All-Traffic (0/0)"
-      - "RFC-1918 (10/8, 172.16/12, 192.168/16)"
-      - "Configure-Manually"
-
+      - All-Traffic (0/0)
+      - 'RFC-1918 (10/8, 172.16/12, 192.168/16)'
+      - Configure-Manually
 Metadata:
-  AWS::CloudFormation::Interface:
+  'AWS::CloudFormation::Interface':
     ParameterGroups:
       - Label:
           default: Account Structure
@@ -132,7 +118,6 @@ Metadata:
           default: Audit Trail Retention Settings
         Parameters:
           - AuditTrailRetentionPeriod
-
     ParameterLabels:
       Principals:
         default: Account List or AWS Organizations ARN
@@ -158,199 +143,520 @@ Metadata:
         default: Tag key for Route Propagation to TGW Route Table(s)
       AuditTrailRetentionPeriod:
         default: Audit Trail Retention Period
-
-
+  'AWS::CloudFormation::Designer':
+    162f9f52-45ca-4c4e-8407-8a0ed33ce1c7:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 540
+        'y': 330
+      z: 1
+      embeds: []
+    605b3dcc-9dc9-4320-a7f6-0dc63f4fef3b:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 540
+        'y': 450
+      z: 1
+      embeds: []
+    5048fc83-aaf9-4cc9-98d3-9eee87ee095f:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 660
+        'y': 210
+      z: 1
+      embeds: []
+    1a932afe-f20c-47e3-bd27-35e60dec26ca:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 660
+        'y': 330
+      z: 1
+      embeds: []
+    a4550f6e-30e7-4f2e-9c4d-ce32181dd9c1:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 660
+        'y': 450
+      z: 1
+      embeds: []
+    639cbd7a-e17c-4335-862d-cbefe128ad22:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 660
+        'y': 570
+      z: 1
+      embeds: []
+    9137c29f-255c-4f3d-9ea4-431fc12d4359:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 690
+      z: 1
+      embeds: []
+    6137f1ca-2a56-4620-962c-c62448d60e3b:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 300
+        'y': 690
+      z: 1
+      embeds: []
+    6ba80574-ec51-4c35-9da2-315e7472ff1c:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 540
+        'y': 690
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 9137c29f-255c-4f3d-9ea4-431fc12d4359
+    ac87f886-1af0-4515-b29c-4f2e5a797519:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 660
+        'y': 690
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 9137c29f-255c-4f3d-9ea4-431fc12d4359
+    de6edc7d-f8b3-45a7-9206-2b58b6b6259a:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 780
+        'y': 90
+      z: 1
+      embeds: []
+    8062e9fc-4269-4833-bcab-b0438e742870:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 780
+        'y': 210
+      z: 1
+      embeds: []
+    dc3656e8-1914-488e-b8c8-2a84fe84c29a:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 780
+        'y': 330
+      z: 1
+      embeds: []
+    7eafa82e-2d5c-435e-ae99-56abd259a2ce:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 780
+        'y': 450
+      z: 1
+      embeds: []
+    335cced5-9d35-4505-9a0c-18b02126c1c5:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 780
+        'y': 570
+      z: 1
+      embeds: []
+    7c88429f-91bc-47c6-89cd-28d0b5be5a0e:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 780
+        'y': 690
+      z: 1
+      embeds: []
+    572eb11c-fc9c-4f70-98ea-a6ae9606259f:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 810
+      z: 1
+      embeds: []
+      dependson:
+        - 7c88429f-91bc-47c6-89cd-28d0b5be5a0e
+    4cfc3125-5875-402a-87cf-6515b4ecc0d4:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 810
+      z: 1
+      embeds: []
+    696c9e1f-1d01-4a65-8262-fe9962a8b86e:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 300
+        'y': 810
+      z: 1
+      embeds: []
+    3ba11391-18f6-4eea-9db0-7d9e3bfb56d4:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 420
+        'y': 810
+      z: 1
+      embeds: []
+    12466927-805e-42f3-98b4-3bc840aecec1:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 540
+        'y': 810
+      z: 1
+      embeds: []
+    d92c3e7a-4dce-4f85-88ee-757c18158bd0:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 660
+        'y': 810
+      z: 1
+      embeds: []
+    2fea74a1-ad95-4d78-a028-5d7804aa6c6b:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 780
+        'y': 810
+      z: 1
+      embeds: []
+    0ed13a31-b9b9-4ee8-ab18-a80116572bff:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 900
+        'y': 570
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - d92c3e7a-4dce-4f85-88ee-757c18158bd0
+    fdab1be8-2d60-4ec8-8c30-c94bb67fa003:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 900
+        'y': 690
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - d92c3e7a-4dce-4f85-88ee-757c18158bd0
+    5022a715-0df2-40a9-b942-e4111121c33a:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 900
+        'y': 810
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - d92c3e7a-4dce-4f85-88ee-757c18158bd0
+    e1b5af15-bcee-4ef3-bbea-8139fb289fa3:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 930
+      z: 1
+      embeds: []
 Conditions:
-  NotificationCondition: !Equals [!Ref ApprovalNotification, 'Yes']
-  IsMemberOfOrganization: !Equals [!Ref PrincipalType, 'AWS Organization ARN']
-  IsNotMemberOfOrganization: !Equals [!Ref PrincipalType, 'List of Accounts']
-
+  NotificationCondition: !Equals 
+    - !Ref ApprovalNotification
+    - 'Yes'
+  IsMemberOfOrganization: !Equals 
+    - !Ref PrincipalType
+    - AWS Organization ARN
+  IsNotMemberOfOrganization: !Equals 
+    - !Ref PrincipalType
+    - List of Accounts
 Mappings:
   NetworkConfiguration:
     TransitGateway:
-      AutoAcceptSharedAttachments: "enable" # the solution assumes this setting is set to 'enable'.
-      DefaultRouteTableAssociation: "disable" # the solution assumes this setting is set to 'disable'.
-      DefaultRouteTablePropagation: "disable" # the solution assumes this setting is set to 'disable'.
-      DnsSupport: "enable" # this value can be changed based on customer preference
-      VpnEcmpSupport: "enable" # this value can be changed based on customer preference
+      AutoAcceptSharedAttachments: enable
+      DefaultRouteTableAssociation: disable
+      DefaultRouteTablePropagation: disable
+      DnsSupport: enable
+      VpnEcmpSupport: enable
     us-east-1:
-      AmazonSideAsn: 64526 # this must be changed by a network admin only
+      AmazonSideAsn: 64526
     us-east-2:
-      AmazonSideAsn: 64527 # this must be changed by a network admin only
+      AmazonSideAsn: 64527
     us-west-1:
-      AmazonSideAsn: 64528 # this must be changed by a network admin only
+      AmazonSideAsn: 64528
     us-west-2:
-      AmazonSideAsn: 64529 # this must be changed by a network admin only
+      AmazonSideAsn: 64529
     eu-west-1:
-      AmazonSideAsn: 64530 # this must be changed by a network admin only
+      AmazonSideAsn: 64530
     eu-west-2:
-      AmazonSideAsn: 64531 # this must be changed by a network admin only
+      AmazonSideAsn: 64531
     eu-west-3:
-      AmazonSideAsn: 64532 # this must be changed by a network admin only
+      AmazonSideAsn: 64532
     eu-central-1:
-      AmazonSideAsn: 64533 # this must be changed by a network admin only
+      AmazonSideAsn: 64533
     ca-central-1:
-      AmazonSideAsn: 64534 # this must be changed by a network admin only
+      AmazonSideAsn: 64534
     ap-northeast-1:
-      AmazonSideAsn: 64535 # this must be changed by a network admin only
+      AmazonSideAsn: 64535
     ap-northeast-2:
-      AmazonSideAsn: 64536 # this must be changed by a network admin only
+      AmazonSideAsn: 64536
     ap-south-1:
-      AmazonSideAsn: 64537 # this must be changed by a network admin only
+      AmazonSideAsn: 64537
     ap-southeast-1:
-      AmazonSideAsn: 64538 # this must be changed by a network admin only
+      AmazonSideAsn: 64538
     ap-southeast-2:
-      AmazonSideAsn: 64539 # this must be changed by a network admin only
+      AmazonSideAsn: 64539
     sa-east-1:
-      AmazonSideAsn: 64540 # this must be changed by a network admin only
+      AmazonSideAsn: 64540
   NotificationConfiguration:
     SNS:
-      DisplayName: "AWS Transit Network Change Approval Notification"
+      DisplayName: AWS Transit Network Change Approval Notification
       TopicName: AWS-Transit-Network-Approval-Notifications
   LambdaFunction:
     Logging:
-      Level: "info"
+      Level: info
   EventBridge:
     Bus:
-      Name: "STNO-EventBridge"
+      Name: STNO-EventBridge
   SourceCode:
     General:
-      S3Bucket: "solutions"
-      KeyPrefix: "serverless-transit-network-orchestrator/v1.0.0"
-      Version: "v1.0.0"
+      S3Bucket: solutions
+      KeyPrefix: serverless-transit-network-orchestrator/v1.0.0
+      Version: v1.0.0
     Variables:
-      WaitTime: "10"
-      AllTraffic: "0.0.0.0/0"
-      RFC1918Routes: "10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16"
-      ApprovalTagKey: "ApprovalRequired"
-      ApprovalTagValue: "No"
+      WaitTime: '10'
+      AllTraffic: 0.0.0.0/0
+      RFC1918Routes: '10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16'
+      ApprovalTagKey: ApprovalRequired
+      ApprovalTagValue: 'No'
   Solution:
     Metrics:
-      SendAnonymousData: "Yes"
-
-
+      SendAnonymousData: 'Yes'
 Resources:
-  # The following description enables the idempotency and CFN template will not rollback if the role
-  # already exist. Do not change the description below.
   CustomServiceLinkedRole:
-    Type: "AWS::IAM::ServiceLinkedRole"
+    Type: 'AWS::IAM::ServiceLinkedRole'
     Properties:
-      AWSServiceName: 'ram.amazonaws.com'
+      AWSServiceName: ram.amazonaws.com
       Description: Allows RAM to access Organizations on your behalf.
-
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 7c88429f-91bc-47c6-89cd-28d0b5be5a0e
   AWSTransitGateway:
-    Type: AWS::EC2::TransitGateway
+    Type: 'AWS::EC2::TransitGateway'
     DeletionPolicy: Retain
     Properties:
-      AmazonSideAsn: !FindInMap [NetworkConfiguration, !Ref "AWS::Region", AmazonSideAsn]
-      Description: "This transit gateway was created by AWS Serverless Transit Network Orchestrator"
-      AutoAcceptSharedAttachments: !FindInMap [NetworkConfiguration, TransitGateway, AutoAcceptSharedAttachments]
-      DefaultRouteTableAssociation: !FindInMap [NetworkConfiguration, TransitGateway, DefaultRouteTableAssociation]
-      DefaultRouteTablePropagation: !FindInMap [NetworkConfiguration, TransitGateway, DefaultRouteTablePropagation]
-      DnsSupport: !FindInMap [NetworkConfiguration, TransitGateway, DnsSupport]
-      VpnEcmpSupport: !FindInMap [NetworkConfiguration, TransitGateway, VpnEcmpSupport]
+      AmazonSideAsn: !FindInMap 
+        - NetworkConfiguration
+        - !Ref 'AWS::Region'
+        - AmazonSideAsn
+      Description: >-
+        This transit gateway was created by AWS Serverless Transit Network
+        Orchestrator
+      AutoAcceptSharedAttachments: !FindInMap 
+        - NetworkConfiguration
+        - TransitGateway
+        - AutoAcceptSharedAttachments
+      DefaultRouteTableAssociation: !FindInMap 
+        - NetworkConfiguration
+        - TransitGateway
+        - DefaultRouteTableAssociation
+      DefaultRouteTablePropagation: !FindInMap 
+        - NetworkConfiguration
+        - TransitGateway
+        - DefaultRouteTablePropagation
+      DnsSupport: !FindInMap 
+        - NetworkConfiguration
+        - TransitGateway
+        - DnsSupport
+      VpnEcmpSupport: !FindInMap 
+        - NetworkConfiguration
+        - TransitGateway
+        - VpnEcmpSupport
       Tags:
         - Key: Name
           Value: STNO-TGW
         - Key: AWS Solutions
           Value: !Ref 'AWS::StackId'
-
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: de6edc7d-f8b3-45a7-9206-2b58b6b6259a
   FlatTGWRouteTable:
-    Type: AWS::EC2::TransitGatewayRouteTable
+    Type: 'AWS::EC2::TransitGatewayRouteTable'
     DeletionPolicy: Retain
     Properties:
       TransitGatewayId: !Ref AWSTransitGateway
       Tags:
-        -
-          Key: Name
+        - Key: Name
           Value: Flat
-        -
-          Key: StackId
-          Value: !Ref AWS::StackId
-        -
-          Key: !FindInMap ["SourceCode", "Variables", "ApprovalTagKey"]
-          Value: !FindInMap ["SourceCode", "Variables", "ApprovalTagValue"]
-
+        - Key: StackId
+          Value: !Ref 'AWS::StackId'
+        - Key: !FindInMap 
+            - SourceCode
+            - Variables
+            - ApprovalTagKey
+          Value: !FindInMap 
+            - SourceCode
+            - Variables
+            - ApprovalTagValue
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 335cced5-9d35-4505-9a0c-18b02126c1c5
   OnPremTGWRouteTable:
-    Type: AWS::EC2::TransitGatewayRouteTable
+    Type: 'AWS::EC2::TransitGatewayRouteTable'
     DeletionPolicy: Retain
     Properties:
       TransitGatewayId: !Ref AWSTransitGateway
       Tags:
-        -
-          Key: Name
+        - Key: Name
           Value: On-premises
-        -
-          Key: StackId
-          Value: !Ref AWS::StackId
-        -
-          Key: !FindInMap ["SourceCode", "Variables", "ApprovalTagKey"]
-          Value: !FindInMap ["SourceCode", "Variables", "ApprovalTagValue"]
-
+        - Key: StackId
+          Value: !Ref 'AWS::StackId'
+        - Key: !FindInMap 
+            - SourceCode
+            - Variables
+            - ApprovalTagKey
+          Value: !FindInMap 
+            - SourceCode
+            - Variables
+            - ApprovalTagValue
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 7eafa82e-2d5c-435e-ae99-56abd259a2ce
   IsolatedTGWRouteTable:
-    Type: AWS::EC2::TransitGatewayRouteTable
+    Type: 'AWS::EC2::TransitGatewayRouteTable'
     DeletionPolicy: Retain
     Properties:
       TransitGatewayId: !Ref AWSTransitGateway
       Tags:
-        -
-          Key: Name
+        - Key: Name
           Value: Isolated
-        -
-          Key: !FindInMap ["SourceCode", "Variables", "ApprovalTagKey"]
-          Value: !FindInMap ["SourceCode", "Variables", "ApprovalTagValue"]
-
+        - Key: !FindInMap 
+            - SourceCode
+            - Variables
+            - ApprovalTagKey
+          Value: !FindInMap 
+            - SourceCode
+            - Variables
+            - ApprovalTagValue
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: dc3656e8-1914-488e-b8c8-2a84fe84c29a
   InfrastructureTGWRouteTable:
-    Type: AWS::EC2::TransitGatewayRouteTable
+    Type: 'AWS::EC2::TransitGatewayRouteTable'
     DeletionPolicy: Retain
     Properties:
       TransitGatewayId: !Ref AWSTransitGateway
       Tags:
-        -
-          Key: Name
+        - Key: Name
           Value: Infrastructure
-        -
-          Key: StackId
-          Value: !Ref AWS::StackId
-        -
-          Key: !FindInMap ["SourceCode", "Variables", "ApprovalTagKey"]
-          Value: !FindInMap ["SourceCode", "Variables", "ApprovalTagValue"]
-
+        - Key: StackId
+          Value: !Ref 'AWS::StackId'
+        - Key: !FindInMap 
+            - SourceCode
+            - Variables
+            - ApprovalTagKey
+          Value: !FindInMap 
+            - SourceCode
+            - Variables
+            - ApprovalTagValue
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 8062e9fc-4269-4833-bcab-b0438e742870
   TGWResourceShare:
     DependsOn:
       - CustomServiceLinkedRole
-    Type: "AWS::RAM::ResourceShare"
+    Type: 'AWS::RAM::ResourceShare'
     Properties:
-      Name: "Transit Gateway Resource Share"
+      Name: Transit Gateway Resource Share
       ResourceArns:
-        - !Join ['', ['arn:aws:ec2:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':transit-gateway/', !Ref AWSTransitGateway]]
+        - !Join 
+          - ''
+          - - 'arn:aws:ec2:'
+            - !Ref 'AWS::Region'
+            - ':'
+            - !Ref 'AWS::AccountId'
+            - ':transit-gateway/'
+            - !Ref AWSTransitGateway
       Principals: !Ref Principals
       Tags:
         - Key: AWS Serverless Transit Network Orchestrator
           Value: !Ref 'AWS::StackId'
-
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 572eb11c-fc9c-4f70-98ea-a6ae9606259f
   ApprovalTopic:
-    Type: AWS::SNS::Topic
+    Type: 'AWS::SNS::Topic'
     Properties:
-      DisplayName: !FindInMap [NotificationConfiguration ,SNS ,DisplayName]
-      TopicName: !FindInMap [NotificationConfiguration ,SNS ,TopicName]
+      DisplayName: !FindInMap 
+        - NotificationConfiguration
+        - SNS
+        - DisplayName
+      TopicName: !FindInMap 
+        - NotificationConfiguration
+        - SNS
+        - TopicName
       KmsMasterKeyId: alias/aws/sns
-
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 9137c29f-255c-4f3d-9ea4-431fc12d4359
   NetworkAdminEmailNotification:
     Condition: NotificationCondition
-    Type: AWS::SNS::Subscription
+    Type: 'AWS::SNS::Subscription'
     Properties:
       Endpoint: !Ref ApprovalNotificationEmail
       Protocol: email
       TopicArn: !Ref ApprovalTopic
-
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: ac87f886-1af0-4515-b29c-4f2e5a797519
   SNSNotificationPolicy:
-    Type: AWS::SNS::TopicPolicy
+    Type: 'AWS::SNS::TopicPolicy'
     Metadata:
       cfn_nag:
         rules_to_suppress:
           - id: F18
-            reason: "Condition restricts permissions to current account."
+            reason: Condition restricts permissions to current account.
+      'AWS::CloudFormation::Designer':
+        id: 6ba80574-ec51-4c35-9da2-315e7472ff1c
     Properties:
       Topics:
         - !Ref ApprovalTopic
@@ -359,247 +665,233 @@ Resources:
           - Sid: __default_statement_ID
             Effect: Allow
             Principal:
-              AWS: "*"
+              AWS: '*'
             Action:
-            - SNS:GetTopicAttributes
-            - SNS:SetTopicAttributes
-            - SNS:AddPermission
-            - SNS:RemovePermission
-            - SNS:DeleteTopic
-            - SNS:Subscribe
-            - SNS:ListSubscriptionsByTopic
-            - SNS:Publish
-            - SNS:Receive
+              - 'SNS:GetTopicAttributes'
+              - 'SNS:SetTopicAttributes'
+              - 'SNS:AddPermission'
+              - 'SNS:RemovePermission'
+              - 'SNS:DeleteTopic'
+              - 'SNS:Subscribe'
+              - 'SNS:ListSubscriptionsByTopic'
+              - 'SNS:Publish'
+              - 'SNS:Receive'
             Resource: !Ref ApprovalTopic
             Condition:
               StringEquals:
-                AWS:SourceOwner: !Sub ${AWS::AccountId}
+                'AWS:SourceOwner': !Sub '${AWS::AccountId}'
           - Sid: TrustCWEToPublishEventsToMyTopic
             Effect: Allow
             Principal:
               Service: events.amazonaws.com
-            Action: sns:Publish
+            Action: 'sns:Publish'
             Resource: !Ref ApprovalTopic
-
-  # IAM Role for Serverless Transit Network Orchestrator Administration in the Hub account
-  TransitNetworkAdministrationRole:
-    Type: AWS::IAM::Role
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W11
-            reason: "Allow * in the ARN of the execution role to allow cross account access to user defined spoke accounts."
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: /
-      Policies:
-        - PolicyName: !Join ["-", ["AssumeRole-TransitNetworkExecutionRole", Ref: "AWS::Region"]]
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - sts:AssumeRole
-                Resource:
-                  - !Join ["-", ["arn:aws:iam::*:role/TransitNetworkExecutionRole", Ref: "AWS::Region"]]
-
-  #
-  # Cloudwatch Rule for Accounts in the AWS Organizations
-  #
   LambdaEventRuleOrganization:
-    Type: AWS::Events::Rule
+    Type: 'AWS::Events::Rule'
     Condition: IsMemberOfOrganization
     Properties:
-      Description: Serverless Transit Network Orchestrator - Rule for tag on resource events in Organization
+      Description: >-
+        Serverless Transit Network Orchestrator - Rule for tag on resource
+        events in Organization
       EventBusName: !Ref STNOCustomEventBus
       EventPattern:
-        {
-          "source": [
-            "aws.tag"
-          ],
-          "detail-type": [
-            "Tag Change on Resource"
-          ],
-          "detail": {
-            "service": [
-              "ec2"
-            ],
-            "resource-type": [
-              "subnet",
-              "vpc"
-            ],
-            "changed-tag-keys": [
-              Ref: "AttachmentTag",
-              Ref: "AssociationTag",
-              Ref: "PropagationTag"
-            ]
-          }
-        }
+        source:
+          - aws.tag
+        detail-type:
+          - Tag Change on Resource
+        detail:
+          service:
+            - ec2
+          resource-type:
+            - subnet
+            - vpc
+          changed-tag-keys:
+            - Ref: AttachmentTag
+            - Ref: AssociationTag
+            - Ref: PropagationTag
       State: ENABLED
       Targets:
-        - Arn: !Sub ${CustomResourceLambda.Arn}
-          Id: 'Custom-Resource-Lambda-Function'
-
-  #
-  # Cloudwatch Rule for Accounts (not in organization)
-  #
+        - Arn: !Sub '${CustomResourceLambda.Arn}'
+          Id: Custom-Resource-Lambda-Function
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 639cbd7a-e17c-4335-862d-cbefe128ad22
   LambdaEventRuleSpokeAccounts:
-    Type: AWS::Events::Rule
+    Type: 'AWS::Events::Rule'
     Condition: IsNotMemberOfOrganization
     Properties:
-      Description: Serverless Transit Network Orchestrator - Rule for tag on resource events from the spoke accounts
+      Description: >-
+        Serverless Transit Network Orchestrator - Rule for tag on resource
+        events from the spoke accounts
       EventBusName: !Ref STNOCustomEventBus
       EventPattern:
-        {
-          "account": !Ref Principals,
-          "source": [
-            "aws.tag"
-          ],
-          "detail-type": [
-            "Tag Change on Resource"
-          ],
-          "detail": {
-            "service": [
-              "ec2"
-            ],
-            "resource-type": [
-              "subnet",
-              "vpc"
-            ],
-            "changed-tag-keys": [
-              Ref: "AttachmentTag",
-              Ref: "AssociationTag",
-              Ref: "PropagationTag"
-            ]
-          }
-        }
+        account: !Ref Principals
+        source:
+          - aws.tag
+        detail-type:
+          - Tag Change on Resource
+        detail:
+          service:
+            - ec2
+          resource-type:
+            - subnet
+            - vpc
+          changed-tag-keys:
+            - Ref: AttachmentTag
+            - Ref: AssociationTag
+            - Ref: PropagationTag
       State: ENABLED
       Targets:
-        - Arn: !Sub ${CustomResourceLambda.Arn}
-          Id: 'Custom-Resource-Lambda-Function'
-
-  #
-  # Cloudwatch Rule for Hub Account (not in organization)
-  #
+        - Arn: !Sub '${CustomResourceLambda.Arn}'
+          Id: Custom-Resource-Lambda-Function
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: a4550f6e-30e7-4f2e-9c4d-ce32181dd9c1
   LambdaEventRuleHubAccount:
-    Type: AWS::Events::Rule
+    Type: 'AWS::Events::Rule'
     Properties:
-      Description: Serverless Transit Network Orchestrator - Rule for tag on resource events from hub account
+      Description: >-
+        Serverless Transit Network Orchestrator - Rule for tag on resource
+        events from hub account
       EventPattern:
-        {
-          "account": [
-            !Ref "AWS::AccountId"
-          ],
-          "source": [
-            "aws.tag"
-          ],
-          "detail-type": [
-            "Tag Change on Resource"
-          ],
-          "detail": {
-            "service": [
-              "ec2"
-            ],
-            "resource-type": [
-              "subnet",
-              "vpc"
-            ],
-            "changed-tag-keys": [
-              Ref: "AttachmentTag",
-              Ref: "AssociationTag",
-              Ref: "PropagationTag"
-            ]
-          }
-        }
+        account:
+          - !Ref 'AWS::AccountId'
+        source:
+          - aws.tag
+        detail-type:
+          - Tag Change on Resource
+        detail:
+          service:
+            - ec2
+          resource-type:
+            - subnet
+            - vpc
+          changed-tag-keys:
+            - Ref: AttachmentTag
+            - Ref: AssociationTag
+            - Ref: PropagationTag
       State: ENABLED
       Targets:
-        - Arn: !Sub ${CustomResourceLambda.Arn}
-          Id: 'Custom-Resource-Lambda-Function'
-
+        - Arn: !Sub '${CustomResourceLambda.Arn}'
+          Id: Custom-Resource-Lambda-Function
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 1a932afe-f20c-47e3-bd27-35e60dec26ca
   STNOCustomEventBus:
-    Type: AWS::Events::EventBus
+    Type: 'AWS::Events::EventBus'
     Properties:
-      Name: !FindInMap [EventBridge, Bus, Name]
-
+      Name: !FindInMap 
+        - EventBridge
+        - Bus
+        - Name
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 5048fc83-aaf9-4cc9-98d3-9eee87ee095f
   EventBusPermission:
-    Type: Custom::CWEventPermissions
+    Type: 'Custom::CWEventPermissions'
     Properties:
       Principals: !Ref Principals
       EventBusName: !Ref STNOCustomEventBus
       ServiceToken: !GetAtt CustomResourceLambda.Arn
-
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e1b5af15-bcee-4ef3-bbea-8139fb289fa3
   CustomResourceLambda:
-    Type: AWS::Lambda::Function
+    Type: 'AWS::Lambda::Function'
     Properties:
       Environment:
         Variables:
-          LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
+          LOG_LEVEL: !FindInMap 
+            - LambdaFunction
+            - Logging
+            - Level
           STATE_MACHINE_ARN: !Ref OrchestratorStateMachine
-          METRICS_FLAG: !FindInMap [Solution, Metrics, SendAnonymousData]
+          METRICS_FLAG: !FindInMap 
+            - Solution
+            - Metrics
+            - SendAnonymousData
       Code:
-        S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"aws-transit-network-orchestrator-cr.zip"]]
+        S3Bucket: !Join 
+          - '-'
+          - - !FindInMap 
+              - SourceCode
+              - General
+              - S3Bucket
+            - Ref: 'AWS::Region'
+        S3Key: !Join 
+          - /
+          - - !FindInMap 
+              - SourceCode
+              - General
+              - KeyPrefix
+            - aws-transit-network-orchestrator-cr.zip
       FunctionName: TransitNetworkOrchestratorCRLambda
       Description: AWS Serverless Transit Network Orchestrator Custom Resource
       Handler: lambda_custom_resource.lambda_handler
       MemorySize: 1536
-      Role: !GetAtt 'CustomResourceLambdaRole.Arn'
+      Role: !GetAtt CustomResourceLambdaRole.Arn
       Runtime: python3.7
       Timeout: 900
       TracingConfig:
-          Mode: Active
-
+        Mode: PassThrough
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: d92c3e7a-4dce-4f85-88ee-757c18158bd0
   LambdaPermissionOrganization:
-    Type: AWS::Lambda::Permission
+    Type: 'AWS::Lambda::Permission'
     Condition: IsMemberOfOrganization
     Properties:
-      Action: lambda:InvokeFunction
+      Action: 'lambda:InvokeFunction'
       Principal: events.amazonaws.com
       SourceArn: !GetAtt LambdaEventRuleOrganization.Arn
       FunctionName: !Ref CustomResourceLambda
-
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 5022a715-0df2-40a9-b942-e4111121c33a
   LambdaPermissionSpokeAccount:
-    Type: AWS::Lambda::Permission
+    Type: 'AWS::Lambda::Permission'
     Condition: IsNotMemberOfOrganization
     Properties:
-      Action: lambda:InvokeFunction
+      Action: 'lambda:InvokeFunction'
       Principal: events.amazonaws.com
       SourceArn: !GetAtt LambdaEventRuleSpokeAccounts.Arn
       FunctionName: !Ref CustomResourceLambda
-
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: fdab1be8-2d60-4ec8-8c30-c94bb67fa003
   LambdaPermissionHubAccount:
-    Type: AWS::Lambda::Permission
+    Type: 'AWS::Lambda::Permission'
     Properties:
-      Action: lambda:InvokeFunction
+      Action: 'lambda:InvokeFunction'
       Principal: events.amazonaws.com
       SourceArn: !GetAtt LambdaEventRuleHubAccount.Arn
       FunctionName: !Ref CustomResourceLambda
-
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 0ed13a31-b9b9-4ee8-ab18-a80116572bff
   CustomResourceLambdaRole:
-    Type: AWS::IAM::Role
+    Type: 'AWS::IAM::Role'
     Metadata:
       cfn_nag:
         rules_to_suppress:
           - id: W11
-            reason: "Allow * in the ARN of the execution role to allow access to user created resource - IAM Service Message: The actions in your policy do not support resource-level
-permissions and require you to choose All resources"
+            reason: >-
+              Allow * in the ARN of the execution role to allow access to user
+              created resource - IAM Service Message: The actions in your policy
+              do not support resource-level permissions and require you to
+              choose All resources
+      'AWS::CloudFormation::Designer':
+        id: 12466927-805e-42f3-98b4-3bc840aecec1
     Properties:
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
             Principal:
               Service:
                 - lambda.amazonaws.com
                 - appsync.amazonaws.com
-            Action: sts:AssumeRole
+            Action: 'sts:AssumeRole'
       Path: /
       Policies:
         - PolicyName: TransitNetworkOrchestratorCRLambdaRole
@@ -612,11 +904,6 @@ permissions and require you to choose All resources"
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
-              - Effect: Allow
-                Action:
-                  - xray:PutTraceSegments
-                  - xray:PutTelemetryRecords
-                Resource: '*'  # IAM Service Message: The actions in your policy do not support resource-level permissions and require you to choose All resources
               - Effect: Allow
                 Action:
                   - iam:GetRole
@@ -659,18 +946,6 @@ permissions and require you to choose All resources"
                   - !Ref OrchestratorStateMachine
               - Effect: "Allow"
                 Action:
-                  - "s3:PutObject"
-                  - "s3:PutObjectTagging"
-                  - "s3:GetObject"
-                  - "s3:GetObjectTagging"
-                  - "s3:DeleteBucket"
-                  - "s3:PutObjectAcl"
-                  - "s3:ListBucket"
-                Resource:
-                  - !Join ["", ["arn:aws:s3:::", !Ref ConsoleBucket]]
-                  - !Join ["", ["arn:aws:s3:::", !Ref ConsoleBucket, "/*"]]
-              - Effect: "Allow"
-                Action:
                   - "s3:GetObject"
                   - "s3:GetObjectTagging"
                   - "s3:ListBucket"
@@ -683,32 +958,35 @@ permissions and require you to choose All resources"
                   - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:TransitNetworkOrchestratorCRLambda
                 Action:
                   - lambda:InvokeFunction
-
-
   DynamoDbTable:
     Type: 'AWS::DynamoDB::Table'
     Properties:
-        AttributeDefinitions:
-            - AttributeName: SubnetId
-              AttributeType: S
-            - AttributeName: Version
-              AttributeType: S
-        KeySchema:
-            - AttributeName: SubnetId
-              KeyType: HASH
-            - AttributeName: Version
-              KeyType: RANGE
-        TimeToLiveSpecification:
-          AttributeName: TimeToLive
-          Enabled: true
-        BillingMode: PAY_PER_REQUEST
-
+      AttributeDefinitions:
+        - AttributeName: SubnetId
+          AttributeType: S
+        - AttributeName: Version
+          AttributeType: S
+      KeySchema:
+        - AttributeName: SubnetId
+          KeyType: HASH
+        - AttributeName: Version
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: TimeToLive
+        Enabled: true
+      BillingMode: PAY_PER_REQUEST
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 162f9f52-45ca-4c4e-8407-8a0ed33ce1c7
   StateMachineLambda:
-    Type: AWS::Lambda::Function
+    Type: 'AWS::Lambda::Function'
     Properties:
       Environment:
         Variables:
-          LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
+          LOG_LEVEL: !FindInMap 
+            - LambdaFunction
+            - Logging
+            - Level
           APPROVAL_NOTIFICATION: !Ref ApprovalNotification
           APPROVAL_NOTIFICATION_ARN: !Ref ApprovalTopic
           TGW_ID: !Ref AWSTransitGateway
@@ -717,61 +995,92 @@ permissions and require you to choose All resources"
           PROPAGATION_TAG: !Ref PropagationTag
           ATTACHMENT_TAG: !Ref AttachmentTag
           DEFAULT_ROUTE: !Ref DefaultRoute
-          ALL_TRAFFIC: !FindInMap ["SourceCode", "Variables", "AllTraffic"]
-          RFC_1918_ROUTES: !FindInMap ["SourceCode", "Variables", "RFC1918Routes"]
-          WAIT_TIME: !FindInMap ["SourceCode", "Variables", "WaitTime"]
+          ALL_TRAFFIC: !FindInMap 
+            - SourceCode
+            - Variables
+            - AllTraffic
+          RFC_1918_ROUTES: !FindInMap 
+            - SourceCode
+            - Variables
+            - RFC1918Routes
+          WAIT_TIME: !FindInMap 
+            - SourceCode
+            - Variables
+            - WaitTime
           TTL: !Ref AuditTrailRetentionPeriod
-          APPROVAL_KEY: !FindInMap ["SourceCode", "Variables", "ApprovalTagKey"]
-          FIRST_PRINCIPAL: !Select [ 0, !Ref Principals ]
+          APPROVAL_KEY: !FindInMap 
+            - SourceCode
+            - Variables
+            - ApprovalTagKey
+          FIRST_PRINCIPAL: !Select 
+            - 0
+            - !Ref Principals
           RESOURCE_SHARE_ARN: !GetAtt TGWResourceShare.Arn
-          METRICS_FLAG: !FindInMap ["Solution", "Metrics", "SendAnonymousData"]
+          METRICS_FLAG: !FindInMap 
+            - Solution
+            - Metrics
+            - SendAnonymousData
           SOLUTION_VERSION: v1.0.0
-          STNO_CONSOLE_LINK: !Sub https://${ConsoleCloudFront.DomainName}
+          STNO_CONSOLE_LINK: 'https://DELETE-ME-MAYBE'
       Code:
-        S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"aws-transit-network-orchestrator-sm.zip"]]
+        S3Bucket: !Join 
+          - '-'
+          - - !FindInMap 
+              - SourceCode
+              - General
+              - S3Bucket
+            - Ref: 'AWS::Region'
+        S3Key: !Join 
+          - /
+          - - !FindInMap 
+              - SourceCode
+              - General
+              - KeyPrefix
+            - aws-transit-network-orchestrator-sm.zip
       FunctionName: TransitNetworkOrchestratorSMLambda
       Description: AWS Serverless Transit Network Orchestrator State Machine Handler
       Handler: state_machine_router.lambda_handler
       MemorySize: 1536
-      Role: !GetAtt 'StateMachineLambdaRole.Arn'
+      Role: !GetAtt StateMachineLambdaRole.Arn
       Runtime: python3.7
       Timeout: 900
       TracingConfig:
-          Mode: Active
-
-
+        Mode: PassThrough
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 4cfc3125-5875-402a-87cf-6515b4ecc0d4
   StateMachineRole:
-    Type: "AWS::IAM::Role"
+    Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
-        Version: "2012-10-17"
+        Version: 2012-10-17
         Statement:
-          -
-            Effect: "Allow"
+          - Effect: Allow
             Principal:
               Service:
-                - !Sub "states.${AWS::Region}.amazonaws.com"
+                - !Sub 'states.${AWS::Region}.amazonaws.com'
             Action:
-              - "sts:AssumeRole"
-      Path: "/"
+              - 'sts:AssumeRole'
+      Path: /
       Policies:
-        - PolicyName: "lambda"
+        - PolicyName: lambda
           PolicyDocument:
-            Version: "2012-10-17"
+            Version: 2012-10-17
             Statement:
-              - Effect: "Allow"
+              - Effect: Allow
                 Action:
-                  - "lambda:InvokeFunction"
+                  - 'lambda:InvokeFunction'
                 Resource: !GetAtt StateMachineLambda.Arn
-
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 696c9e1f-1d01-4a65-8262-fe9962a8b86e
   StateMachineLambdaRole:
     Type: AWS::IAM::Role
     Metadata:
       cfn_nag:
         rules_to_suppress:
           - id: W11
-            reason: "Allow * because it is required for making Describe and xray API calls as they don't support resource-level permissions and require you to choose All resources."
+            reason: "Allow * because it is required for making Describe calls as they don't support resource-level permissions and require you to choose All resources."
           - id: W28
             reason: "The role name 'TransitNetworkOrchestratorSMLambda' has to be defined to allow cross account access from the hub account to make network changes."
     Properties:
@@ -797,11 +1106,6 @@ permissions and require you to choose All resources"
                   - logs:PutLogEvents
                 Resource:
                   - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
-              - Effect: Allow
-                Action:
-                  - xray:PutTraceSegments
-                  - xray:PutTelemetryRecords
-                Resource: '*'  # IAM Service Message: The actions in your policy do not support resource-level permissions and require you to choose All resources
               - Effect: Allow
                 Action:
                   - iam:GetRole
@@ -868,9 +1172,9 @@ permissions and require you to choose All resources"
     Type: 'AWS::StepFunctions::StateMachine'
     Properties:
       StateMachineName: TransitNetworkOrchestratorStateMachine
-      RoleArn: !GetAtt 'StateMachineRole.Arn'
+      RoleArn: !GetAtt StateMachineRole.Arn
       DefinitionString:
-        Fn::Sub: |-
+        'Fn::Sub': |-
           {
             "Comment": "A state machine that orchestrates transit network changes.",
             "StartAt": "Describe Resources Pass",
@@ -1227,524 +1531,43 @@ permissions and require you to choose All resources"
               }
             }
           }
-
-  ############################
-  # AWS AppSync API       #
-  ############################
-  AppSyncPipelineApi:
-    Type: AWS::AppSync::GraphQLApi
-    Properties:
-      Name: STNOGraphQLAPI
-      AuthenticationType: AMAZON_COGNITO_USER_POOLS
-      UserPoolConfig:
-        UserPoolId:
-          Ref: STNOUserPool
-        AwsRegion:
-          Ref: AWS::Region
-        DefaultAction: DENY
-
-  GraphQLSchema:
-    Type: "AWS::AppSync::GraphQLSchema"
-    Properties:
-      ApiId:
-        Fn::GetAtt:
-        - AppSyncPipelineApi
-        - ApiId
-      DefinitionS3Location: !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/schema.graphql"]]
-
-
-  ############################
-  # AWS AppSync Datasources  #
-  ############################
-  DynamoDBSTNOTableDatasource:
-    Type: AWS::AppSync::DataSource
-    Properties:
-      Type: AMAZON_DYNAMODB
-      Name: STNO_DynamoDB_Datasource
-      ApiId:
-        Fn::GetAtt:
-        - "AppSyncPipelineApi"
-        - ApiId
-      ServiceRoleArn: !GetAtt AppSyncSTNODynamoDBRole.Arn
-      DynamoDBConfig:
-        TableName:
-          Ref: DynamoDbTable
-        AwsRegion:
-          Ref: AWS::Region
-        UseCallerCredentials: FALSE
-
-  STNOLambdaDatasource:
-    Type: AWS::AppSync::DataSource
-    Properties:
-      Type: AWS_LAMBDA
-      Name: STNO_Lambda_Datasource
-      ApiId:
-        Fn::GetAtt:
-        - "AppSyncPipelineApi"
-        - ApiId
-      ServiceRoleArn: !GetAtt CustomResourceLambdaRole.Arn
-      LambdaConfig:
-        LambdaFunctionArn: !GetAtt CustomResourceLambda.Arn
-
-  ############################
-  # AWS AppSync Resolvers    #
-  ############################
-  GetActionItemsResolver:
-    Type: "AWS::AppSync::Resolver"
-    DependsOn:
-    - GraphQLSchema
-    Properties:
-      ApiId: !GetAtt AppSyncPipelineApi.ApiId
-      TypeName: "Query"
-      FieldName: "getActionItemsFromTransitNetworkOrchestratorTables"
-      DataSourceName: !GetAtt DynamoDBSTNOTableDatasource.Name
-      RequestMappingTemplateS3Location:
-        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"], "/graphql/resolver/Query_GetActionItemsResolver_Request"]]
-      ResponseMappingTemplateS3Location:
-        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"], "/graphql/resolver/Query_GetActionItemsResolver_Response"]]
-
-
-  GetDashboardItemsResolver:
-    Type: "AWS::AppSync::Resolver"
-    DependsOn:
-    - GraphQLSchema
-    Properties:
-      ApiId: !GetAtt AppSyncPipelineApi.ApiId
-      TypeName: "Query"
-      FieldName: "getDashboarItemsFromTransitNetworkOrchestratorTables"
-      DataSourceName: !GetAtt DynamoDBSTNOTableDatasource.Name
-      RequestMappingTemplateS3Location:
-        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/resolver/Query_GetDashboardItemsResolver_Request"]]
-      ResponseMappingTemplateS3Location:
-        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/resolver/Query_GetDashboardItemsResolver_Response"]]
-
-
-  GetVersionHistoryResolver:
-    Type: "AWS::AppSync::Resolver"
-    DependsOn:
-    - GraphQLSchema
-    Properties:
-      ApiId: !GetAtt AppSyncPipelineApi.ApiId
-      TypeName: "Query"
-      FieldName: "getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables"
-      DataSourceName: !GetAtt DynamoDBSTNOTableDatasource.Name
-      RequestMappingTemplateS3Location:
-        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/resolver/Query_GetVersionHistoryResolver_Request"]]
-      ResponseMappingTemplateS3Location:
-        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/resolver/Query_GetVersionHistoryResolver_Response"]]
-
-
-  UpdateDDBTableResolver:
-    Type: AWS::AppSync::Resolver
-    Properties:
-      ApiId: !GetAtt AppSyncPipelineApi.ApiId
-      TypeName: "Mutation"
-      FieldName: "updateTransitNetworkOrchestratorTable"
-      RequestMappingTemplate: |
-        {}
-      ResponseMappingTemplate: |
-        $util.toJson($ctx.result)
-      Kind: "PIPELINE"
-      PipelineConfig:
-        Functions:
-        - !GetAtt UpdateDDBTableAppSyncFunction.FunctionId
-        - !GetAtt LambdaAppSyncFunction.FunctionId
-
-  UpdateDDBTableAppSyncFunction:
-    Type: AWS::AppSync::FunctionConfiguration
-    Properties:
-      ApiId: !GetAtt AppSyncPipelineApi.ApiId
-      Name: "Mutation_updateTransitNetworkOrchestratorTable_Function"
-      Description: "Update DDB table: set status to processing"
-      DataSourceName: !GetAtt DynamoDBSTNOTableDatasource.Name
-      RequestMappingTemplateS3Location:
-        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/function/Mutation_UpdateDDBTableAppSyncFunction_Request"]]
-      ResponseMappingTemplateS3Location:
-        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/function/Mutation_UpdateDDBTableAppSyncFunction_Response"]]
-      FunctionVersion: "2018-05-29"
-
-  LambdaAppSyncFunction:
-    Type: AWS::AppSync::FunctionConfiguration
-    Properties:
-      ApiId: !GetAtt AppSyncPipelineApi.ApiId
-      Name: "STNO_Lambda_Function"
-      Description: "Function to receive data from appsync to invoke downstream actions"
-      DataSourceName: !GetAtt STNOLambdaDatasource.Name
-      RequestMappingTemplateS3Location:
-        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/function/LambdaAppSyncFunction_Request"]]
-      ResponseMappingTemplateS3Location:
-        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/function/LambdaAppSyncFunction_Response"]]
-      FunctionVersion: "2018-05-29"
-
-  ############################
-  # Amazon Cognito User Pool #
-  ############################
-  STNOUserPool:
-    Type: AWS::Cognito::UserPool
-    Properties:
-      MfaConfiguration: "OFF"
-      AdminCreateUserConfig:
-                AllowAdminCreateUserOnly: true
-                InviteMessageTemplate:
-                  EmailSubject: !Sub "Serverless Transit Network Orchestrator Console Credentials (${AWS::Region})"
-                  EmailMessage:
-                    !Sub |
-                        <p>Here are your temporary login credentials for Serverless Transit Network Orchestrator Console: https://${ConsoleCloudFront.DomainName}</p>
-                        <p>
-                        Region: ${AWS::Region}<br />
-                        Username: <strong>{username}</strong><br />
-                        Temporary Password: <strong>{####}</strong>
-                        </p>
-      Policies:
-        PasswordPolicy:
-          MinimumLength: 10
-          RequireLowercase: true
-          RequireNumbers: true
-          RequireSymbols: true
-          RequireUppercase: true
-          TemporaryPasswordValidityDays: 7
-
-
-  UserPoolClient:
-    Type: AWS::Cognito::UserPoolClient
-    Properties:
-      ClientName: "simpleClient"
-      ExplicitAuthFlows:
-      - "ADMIN_NO_SRP_AUTH"
-      GenerateSecret: FALSE
-      UserPoolId:
-        Ref: STNOUserPool
-
-  ############################
-  # UserPool Groups          #
-  ############################
-  UserPoolGroupAdmin:
-    Type: AWS::Cognito::UserPoolGroup
-    Properties:
-      Description: "Admin can perform all read and write operations"
-      GroupName: "AdminGroup"
-      Precedence: 0
-      UserPoolId:
-        Ref: STNOUserPool
-
-  UserPoolGroupReadOnlyUsers:
-    Type: AWS::Cognito::UserPoolGroup
-    Properties:
-      Description: "Users can only view requests"
-      GroupName: "ReadOnlyUserGroup"
-      Precedence: 1
-      UserPoolId:
-        Ref: STNOUserPool
-
-  ############################
-  # UserPool User - adminuser  #
-  ############################
-  UserPoolUserAdmin:
-    Type: AWS::Cognito::UserPoolUser
-    Properties:
-      Username: !Ref UserPoolUsernameForAdminUser
-      DesiredDeliveryMediums:
-        - "EMAIL"
-      UserAttributes:
-        - Name: email_verified
-          Value: 'true'
-        - Name: email
-          Value:
-            Ref: ConsoleLoginInformationEmail
-      UserPoolId:
-        Ref: STNOUserPool
-
-  UserPoolAdminUserToAdminGroup:
-    Type: AWS::Cognito::UserPoolUserToGroupAttachment
-    Properties:
-      GroupName: "AdminGroup"
-      Username: !Ref UserPoolUsernameForAdminUser
-      UserPoolId:
-        Ref: STNOUserPool
-    DependsOn:
-    - UserPoolGroupAdmin
-    - UserPoolUserAdmin
-
-  ############################
-  # UserPool User - readonlyuser  #
-  ############################
-  UserPoolUserReadOnly:
-    Type: AWS::Cognito::UserPoolUser
-    Properties:
-      Username: !Ref UserPoolUsernameForReadOnlyUser
-      DesiredDeliveryMediums:
-        - "EMAIL"
-      UserAttributes:
-        - Name: email_verified
-          Value: 'true'
-        - Name: email
-          Value:
-            Ref: ConsoleLoginInformationEmail
-      UserPoolId:
-        Ref: STNOUserPool
-
-  UserPoolReadOnlyUserToReadOnlyGroup:
-    Type: AWS::Cognito::UserPoolUserToGroupAttachment
-    Properties:
-      GroupName: "ReadOnlyUserGroup"
-      Username: !Ref UserPoolUsernameForReadOnlyUser
-      UserPoolId:
-        Ref: STNOUserPool
-    DependsOn:
-    - UserPoolGroupReadOnlyUsers
-    - UserPoolUserReadOnly
-
-    ############################
-  # Amazon Cognito Identity Pool #
-   ############################
-  CognitoAuthRole:
-      Type: "AWS::IAM::Role"
-      Properties:
-          AssumeRolePolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                  -
-                      Effect: "Allow"
-                      Principal:
-                          Federated: "cognito-identity.amazonaws.com"
-                      Action:
-                              - "sts:AssumeRoleWithWebIdentity"
-                      Condition:
-                          StringEquals:
-                              cognito-identity.amazonaws.com:aud: !Ref IdentityPool
-                          ForAnyValue:StringLike:
-                              cognito-identity.amazonaws.com:amr: "authenticated"
-          Path: "/"
-          Policies:
-            -
-              PolicyName: STNOCognitoAuthRolePolicy
-              PolicyDocument:
-                  Version: "2012-10-17"
-                  Statement:
-                      -
-                          Effect: "Allow"
-                          Action:
-                            - "cognito-identity:GetId"
-                          Resource:
-                            - !Join ["",["arn:aws:cognito-identity:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":identitypool/", !Ref IdentityPool]]
-
-  IdentityPoolRoleAttachment:
-    Type: "AWS::Cognito::IdentityPoolRoleAttachment"
-    Properties:
-        IdentityPoolId: !Ref IdentityPool
-        Roles:
-            authenticated: !GetAtt CognitoAuthRole.Arn
-
-  IdentityPool:
-      Type: "AWS::Cognito::IdentityPool"
-      Properties:
-          AllowUnauthenticatedIdentities: false
-          CognitoIdentityProviders:
-              -
-                ClientId: !Ref UserPoolClient
-                ProviderName: !GetAtt STNOUserPool.ProviderName
-                ServerSideTokenCheck: false
-
-  ##########################
-  # Amazon DynamoDB Role #
-  ##########################
-  AppSyncSTNODynamoDBRole:
-    Type: AWS::IAM::Role
-    Properties:
-      ManagedPolicyArns:
-      - Ref: AppSyncSTNODynamoDBPolicy
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-        - Effect: Allow
-          Action:
-          - sts:AssumeRole
-          Principal:
-            Service:
-            - appsync.amazonaws.com
-
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 3ba11391-18f6-4eea-9db0-7d9e3bfb56d4
   AppSyncSTNODynamoDBPolicy:
-    Type: AWS::IAM::ManagedPolicy
+    Type: 'AWS::IAM::ManagedPolicy'
     Properties:
-      Description: Managed policy to allow AWS AppSync to access the tables created by this template.
+      Description: >-
+        Managed policy to allow AWS AppSync to access the tables created by this
+        template.
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-        - Effect: Allow
-          Action:
-          - dynamodb:UpdateItem
-          - dynamodb:Scan
-          - dynamodb:Query
-          Resource: !GetAtt DynamoDbTable.Arn
-
-  ##########################
-  # S3 Bucket #
-  ##########################
-  ConsoleBucket:
-    DeletionPolicy: Retain
-    Type: 'AWS::S3::Bucket'
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W41
-            reason: "This buckect contains console content and does not require encryption."
-    Properties:
-      LoggingConfiguration:
-        DestinationBucketName: !Ref LogsBucket
-        LogFilePrefix: console_logs/
-
-  ConsoleBucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
-    Properties:
-      Bucket: !Ref ConsoleBucket
-      PolicyDocument:
-        Statement:
-          -
-            Effect: Allow
-            Principal:
-              CanonicalUser: !GetAtt ConsoleOriginAccessIdentity.S3CanonicalUserId
-            Action: 's3:GetObject'
-            Resource: !Join ["", ["arn:aws:s3:::", Ref: "ConsoleBucket", "/*"]]
-
-  LogsBucket:
-    DeletionPolicy: Retain
-    Type: AWS::S3::Bucket
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W35
-            reason: "This is an access log bucket for the resource 'ConsoleBucket' and does not require access logging to be configured."
-          - id: W41
-            reason: "This is logs bucket and does not require encryption."
-    Properties:
-      AccessControl: LogDeliveryWrite
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-
-  ##########################
-  # Cloud Front #
-  ##########################
-  ConsoleOriginAccessIdentity:
-    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
-    Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment: !Sub "access-identity-${ConsoleBucket}"
-
-  ConsoleCloudFront:
-      Type: AWS::CloudFront::Distribution
-      Properties:
-          DistributionConfig:
-              Comment: "Cloud Front distribution for Serverless Transit Network Orchestrator Console"
-              Origins:
-                  -
-                    Id: S3-solution-website
-                    DomainName: !Sub "${ConsoleBucket}.s3.${AWS::Region}.amazonaws.com"
-                    OriginPath: /console
-                    S3OriginConfig:
-                        OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${ConsoleOriginAccessIdentity}"
-              DefaultCacheBehavior:
-                  TargetOriginId: S3-solution-website
-                  AllowedMethods:
-                      - GET
-                      - HEAD
-                      - OPTIONS
-                      - PUT
-                      - POST
-                      - PATCH
-                      - DELETE
-                  CachedMethods:
-                      - GET
-                      - HEAD
-                      - OPTIONS
-                  ForwardedValues:
-                      QueryString: false
-                  ViewerProtocolPolicy: redirect-to-https
-              IPV6Enabled: true
-              DefaultRootObject: "index.html"
-              CustomErrorResponses:
-                - ErrorCode: 404
-                  ResponsePagePath: "/index.html"
-                  ResponseCode: 200
-                - ErrorCode: 403
-                  ResponsePagePath: "/index.html"
-                  ResponseCode: 200
-              ViewerCertificate:
-                  CloudFrontDefaultCertificate: true
-              Enabled: true
-              HttpVersion: 'http2'
-              Logging:
-                Bucket: !Join ['',[!Ref LogsBucket,'.s3.amazonaws.com']]
-                IncludeCookies: false
-                Prefix: cloudfront_logs/
-
-  ConsoleIAMPolicy:
-    Type: "AWS::IAM::Policy"
-    Metadata:
-      cfn_nag:
-          rules_to_suppress:
-              - id: W12
-                reason: Allow * to grant proper access to contents in one specific bucket for a specific account and region.
-    Properties:
-      PolicyName: "STNOConsolePolicy"
-      Roles:
-        - Ref: "StateMachineLambdaRole"
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          -
-            Effect: "Allow"
+          - Effect: Allow
             Action:
-              - s3:putObject
-              - s3:deleteObject
-              - s3:deleteBucket
-            Resource:
-              - !Join ["", ["arn:aws:s3:::", Ref: "ConsoleBucket"]]
-              - !Join ["", ["arn:aws:s3:::", Ref: "ConsoleBucket", "/*" ]]
-          -
-            Effect: "Allow"
-            Action:
-              - s3:getObject
-            Resource:
-              - !Join ["", ["arn:aws:s3:::",!FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region"]]
-              - !Join ["", ["arn:aws:s3:::",!FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region","/*"]]
-
-  Console:
-    DependsOn: ConsoleIAMPolicy
-    Type: "Custom::ConsoleDeploy"
-    Properties:
-      ServiceToken: !GetAtt CustomResourceLambda.Arn
-      Resource: Console
-      SrcBucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
-      SrcPath: !FindInMap ["SourceCode", "General", "KeyPrefix"]
-      ConsoleBucket: !Ref ConsoleBucket
-      CustomAction: "consoleDeploy"
-      AwsProjectRegion: !Sub "${AWS::Region}"
-      AwsCognitoRegion: !Sub "${AWS::Region}"
-      AwsUserPoolsId: !Ref STNOUserPool
-      AwsUserPoolsWebClientId: !Ref UserPoolClient
-      AwsCognitoIdentityPoolId: !Ref IdentityPool
-      AwsAppsyncGraphqlEndpoint: !GetAtt AppSyncPipelineApi.GraphQLUrl
-      AwsAppsyncRegion: !Sub "${AWS::Region}"
-      AwsContentDeliveryBucket: !Ref ConsoleBucket
-      AwsContentDeliveryBucketRegion: !Sub "${AWS::Region}"
-      AwsContentDeliveryUrl: !Sub "https://${ConsoleCloudFront.DomainName}"
-
+              - 'dynamodb:UpdateItem'
+              - 'dynamodb:Scan'
+              - 'dynamodb:Query'
+            Resource: !GetAtt DynamoDbTable.Arn
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 605b3dcc-9dc9-4320-a7f6-0dc63f4fef3b
   SendCFNParameters:
-    Type: Custom::SendCFNParameters
+    Type: 'Custom::SendCFNParameters'
     Properties:
       PrincipalType: !Ref PrincipalType
       ApprovalNotification: !Ref ApprovalNotification
       AuditTrailRetentionPeriod: !Ref AuditTrailRetentionPeriod
       DefaultRoute: !Ref DefaultRoute
-      MetricsFlag: !FindInMap [Solution, Metrics, SendAnonymousData]
+      MetricsFlag: !FindInMap 
+        - Solution
+        - Metrics
+        - SendAnonymousData
       SolutionVersion: v1.0.0
       ServiceToken: !GetAtt CustomResourceLambda.Arn
-
-##########################
-  # Outputs #
-##########################
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 2fea74a1-ad95-4d78-a028-5d7804aa6c6b
 Outputs:
   SLRId:
     Value: !Ref CustomServiceLinkedRole
@@ -1755,7 +1578,7 @@ Outputs:
   IsolatedTGWRT:
     Value: !Ref IsolatedTGWRouteTable
   OnpremTGWRT:
-      Value: !Ref OnPremTGWRouteTable
+    Value: !Ref OnPremTGWRouteTable
   InfrastructureTGWRT:
     Value: !Ref InfrastructureTGWRouteTable
   ResourceShareArn:
@@ -1763,24 +1586,7 @@ Outputs:
   SolutionVersion:
     Description: Version Number
     Value: v1.0.0
-  Console:
-    Description: The link to the console
-    Value: !Sub https://${ConsoleCloudFront.DomainName}
-  ConsoleS3Bucket:
-    Description: The s3 bucket that stores the contents of the website
-    Value: !Ref ConsoleBucket
-  UserPoolClientID:
-    Description: The User Pool AppClient ID used when logging into the UserPool
-    Value: !Ref UserPoolClient
-  UserPoolID:
-    Description: The User Pool ID
-    Value: !Ref STNOUserPool
-  IdentityPoolID:
-    Description: The Identity Pool ID.
-    Value: !Ref IdentityPool
   DynamoDBTable:
     Description: The name of the Amazon DynamoDB table containing data of network requests
     Value: !Ref DynamoDbTable
-  AppSyncAPI:
-    Description: The AppSync API
-    Value: !Ref AppSyncPipelineApi
+ 
