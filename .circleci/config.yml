@@ -16,13 +16,14 @@ commands:
               export DIST_OUTPUT_BUCKET=<< parameters.s3_bucket >> # bucket where customized code will reside 
               export VERSION=v0.0.1 # version number for the customized code 
 
-
-              cd deployment
               #Install requirements
-              pip3 install -r ./source/requirements.txt
+              cd ./source
+              pip3 install -r ./requirements.txt
               #Run the unit testing
               chmod +x ./run-unit-tests.sh
-              ./run-unit-tests.sh               
+              ./run-unit-tests.sh  
+              cd deployment
+             
               #Create lambda zips
               chmod +x ./build-lambda-only.sh
               ./build-lambda-only.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
