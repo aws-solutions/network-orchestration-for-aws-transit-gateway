@@ -47,3 +47,6 @@ echo -e "\n >> Cleaning up the tests and ui folder from the lambda zip files \n"
 zip -d $build_dist_dir/aws-transit-network-orchestrator-cr.zip tests/* ui/*
 zip -d $build_dist_dir/aws-transit-network-orchestrator-sm.zip tests/* ui/*
 
+
+echo "--- Debug data below:"
+ls -la */*
