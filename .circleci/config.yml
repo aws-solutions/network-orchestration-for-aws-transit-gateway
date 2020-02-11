@@ -15,6 +15,25 @@ commands:
               echo "Hello Dave..."
               echo "I feel << parameters.test_param >>."
               aws s3api list-buckets 
+  lamda_zip_and_ship:
+    description: "Build lambda zip and ship to s3"
+    parameters:
+      s3_bucket:
+        type: string
+        default: "tested"
+    steps:
+      - run:
+          name: Execute Test
+          command: |   
+              export SOLUTION_NAME=tgw-stno-lambdas # name of the solution
+              export DIST_OUTPUT_BUCKET=tgw-stno-lambdas # bucket where customized code will reside 
+              export VERSION=v0.0.1 # version number for the customized code 
+
+              cd deployment
+              chmod +x ./build-s3-dist.sh
+              ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
+
+              
 jobs:
   test:
     executor: 
