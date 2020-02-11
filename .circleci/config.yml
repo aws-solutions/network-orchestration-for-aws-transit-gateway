@@ -14,7 +14,6 @@ commands:
           command: |   
               echo "Hello Dave..."
               echo "I feel << parameter.test >>."
-            fi
 jobs:
   deploy-templates:
     executor: aws-cli/default
