@@ -50,7 +50,7 @@ jobs:
           configure-default-region: true
       - tester:
           test_param: "Boo YAH"
-      - lamda_zip_and_ship
+      - lamda_zip_and_ship:
           s3_bucket: "tgw-stno-lambdas"
       
    
