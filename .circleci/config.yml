@@ -52,7 +52,7 @@ jobs:
           aws-secret-access-key: AWS_SECRET_ACCESS_KEY
           configure-default-region: true
       - lamda_zip_and_ship:
-          s3_bucket: LAMBDA_BUCKET
+          s3_bucket: ${LAMBDA_BUCKET}
       
    
 
