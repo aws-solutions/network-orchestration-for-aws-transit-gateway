@@ -26,14 +26,14 @@ commands:
           name: Execute Test
           command: |   
               export SOLUTION_NAME=tgw-stno-lambdas # name of the solution
-              export DIST_OUTPUT_BUCKET=tgw-stno-lambdas # bucket where customized code will reside 
+              export DIST_OUTPUT_BUCKET=<< parameters.s3_bucket >> # bucket where customized code will reside 
               export VERSION=v0.0.1 # version number for the customized code 
 
               cd deployment
               chmod +x ./build-s3-dist.sh
               ./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
 
-              
+
 jobs:
   test:
     executor: 
@@ -50,6 +50,9 @@ jobs:
           configure-default-region: true
       - tester:
           test_param: "Boo YAH"
+      - lamda_zip_and_ship
+          s3_bucket: "tgw-stno-lambdas"
+      
    
 
 workflows:
