@@ -35,8 +35,8 @@ commands:
               chmod +x ./build-lambda-only.sh
               ./build-lambda-only.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
               #Copy lambda zips
-              aws s3 cp deployment/global-s3-assets/  s3://$TEMPLATE_OUTPUT_BUCKET/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control --profile aws-cred-profile-name 
-              aws s3 cp deployment/regional-s3-assets/ s3://$BUILD_OUTPUT_BUCKET/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control --profile aws-cred-profile-name
+              aws s3 cp deployment/global-s3-assets/  s3://$TEMPLATE_OUTPUT_BUCKET/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control  
+              aws s3 cp deployment/regional-s3-assets/ s3://$BUILD_OUTPUT_BUCKET/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control 
               #Debug stuffs
               echo "---------DEBUG-----FOR---CR---"
               unzip -l regional-s3-assets/aws-transit-network-orchestrator-cr.zip
