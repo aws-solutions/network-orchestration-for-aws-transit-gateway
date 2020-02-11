@@ -17,7 +17,7 @@ commands:
               export VERSION=v0.0.1 # version number for the customized code 
 
               #Install requirements
-              pip3 install -r ./source/requirements.txt
+              pip3 install -r ./source/testing_requirements.txt
               
               #Change into the deployment directory
               cd ./deployment
