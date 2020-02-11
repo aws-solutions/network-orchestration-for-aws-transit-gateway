@@ -13,7 +13,7 @@ commands:
           name: Execute Test
           command: |   
               echo "Hello Dave..."
-              echo "I feel << parameter.test >>."
+              echo "I feel << parameter.test_param >>."
               aws s3api list-buckets 
 jobs:
   test:
