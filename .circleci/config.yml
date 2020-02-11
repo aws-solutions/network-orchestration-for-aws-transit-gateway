@@ -2,19 +2,6 @@ version: 2.1
 orbs:
   aws-cli: circleci/aws-cli@0.1.16
 commands:
-  tester:
-    description: "testing"
-    parameters:
-      test_param:
-        type: string
-        default: "tested"
-    steps:
-      - run:
-          name: Execute Test
-          command: |   
-              echo "Hello Dave..."
-              echo "I feel << parameters.test_param >>."
-              aws s3api list-buckets 
   lamda_zip_and_ship:
     description: "Build lambda zip and ship to s3"
     parameters:
@@ -31,6 +18,8 @@ commands:
 
 
               cd deployment
+              #Install requirements
+              pip3 install -r ./source/requirements.txt
               #Run the unit testing
               chmod +x ./run-unit-tests.sh
               ./run-unit-tests.sh               
@@ -59,8 +48,6 @@ jobs:
           aws-access-key-id: AWS_ACCESS_KEY_ID
           aws-secret-access-key: AWS_SECRET_ACCESS_KEY
           configure-default-region: true
-      - tester:
-          test_param: "Boo YAH"
       - lamda_zip_and_ship:
           s3_bucket: LAMBDA_BUCKET
       
