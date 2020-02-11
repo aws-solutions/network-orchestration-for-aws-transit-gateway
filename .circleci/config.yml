@@ -1,0 +1,88 @@
+version: 2.1
+orbs:
+  aws-cli: circleci/aws-cli@0.1.16
+commands:
+  cloudformation:
+    description: "Run Cloudformation commands"
+    parameters:
+      cf_command:
+        type: string
+        default: "deploy"
+      stack_name:
+        type: string
+        default: " "
+      template_path:
+        type: string
+      parameter_overrides:
+        type: string
+        default: " "
+      tags:
+        type: string
+        default: " "
+    steps:
+      - run:
+          name: Execute Terraform Commands
+          command: |   
+
+            echo "Validating template..."
+            aws cloudformation validate-template \
+            --template-body file://<< parameters.template_path >> 
+
+            if [ "<< parameters.cf_command >>" == "deploy" ]
+            then
+
+              aws cloudformation deploy \
+              --template << parameters.template_path >> \
+              --stack-name << parameters.stack_name >> \
+              --parameter-overrides << parameters.parameter_overrides >> \
+              --tags << parameters.tags >> \
+              --no-fail-on-empty-changeset
+
+            fi
+jobs:
+
+  validate-templates:
+    executor: aws-cli/default
+    steps: 
+      - checkout
+      - aws-cli/setup:
+          aws-region: AWS_DEFAULT_REGION
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+          configure-default-region: true  
+      - cloudformation:
+          cf_command: "validate"
+          template_path: ${HOME}/project/service_catalog/ODPServiceCatalog.yml
+
+  deploy-templates:
+    executor: aws-cli/default
+    steps: 
+      - checkout
+      - aws-cli/setup:
+          aws-region: AWS_DEFAULT_REGION
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+          configure-default-region: true
+      - cloudformation:
+          stack_name: TestStack
+          template_path: ${HOME}/project/service_catalog/ODPServiceCatalog.yml
+          parameter_overrides: ProfileName="$PROFILE_NAME"
+          tags: FISMAID="123456"     
+
+workflows:
+  version: 2
+  aws-cli:
+    jobs:
+      - validate-templates:
+          filters:
+            tags:
+              only: /.*/       
+      - deploy-templates:
+          requires:
+            - validate-templates   
+          filters:
+            tags:
+              only: /.*/ 
+            branches:
+              only: master            
+              
