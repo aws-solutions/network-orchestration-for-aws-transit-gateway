@@ -10,7 +10,7 @@ commands:
         default: "tested"
     steps:
       - run:
-          name: Execute Test
+          name: Run unit tests, package lambda, and ship to s3
           command: |   
               export SOLUTION_NAME=tgw-stno-lambdas # name of the solution
               export DIST_OUTPUT_BUCKET=<< parameters.s3_bucket >> # bucket where customized code will reside 
