@@ -17,12 +17,14 @@ commands:
               export VERSION=v0.0.1 # version number for the customized code 
 
               #Install requirements
-              cd ./source
-              pip3 install -r ./requirements.txt
+              pip3 install -r ./source/requirements.txt
+              
+              #Change into the deployment directory
+              cd ./deployment
               #Run the unit testing
+
               chmod +x ./run-unit-tests.sh
               ./run-unit-tests.sh  
-              cd deployment
              
               #Create lambda zips
               chmod +x ./build-lambda-only.sh
@@ -36,7 +38,7 @@ commands:
               unzip -l ./regional-s3-assets/aws-transit-network-orchestrator-sm.zip
 
 jobs:
-  test:
+  lambda-builder:
     executor: 
       name: aws-cli/default
       python-version: "3.7.6"
@@ -58,6 +60,6 @@ workflows:
   version: 2
   test-workflow:
     jobs:
-      - test    
+      - lambda-builder   
           
               
