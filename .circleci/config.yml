@@ -2,7 +2,7 @@ version: 2.1
 orbs:
   aws-cli: circleci/aws-cli@0.1.16
 commands:
-  test:
+  tester:
     description: "testing"
     parameters:
       test_param:
@@ -29,7 +29,7 @@ jobs:
           aws-access-key-id: AWS_ACCESS_KEY_ID
           aws-secret-access-key: AWS_SECRET_ACCESS_KEY
           configure-default-region: true
-      - test:
+      - tester:
           test_param: "Boo YAH"
    
 
