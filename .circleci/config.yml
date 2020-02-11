@@ -31,6 +31,9 @@ commands:
 
 
               cd deployment
+              #Run the unit testing
+              chmod +x ./run-unit-tests.sh
+              ./run-unit-tests.sh               
               #Create lambda zips
               chmod +x ./build-lambda-only.sh
               ./build-lambda-only.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
@@ -59,7 +62,7 @@ jobs:
       - tester:
           test_param: "Boo YAH"
       - lamda_zip_and_ship:
-          s3_bucket: "tgw-stno-lambdas"
+          s3_bucket: LAMBDA_BUCKET
       
    
 
