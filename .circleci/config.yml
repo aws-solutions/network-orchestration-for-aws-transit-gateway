@@ -15,9 +15,11 @@ commands:
               echo "Hello Dave..."
               echo "I feel << parameter.test >>."
 jobs:
-  deploy-templates:
-    executor: aws-cli/default
+  test:
+    executor: 
+      name: aws-cli/default
       python-version: 3.8
+
     steps: 
       - checkout
       - aws-cli/setup:
@@ -29,7 +31,7 @@ jobs:
 
 workflows:
   version: 2
-  aws-cli:
+  test-workflow:
     jobs:
       - test    
           
