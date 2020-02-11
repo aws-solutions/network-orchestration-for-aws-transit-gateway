@@ -29,12 +29,19 @@ commands:
               export DIST_OUTPUT_BUCKET=<< parameters.s3_bucket >> # bucket where customized code will reside 
               export VERSION=v0.0.1 # version number for the customized code 
 
+
               cd deployment
+              #Create lambda zips
               chmod +x ./build-lambda-only.sh
               ./build-lambda-only.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
-              echo "---------DEBUG-----"
-              ls -la */*
-
+              #Copy lambda zips
+              aws s3 cp deployment/global-s3-assets/  s3://$TEMPLATE_OUTPUT_BUCKET/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control --profile aws-cred-profile-name 
+              aws s3 cp deployment/regional-s3-assets/ s3://$BUILD_OUTPUT_BUCKET/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control --profile aws-cred-profile-name
+              #Debug stuffs
+              echo "---------DEBUG-----FOR---CR---"
+              unzip -l regional-s3-assets/aws-transit-network-orchestrator-cr.zip
+              echo "---------DEBUG-----FOR---SM---"
+              unzip -l regional-s3-assets/aws-transit-network-orchestrator-sm.zip
 
 jobs:
   test:
