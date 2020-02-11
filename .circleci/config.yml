@@ -18,7 +18,7 @@ jobs:
   test:
     executor: 
       name: aws-cli/default
-      python-version: 3.8
+      python-version: "3.8"
 
     steps: 
       - checkout
