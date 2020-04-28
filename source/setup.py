@@ -23,6 +23,6 @@ setup(
     tests_require=tests_requires,
     setup_requires=['pytest-runner'],
     classifiers=[
-        "Programming Language :: Python :: 3.7"
+        "Programming Language :: Python :: 3.8"
     ],
 )

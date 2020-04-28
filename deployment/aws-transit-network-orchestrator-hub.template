@@ -551,7 +551,7 @@ Resources:
       Handler: lambda_custom_resource.lambda_handler
       MemorySize: 1536
       Role: !GetAtt 'CustomResourceLambdaRole.Arn'
-      Runtime: python3.7
+      Runtime: python3.8
       Timeout: 900
       TracingConfig:
           Mode: Active
@@ -735,7 +735,7 @@ permissions and require you to choose All resources"
       Handler: state_machine_router.lambda_handler
       MemorySize: 1536
       Role: !GetAtt 'StateMachineLambdaRole.Arn'
-      Runtime: python3.7
+      Runtime: python3.8
       Timeout: 900
       TracingConfig:
           Mode: Active
