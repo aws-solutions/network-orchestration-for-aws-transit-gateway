@@ -1037,7 +1037,12 @@ permissions and require you to choose All resources"
               "TGW Attachment CRUD Operations": {
                 "Type": "Task",
                 "Resource": "${StateMachineLambda.Arn}",
-                "Next": "CRUD Operation Completed?"
+                "Next": "CRUD Operation Completed?",
+                "Catch": [{ 
+                  "ErrorEquals": ["States.ALL"], 
+                  "Next": "Get Transit Gateway VPC Attachment State Pass", 
+                  "ResultPath": "$.error" 
+                }]
               },
               "CRUD Operation Completed?": {
                 "Type": "Choice",
@@ -1153,7 +1158,12 @@ permissions and require you to choose All resources"
               "Associate TGW Route Table": {
                 "Type": "Task",
                 "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Get TGW Attachment Propagations Pass"
+                "Next": "Get TGW Attachment Propagations Pass",
+                "Catch": [{ 
+                  "ErrorEquals": ["States.ALL"], 
+                  "Next": "Get Transit Gateway VPC Attachment State Pass", 
+                  "ResultPath": "$.error" 
+                }]
               },
               "Get TGW Attachment Propagations Pass": {
                 "Type": "Pass",
@@ -1181,7 +1191,12 @@ permissions and require you to choose All resources"
               "Enable TGW Attachment Propagations": {
                 "Type": "Task",
                 "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Disable TGW Attachment Propagations Pass"
+                "Next": "Disable TGW Attachment Propagations Pass",
+                "Catch": [{ 
+                  "ErrorEquals": ["States.ALL"], 
+                  "Next": "Get Transit Gateway VPC Attachment State Pass", 
+                  "ResultPath": "$.error" 
+                }]
               },
               "Disable TGW Attachment Propagations Pass": {
                 "Type": "Pass",
