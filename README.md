@@ -1,5 +1,7 @@
 # Serverless Transit Network Orchestrator
 The Serverless Transit Network Orchestrator (STNO) solution adds automation to AWS Transit Gateway. This solution provides the tools necessary to automate the process of setting up and managing transit networks in distributed AWS environments. A web interface is created to help control, audit, and approve (transit) network changes. STNO supports both AWS Organizations and standalone AWS account types.
+
+Serverless Transit Network Orchestrator version 2.0 supports AWS Transit Gateway inter-Region peering and Amazon VPC prefix lists. Customers can establish peering connections between transit gateways to extend connectivity and build global networks spanning multiple AWS Regions. Version 2.0 also gives customers the ability to automatically register AWS Transit Gateway with Network Manager. This lets customers visualize and monitor their global network from a single dashboard rather than toggling between Regions from the AWS Console.
  
 ## Getting Started 
 To get started with the Serverless Transit Network Orchestrator, please review the solution documentation. https://aws.amazon.com/solutions/serverless-transit-network-orchestrator
