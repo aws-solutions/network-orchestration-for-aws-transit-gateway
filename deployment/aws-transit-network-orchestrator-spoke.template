@@ -12,7 +12,7 @@
 # permissions and limitations under the License.
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: (SO0058s) - The AWS CloudFormation template (Spoke) for deployment of the serverless-transit-network-orchestrator Solution. Version v1.0.0
+Description: (SO0058s) - The AWS CloudFormation template (Spoke) for deployment of the serverless-transit-network-orchestrator Solution. Version v2.0.0
 
 Parameters:
   # Hub Account
@@ -188,4 +188,4 @@ Resources:
 Outputs:
   SolutionVersion:
     Description: Version Number
-    Value: v1.0.0
+    Value: v2.0.0

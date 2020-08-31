@@ -1,5 +1,5 @@
 ######################################################################################################################
-#  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
+#  Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
 #                                                                                                                    #
 #  Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance        #
 #  with the License. A copy of the License is located at                                                             #
@@ -74,10 +74,13 @@ def main(argv):
             print('\n >> Building {} \n ======================================'.format(arg))
             if arg == 'custom_resource_lambda':
                 zip_file_name = 'aws-transit-network-orchestrator-cr'
-                exclude = ['state_machine_']
+                exclude = ['state_machine_', 'tgw_peering_attachment_handler']
             elif arg == 'state_machine_lambda':
                 zip_file_name = 'aws-transit-network-orchestrator-sm'
-                exclude = ['custom_resource']
+                exclude = ['custom_resource', 'tgw_peering_attachment_handler']
+            elif arg == 'tgw_peering_attach_sm_lambda':
+                zip_file_name = 'aws-transit-network-orchestrator-tgw-peering'
+                exclude = ['custom_resource', 'state_machine_']
             else:
                 print('Invalid argument... Please provide either or all the arguments as shown in the example below.')
                 print('lambda_build.py custom_resource_lambda state_machine_lambda')

@@ -40,12 +40,18 @@ fi
 
 # Create zip file for AWS Lambda functions
 echo -e "\n >> Creating all lambda functions for Serverless Transit Network Orchestrator Solution"
-python source/scripts/build_scripts/lambda_build.py custom_resource_lambda state_machine_lambda
-python $source_dir/scripts/build_scripts/lambda_build.py custom_resource_lambda state_machine_lambda
+python source/scripts/build_scripts/lambda_build.py custom_resource_lambda state_machine_lambda tgw_peering_attach_sm_lambda
+python $source_dir/scripts/build_scripts/lambda_build.py custom_resource_lambda state_machine_lambda tgw_peering_attach_sm_lambda
 
+# Clean up tests and ui dir from the zip files
 echo -e "\n >> Cleaning up the tests and ui folder from the lambda zip files \n"
-zip -d $build_dist_dir/aws-transit-network-orchestrator-cr.zip tests/* ui/*
-zip -d $build_dist_dir/aws-transit-network-orchestrator-sm.zip tests/* ui/*
+zip_files=("aws-transit-network-orchestrator-cr.zip" "aws-transit-network-orchestrator-sm.zip" "aws-transit-network-orchestrator-tgw-peering.zip")
+echo "Removing junk files"
+for zip_file in "${zip_files[@]}";
+  do
+    echo "Deleting: zip -d $build_dist_dir/$zip_file tests/* ui/*"
+    zip -d "$build_dist_dir"/"$zip_file" tests/* ui/*
+  done
 
 # Copy ui files to regional-s3-assets and zip them
 echo "pwd"

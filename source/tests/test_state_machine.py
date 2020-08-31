@@ -12,6 +12,7 @@ state_machine_arn = 'arn:aws:states:us-east-1:xxxx:execution:TestStateMachine'
 input = {}
 name = 'test-execution-name'
 
+
 def test_trigger_state_machine(mocker):
     mocker.patch.object(sfn, 'trigger_state_machine')
     sfn.trigger_state_machine.return_value = trigger_state_machine_response

@@ -1,5 +1,5 @@
 ######################################################################################################################
-#  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
+#  Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
 #                                                                                                                    #
 #  Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance        #
 #  with the License. A copy of the License is located at                                                             #
@@ -55,7 +55,7 @@ class Metrics(object):
                           'UUID': uuid,
                           'Data': data}
                 metrics = dict(time_stamp, **params)
-                json_data = json.dumps(metrics, indent=4, cls=DecimalEncoder, sort_keys=True)
+                json_data = json.dumps(metrics, cls=DecimalEncoder)
                 headers = {'content-type': 'application/json'}
                 r = requests.post(url, data=json_data, headers=headers)
                 code = r.status_code

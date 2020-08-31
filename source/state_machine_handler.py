@@ -1,5 +1,5 @@
 ######################################################################################################################
-#  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
+#  Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
 #                                                                                                                    #
 #  Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance    #
 #  with the License. A copy of the License is located at                                                             #
@@ -20,6 +20,7 @@ from lib.ram import RAM
 from lib.sts import STS
 from lib.sns import SNS
 from lib.helper import timestamp_message, current_time
+from lib.string_manipulation import convert_string_to_list
 from lib.assume_role_helper import AssumeRole
 from os import environ
 import inspect
@@ -950,13 +951,34 @@ class VPC(object):
             raise
 
     def _create_route(self, ec2, destination):
+        """
+        This function creates routes in the route table associated with the
+        tagged subnet.
+        :param ec2: ec2 session
+        :param destination: destination that would TGW as the
+        target. Destination can be a CIDR block or prefix list.
+        :return: None
+        """
         try:
-            self.logger.info("Executing: " + self.__class__.__name__ + "/" + inspect.stack()[0][3])
-            if self.event.get('DefaultRouteToTgwExists') == 'no' and self.event.get('DestinationRouteExists') == 'no':
-                self.logger.info("Adding destination route: {} to TGW gateway: {} into the route table: {}"
-                                 .format(destination, environ.get('TGW_ID'), self.event.get('RouteTableId')))
-                ec2.create_route(destination, self.event.get('RouteTableId'), environ.get('TGW_ID'))
-                self._create_tag(self.event.get('RouteTableId'), 'RouteTable', 'Route(s) added to the route table.')
+            self.logger.info("Executing: " + self.__class__.__name__ +
+                             "/" + inspect.stack()[0][3])
+            if self.event.get('DefaultRouteToTgwExists') == 'no' and \
+                    self.event.get('DestinationRouteExists') == 'no':
+                self.logger.info(
+                    f"Adding destination : {destination} to TGW gateway: "
+                    f"{environ.get('TGW_ID')} into the route table:"
+                    f" {self.event.get('RouteTableId')}")
+                if destination.startswith("pl-"):
+                    ec2.create_route_prefix_list(destination,
+                                                 self.event.get('RouteTableId'),
+                                                 environ.get('TGW_ID'))
+                else:
+                    ec2.create_route_cidr_block(destination,
+                                                self.event.get('RouteTableId'),
+                                                environ.get('TGW_ID'))
+                self._create_tag(self.event.get('RouteTableId'),
+                                 'RouteTable',
+                                 'Route(s) added to the route table.')
         except Exception as e:
             message = self._message(inspect.stack()[0][3], e)
             self.logger.exception(message)
@@ -965,13 +987,32 @@ class VPC(object):
             raise
 
     def _delete_route(self, ec2, destination):
+        """
+       This function deletes routes in the route table associated
+       with the tagged subnet.
+       :param ec2: ec2 session
+       :param destination: destination that would TGW as the
+       target. Destination can be a CIDR block or prefix list.
+       :return: None
+       """
         try:
-            self.logger.info("Executing: " + self.__class__.__name__ + "/" + inspect.stack()[0][3])
-            if self.event.get('DefaultRouteToTgwExists') == 'yes' and self.event.get('DestinationRouteExists') == 'yes':
-                self.logger.info("Removing destination route: {} to TGW gateway: {} from the route table: {}"
-                                 .format(destination, environ.get('TGW_ID'), self.event.get('RouteTableId')))
-                ec2.delete_route(destination, self.event.get('RouteTableId'))
-                self._create_tag(self.event.get('RouteTableId'), 'RouteTable', 'Route(s) removed from the route table.')
+            self.logger.info("Executing: " + self.__class__.__name__ +
+                             "/" + inspect.stack()[0][3])
+            if self.event.get('DefaultRouteToTgwExists') == 'yes' and\
+                    self.event.get('DestinationRouteExists') == 'yes':
+                self.logger.info(f"Removing destination : {destination} "
+                                 f"to TGW gateway: {environ.get('TGW_ID')}  "
+                                 f"from the route table:"
+                                 f" {self.event.get('RouteTableId')}")
+                if destination.startswith("pl-"):
+                    ec2.delete_route_prefix_list(destination,
+                                                 self.event.get('RouteTableId'))
+                else:
+                    ec2.delete_route_cidr_block(destination,
+                                                self.event.get('RouteTableId'))
+                self._create_tag(self.event.get('RouteTableId'),
+                                 'RouteTable',
+                                 'Route(s) removed from the route table.')
         except Exception as e:
             message = self._message(inspect.stack()[0][3], e)
             self.logger.exception(message)
@@ -1000,29 +1041,44 @@ class VPC(object):
         try:
             self.logger.info("Executing: " + self.__class__.__name__ + "/" + inspect.stack()[0][3])
             # this condition will be met if VPC tagged not Subnet
+
             if self.event.get('SubnetId') is not None:
                 ec2 = self._session(self.spoke_region, self.spoke_account_id)
 
                 existing_routes = self._describe_route_tables_for_subnet()
 
-                # handles the case if the subnet has no association with explicit route table
+                # handles the case if the subnet has no association with
+                # explicit route table
                 if existing_routes is None:
                     return self.event
 
                 # allowed values in hub CFN template
                 # "All-Traffic (0/0)"
                 # "RFC-1918 (10/8, 172.16/12, 192.168/16)"
+                # "Custom Destinations"
                 # "Configure-Manually
+                quad_zero_route = environ.get('ALL_TRAFFIC')   # 0.0.0.0/0
+                rfc_1918_routes = convert_string_to_list(
+                    environ.get('RFC_1918_ROUTES'))
 
                 if "All-Traffic" in environ.get('DEFAULT_ROUTE'):
-                    self._find_existing_default_route(existing_routes, environ.get('ALL_TRAFFIC'))
-                    self._update_route_table(ec2, environ.get('ALL_TRAFFIC'))
+                    self._find_existing_default_route(existing_routes,
+                                                      quad_zero_route)
+                    self._update_route_table(ec2, quad_zero_route)
                 elif "RFC-1918" in environ.get('DEFAULT_ROUTE'):
-                    for route in [x.strip() for x in environ.get('RFC_1918_ROUTES').split(',')]:
-                        self._find_existing_default_route(existing_routes, route)
+                    for route in rfc_1918_routes:
+                        self._find_existing_default_route(existing_routes,
+                                                          route)
                         self._update_route_table(ec2, route)
+                elif "Custom-Destinations" in environ.get('DEFAULT_ROUTE'):
+                    self.update_route_table_with_cidr_blocks(ec2,
+                                                             existing_routes)
+                    self.update_route_table_with_prefix_lists(ec2,
+                                                              existing_routes)
+
                 elif "Configure-Manually" in environ.get('DEFAULT_ROUTE'):
-                    self.logger.info('Admin opted to configure route table manually')
+                    self.logger.info('Admin opted to configure route '
+                                     'table manually')
 
             return self.event
 
@@ -1031,6 +1087,24 @@ class VPC(object):
             self.logger.exception(message)
             self._update_ddb_failed(e)
             raise
+
+    def update_route_table_with_cidr_blocks(self, ec2, existing_routes):
+        cidr_blocks = convert_string_to_list(environ.get('CIDR_BLOCKS'))
+        if len(cidr_blocks) > 0:
+            for route in cidr_blocks:
+                self.logger.info(f"Adding route: {route}")
+                self._find_existing_default_route(existing_routes,
+                                                  route)
+                self._update_route_table(ec2, route)
+
+    def update_route_table_with_prefix_lists(self, ec2, existing_routes):
+        prefix_lists = convert_string_to_list(environ.get('PREFIX_LISTS'))
+        if len(prefix_lists) > 0:
+            for prefix_list_id in prefix_lists:
+                self.logger.info(f"Adding prefix list id: {prefix_list_id}")
+                self._find_existing_default_route(existing_routes,
+                                                  prefix_list_id)
+                self._update_route_table(ec2, prefix_list_id)
 
     def _message(self, method, e):
         return {'FILE': __file__.split('/')[-1], 'CLASS': self.__class__.__name__,

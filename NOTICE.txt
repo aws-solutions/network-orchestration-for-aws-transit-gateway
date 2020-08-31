@@ -1,6 +1,6 @@
 AWS Serverless Transit Network Orchestrator
 
-Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except
 in compliance with the License. A copy of the License is located at http://www.apache.org/licenses/LICENSE-2.0
 or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS,
@@ -23,6 +23,7 @@ react-router-dom under the Massachusetts Institute of Technology (MIT) license
 react-scripts under the Massachusetts Institute of Technology (MIT) license
 react-icons under the Massachusetts Institute of Technology (MIT) license
 react-modal under the Massachusetts Institute of Technology (MIT) license
+popper.js under the Massachusetts Institute of Technology (MIT) license
 ag-grid-community under the Massachusetts Institute of Technology (MIT) license
 ag-grid-react under the Massachusetts Institute of Technology (MIT) license
 font-awesome under the Massachusetts Institute of Technology (MIT) license

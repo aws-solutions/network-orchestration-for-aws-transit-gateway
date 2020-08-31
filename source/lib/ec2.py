@@ -1,10 +1,9 @@
 ######################################################################################################################
-#  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
-#                                                                                                                    #
-#  Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance        #
+#  Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
+#  Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance    #
 #  with the License. A copy of the License is located at                                                             #
 #                                                                                                                    #
-#      http://www.apache.org/licenses/LICENSE-2.0                                                                                    #
+#      http://www.apache.org/licenses/LICENSE-2.0                                                                    #
 #                                                                                                                    #
 #  or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES #
 #  OR CONDITIONS OF ANY KIND, express or implied. See the License for the specific language governing permissions    #
@@ -132,7 +131,10 @@ class EC2(object):
             self.logger.exception(message)
             raise
 
-    def create_route(self, vpc_cidr, route_table_id, transit_gateway_id):
+    def create_route_cidr_block(self,
+                                vpc_cidr,
+                                route_table_id,
+                                transit_gateway_id):
         try:
             response = self.ec2_client.create_route(
                 DestinationCidrBlock=vpc_cidr,
@@ -140,37 +142,45 @@ class EC2(object):
                 TransitGatewayId=transit_gateway_id
                 )
             return response
-        except Exception as e:
-            message = {'FILE': __file__.split('/')[-1], 'CLASS': self.__class__.__name__,
-                       'METHOD': inspect.stack()[0][3], 'EXCEPTION': str(e)}
-            self.logger.exception(message)
+        except ClientError as e:
+            self.logger.log_unhandled_exception(e)
             raise
 
-    def delete_route(self, vpc_cidr, route_table_id):
+    def delete_route_cidr_block(self, vpc_cidr, route_table_id):
         try:
             response = self.ec2_client.delete_route(
                 DestinationCidrBlock=vpc_cidr,
                 RouteTableId=route_table_id
             )
             return response
-        except Exception as e:
-            message = {'FILE': __file__.split('/')[-1], 'CLASS': self.__class__.__name__,
-                       'METHOD': inspect.stack()[0][3], 'EXCEPTION': str(e)}
-            self.logger.exception(message)
+        except ClientError as e:
+            self.logger.log_unhandled_exception(e)
             raise
 
-    def replace_route(self, vpc_cidr, route_table_id, transit_gateway_id):
+    def create_route_prefix_list(self,
+                                 prefix_list,
+                                 route_table_id,
+                                 transit_gateway_id):
         try:
-            response = self.ec2_client.replace_route(
-                DestinationCidrBlock=vpc_cidr,
+            response = self.ec2_client.create_route(
+                DestinationPrefixListId=prefix_list,
                 RouteTableId=route_table_id,
                 TransitGatewayId=transit_gateway_id
                 )
             return response
-        except Exception as e:
-            message = {'FILE': __file__.split('/')[-1], 'CLASS': self.__class__.__name__,
-                       'METHOD': inspect.stack()[0][3], 'EXCEPTION': str(e)}
-            self.logger.exception(message)
+        except ClientError as e:
+            self.logger.log_unhandled_exception(e)
+            raise
+
+    def delete_route_prefix_list(self, prefix_list, route_table_id):
+        try:
+            response = self.ec2_client.delete_route(
+                DestinationPrefixListId=prefix_list,
+                RouteTableId=route_table_id
+            )
+            return response
+        except ClientError as e:
+            self.logger.log_unhandled_exception(e)
             raise
 
     @try_except_retry()

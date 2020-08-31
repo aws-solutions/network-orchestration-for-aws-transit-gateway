@@ -1,5 +1,5 @@
 ######################################################################################################################
-#  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
+#  Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
 #                                                                                                                    #
 #  Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance        #
 #  with the License. A copy of the License is located at                                                             #
@@ -15,7 +15,8 @@
 
 from hashlib import md5
 from lib.crhelper import cfn_handler
-from custom_resource_handler import StepFunctions, SecureSSMParameters, CWEventPermissions, S3ConsoleDeploy, CFNMetrics
+from custom_resource_handler import StepFunctions, CWEventPermissions, \
+    S3ConsoleDeploy, CFNMetrics, PrefixListIdToArnConverter
 from lib.logger import Logger
 import os
 import inspect
@@ -38,14 +39,7 @@ def create(event, context):
     s = '%s-%s' % (event.get('StackId'), event.get('LogicalResourceId'))
     physical_resource_id = md5(s.encode('UTF-8')).hexdigest()
 
-    if event.get('ResourceType') == 'Custom::SecureSSMStrings':
-        ssm = SecureSSMParameters(event, logger)
-        logger.info("Create Secure Parameter (SSM) - CR Router")
-        response = ssm.create_secure_ssm_parameter()
-        logger.info("Response from Create Secure SSM Parameter CR Handler")
-        logger.info(response)
-        return physical_resource_id, response
-    elif event.get('ResourceType') == 'Custom::CWEventPermissions':
+    if event.get('ResourceType') == 'Custom::CWEventPermissions':
         cwe = CWEventPermissions(event, logger)
         logger.info("Create CW Event Bus Policy - CR Router")
         response = cwe.create_permissions()
@@ -58,6 +52,12 @@ def create(event, context):
         cd.upload_console_files()
         cd.upload_config_file()
         response = None
+        return physical_resource_id, response
+    elif event.get('ResourceType') == 'Custom::GetPrefixListArns':
+        converter_client = PrefixListIdToArnConverter(event, logger)
+        response = converter_client.get_prefix_list_arns()
+        logger.info("Response from Get Prefix List Arns - CR Handler")
+        logger.info(response)
         return physical_resource_id, response
     elif event.get('ResourceType') == 'Custom::SendCFNParameters':
         send = CFNMetrics(event, logger)
@@ -74,14 +74,7 @@ def update(event, context):
     Runs on Stack Update
     """
     physical_resource_id = event['PhysicalResourceId']
-    if event.get('ResourceType') == 'Custom::SecureSSMStrings':
-        ssm = SecureSSMParameters(event, logger)
-        logger.info("Update Secure Parameter (SSM)- CR Router")
-        response = ssm.create_secure_ssm_parameter()
-        logger.info("Response from Update Secure SSM Parameter CR Handler")
-        logger.info(response)
-        return physical_resource_id, response
-    elif event.get('ResourceType') == 'Custom::CWEventPermissions':
+    if event.get('ResourceType') == 'Custom::CWEventPermissions':
         cwe = CWEventPermissions(event, logger)
         logger.info("Updating CW Event Bus Policy - CR Router")
         response = cwe.update_permissions()
@@ -94,6 +87,12 @@ def update(event, context):
         cd.upload_console_files()
         cd.upload_config_file()
         response = None
+        return physical_resource_id, response
+    elif event.get('ResourceType') == 'Custom::GetPrefixListArns':
+        converter_client = PrefixListIdToArnConverter(event, logger)
+        response = converter_client.get_prefix_list_arns()
+        logger.info("Response from Get Prefix List Arns - CR Handler")
+        logger.info(response)
         return physical_resource_id, response
     elif event.get('ResourceType') == 'Custom::SendCFNParameters':
         send = CFNMetrics(event, logger)
@@ -109,14 +108,7 @@ def delete(event, context):
     """
     Runs on Stack Delete.
     """
-    if event.get('ResourceType') == 'Custom::SecureSSMStrings':
-        ssm = SecureSSMParameters(event, logger)
-        logger.info("Delete Secure Parameter (SSM) - CR Router")
-        response = ssm.delete_secure_ssm_parameter()
-        logger.info("Response from Delete Secure SSM Parameter CR Handler")
-        logger.info(response)
-        return response
-    elif event.get('ResourceType') == 'Custom::CWEventPermissions':
+    if event.get('ResourceType') == 'Custom::CWEventPermissions':
         cwe = CWEventPermissions(event, logger)
         logger.info("Deleting CW Event Bus Policy - CR Router")
         response = cwe.delete_permissions()
@@ -124,6 +116,10 @@ def delete(event, context):
         logger.info(response)
         return response
     elif event.get('ResourceType') == 'Custom::ConsoleDeploy':
+        logger.info("No action required, returning 'None'")
+        response = None
+        return response
+    elif event.get('ResourceType') == 'Custom::GetPrefixListArns':
         logger.info("No action required, returning 'None'")
         response = None
         return response
@@ -149,8 +145,7 @@ def lambda_handler(event, context):
         # else if the event is from Cloudformation Service
         elif event.get('StackId') is not None and 'arn:aws:cloudformation' in event.get('StackId'):
             logger.info('Event received from Cloudformation Service')
-            if event.get('ResourceType') != 'Custom::SecureSSMStrings':
-                logger.info(event)  # avoid printing sensitive data in the logs
+            logger.info(event)
             return cfn_handler(event, context, create, update, delete, logger, init_failed)
         # else of the event is from Web Application
         elif event.get('data') is not None:

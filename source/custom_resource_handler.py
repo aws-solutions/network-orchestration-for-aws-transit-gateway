@@ -1,5 +1,5 @@
 ######################################################################################################################
-#  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
+#  Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
 #                                                                                                                    #
 #  Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance    #
 #  with the License. A copy of the License is located at                                                             #
@@ -17,6 +17,7 @@ from lib.state_machine import StateMachine
 from lib.ssm import SSM
 from lib.cloud_watch_events import CloudWatchEvents
 from lib.metrics import Metrics
+from lib.string_manipulation import convert_string_to_list
 from os import environ
 import time
 import inspect
@@ -52,48 +53,6 @@ class StepFunctions(object):
             self.logger.info("Triggering {} State Machine".format(state_machine_arn.split(":", 6)[6]))
             response = sm.trigger_state_machine(state_machine_arn, self.event, sanitize(exec_name))
             self.logger.info("State machine triggered successfully, Execution Arn: {}".format(response))
-        except Exception as e:
-            message = {'FILE': __file__.split('/')[-1], 'CLASS': self.__class__.__name__,
-                       'METHOD': inspect.stack()[0][3], 'EXCEPTION': str(e)}
-            self.logger.exception(message)
-            raise
-
-
-class SecureSSMParameters(object):
-    def __init__(self, event, logger):
-        self.params = event.get('ResourceProperties')
-        self.logger = logger
-        self.logger.info("Put Secure SSM Parameter Values Handler Event")
-
-    ''' This function creates or updates key value pair in SSM parameter store as a secure string.
-        The value will be encrypted with the AWS managed key 'aws/ssm' '''
-    def create_secure_ssm_parameter(self):
-        try:
-            self.logger.info("Executing: " + self.__class__.__name__ + "/" + inspect.stack()[0][3])
-            ssm = SSM(self.logger)
-            # put values from SSM Parameter Store as a secure string
-            # if the key already exists the value will be overwritten
-            self.logger.info("Create/Update Secure SSM Parameter Key: {}".format(self.params.get('PSKey')))
-            response = ssm.put_parameter(self.params.get('PSKey'),
-                                         self.params.get('PSValue'),
-                                         self.params.get('PSDescription'),
-                                         'SecureString')
-            self.logger.info(response)
-            return response  # return version number
-        except Exception as e:
-            message = {'FILE': __file__.split('/')[-1], 'CLASS': self.__class__.__name__,
-                       'METHOD': inspect.stack()[0][3], 'EXCEPTION': str(e)}
-            self.logger.exception(message)
-            raise
-
-    ''' This delete the key value pair in SSM parameter store.'''
-    def delete_secure_ssm_parameter(self):
-        try:
-            self.logger.info("Executing: " + self.__class__.__name__ + "/" + inspect.stack()[0][3])
-            ssm = SSM(self.logger)
-            self.logger.info("Delete Secure SSM Parameter Key: {}".format(self.params.get('PSKey')))
-            response = ssm.delete_parameter(self.params.get('PSKey'))
-            return response  # should be empty dict {}
         except Exception as e:
             message = {'FILE': __file__.split('/')[-1], 'CLASS': self.__class__.__name__,
                        'METHOD': inspect.stack()[0][3], 'EXCEPTION': str(e)}
@@ -288,6 +247,39 @@ class S3ConsoleDeploy(object):
             raise
 
 
+class PrefixListIdToArnConverter(object):
+    def __init__(self, event, logger):
+        self.event = event
+        self.params = event.get('ResourceProperties')
+        self.logger = logger
+        self.logger.info(event)
+
+    def get_prefix_list_arns(self) -> dict:
+        """
+        Converts the list of prefix list ids to list of prefix list ARNs
+        :return: list of arns for the customer provided prefix lists
+        """
+        prefix_list = self.params.get('PrefixListIds')
+        account_id = self.params.get('AccountId')
+        list_of_prefix_list_ids = convert_string_to_list(prefix_list)
+        self.logger.info(f"Processing prefix list ids:"
+                         f" {list_of_prefix_list_ids}")
+        list_of_prefix_list_arns = []
+        if len(list_of_prefix_list_ids) == 0:
+            raise ValueError("STNO CFN Parameter Missing: You must "
+                             "provide at least one valid prefix list id.")
+        else:
+            for prefix_list_id in list_of_prefix_list_ids:
+                arn = "%s%s:%s%s%s" % ("arn:aws:ec2:",
+                                       environ.get('AWS_REGION'),
+                                       account_id,
+                                       ":prefix-list/",
+                                       prefix_list_id)
+                list_of_prefix_list_arns.append(arn)
+        response = {"PrefixListArns": list_of_prefix_list_arns}
+        return response
+
+
 # Send anonymous metrics
 class CFNMetrics(object):
     def __init__(self, event, logger):
@@ -330,7 +322,9 @@ class CFNMetrics(object):
                 "AuditTrailRetentionPeriod": self.params.get('AuditTrailRetentionPeriod'),
                 "DefaultRoute": self.params.get('DefaultRoute'),
                 "Region": get_region(),
-                "SolutionVersion": self.params.get('SolutionVersion')
+                "SolutionVersion": self.params.get('SolutionVersion'),
+                "CreatedNewTransitGateway": self.params.get(
+                    'CreatedNewTransitGateway')
             }
             send = Metrics(self.logger)
             send.metrics(data)

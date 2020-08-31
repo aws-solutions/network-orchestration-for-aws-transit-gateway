@@ -1,5 +1,5 @@
 ######################################################################################################################
-#  Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
+#  Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.                                           #
 #                                                                                                                    #
 #  Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance        #
 #  with the License. A copy of the License is located at                                                             #
@@ -80,3 +80,8 @@ class Logger(object):
     def exception(self, message, **kwargs):
         """wrapper for logging.exception call"""
         self.log.exception(self._format(message), **kwargs)
+
+    def log_unhandled_exception(self, message):
+        """log unhandled exception"""
+        self.log.exception("Unhandled Exception: {}".format(message))
+

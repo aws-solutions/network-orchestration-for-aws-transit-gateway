@@ -11,7 +11,7 @@
 # express or implied. See the License for the specific language governing
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: (SO0058) - The AWS CloudFormation template (Hub) for deployment of the serverless-transit-network-orchestrator Solution. Version v1.0.0
+Description: (SO0058) - The AWS CloudFormation template (Hub) for deployment of the serverless-transit-network-orchestrator Solution. Version v2.0.0
 
 Parameters:
   Principals:
@@ -90,14 +90,48 @@ Parameters:
     MaxLength: 20
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
 
+  TgwPeeringTagPrefix:
+    Description: Transit gateway tag prefix. The tag key must start with this string.
+    Default: TgwPeer
+    Type: String
+    MinLength: 0
+    MaxLength: 20
+
+  TgwPeeringTagDelimiter:
+    Description: Delimiter for transit gateway tag. This delimiter must be used before adding peer region in the tag key.
+    Type: String
+    Default: "Colon (:)"
+    AllowedValues:
+      - "Colon (:)"
+      - "Dot (.)"
+      - "Underscore (_)"
+      - "Pipe (|)"
+
   DefaultRoute:
-    Description: Default/Static route(s) to Transit Gateway - spoke account route table associated with the tagged subnets.
+    Description: Default/Static route(s) to Transit Gateway - applicable to spoke account route table associated with the tagged subnets.
     Default: "All-Traffic (0/0)"
     Type: String
     AllowedValues:
       - "All-Traffic (0/0)"
       - "RFC-1918 (10/8, 172.16/12, 192.168/16)"
+      - "Custom-Destinations"
       - "Configure-Manually"
+
+  ListOfCustomCidrBlocks:
+    Type: String
+    Description: Option to provide CIDR block(s) (OPTIONAL if providing prefix list id(s)) Example - 192.168.1.0/24, 192.168.2.0/24
+
+  CustomerManagedPrefixListIds:
+    Type: String
+    Description: Option to provide Customer-managed Prefix List Id(s) (OPTIONAL if providing CIDR blocks.) Example - pl-abcd1234, pl-efgh5678
+
+  ExistingTransitGatewayId:
+    Description: New transit gateway will be created if no value is provided. Example, tgw-a1b2c3d4e5
+    Type: String
+
+  ExistingGlobalNetworkId:
+    Description: New global network will be created if no value is provided. Example, global-network-01231231231231231
+    Type: String
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -119,15 +153,24 @@ Metadata:
           - UserPoolUsernameForAdminUser
           - UserPoolUsernameForReadOnlyUser
       - Label:
-          default: Network Settings
+          default: Transit Gateway Settings
+        Parameters:
+          - ExistingTransitGatewayId
+          - ExistingGlobalNetworkId
+      - Label:
+          default: VPC Route Table Settings
         Parameters:
           - DefaultRoute
+          - ListOfCustomCidrBlocks
+          - CustomerManagedPrefixListIds
       - Label:
           default: Tag Settings
         Parameters:
           - AttachmentTag
           - AssociationTag
           - PropagationTag
+          - TgwPeeringTagPrefix
+          - TgwPeeringTagDelimiter
       - Label:
           default: Audit Trail Retention Settings
         Parameters:
@@ -149,7 +192,7 @@ Metadata:
       UserPoolUsernameForReadOnlyUser:
         default: Read-Only Username
       DefaultRoute:
-        default: Default Route to TGW
+        default: Choose the type of destination for target Transit Gateway
       AttachmentTag:
         default: Tag key for TGW Attachment
       AssociationTag:
@@ -158,12 +201,27 @@ Metadata:
         default: Tag key for Route Propagation to TGW Route Table(s)
       AuditTrailRetentionPeriod:
         default: Audit Trail Retention Period
+      ExistingTransitGatewayId:
+        default: (Optional) Provide the existing transit gateway id.
+      TgwPeeringTagPrefix:
+        default: Transit Gateway Tag Prefix
+      TgwPeeringTagDelimiter:
+        default: Transit Gateway Tag Delimiter
+      ExistingGlobalNetworkId:
+        default: (Optional) Provide the existing global network id.
+      ListOfCustomCidrBlocks:
+        default: If selected 'Custom-Destinations', provide a comma seperated list of CIDR Blocks.
+      CustomerManagedPrefixListIds:
+        default: If selected 'Custom-Destinations', provide a comma seperated list of Customer-managed Prefix List IDs.
 
 
 Conditions:
   NotificationCondition: !Equals [!Ref ApprovalNotification, 'Yes']
   IsMemberOfOrganization: !Equals [!Ref PrincipalType, 'AWS Organization ARN']
   IsNotMemberOfOrganization: !Equals [!Ref PrincipalType, 'List of Accounts']
+  CreateNewTransitGateway: !Equals [!Ref ExistingTransitGatewayId, '']
+  CreateNewGlobalNetwork: !Equals [!Ref ExistingGlobalNetworkId, '']
+  ProvidedPrefixListIds: !Not [!Equals [!Ref CustomerManagedPrefixListIds, '']]
 
 Mappings:
   NetworkConfiguration:
@@ -216,8 +274,8 @@ Mappings:
   SourceCode:
     General:
       S3Bucket: "solutions"
-      KeyPrefix: "serverless-transit-network-orchestrator/v1.0.0"
-      Version: "v1.0.0"
+      KeyPrefix: "serverless-transit-network-orchestrator/v2.0.0"
+      Version: "v2.0.0"
     Variables:
       WaitTime: "10"
       AllTraffic: "0.0.0.0/0"
@@ -241,6 +299,8 @@ Resources:
   AWSTransitGateway:
     Type: AWS::EC2::TransitGateway
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Condition: CreateNewTransitGateway
     Properties:
       AmazonSideAsn: !FindInMap [NetworkConfiguration, !Ref "AWS::Region", AmazonSideAsn]
       Description: "This transit gateway was created by AWS Serverless Transit Network Orchestrator"
@@ -251,15 +311,16 @@ Resources:
       VpnEcmpSupport: !FindInMap [NetworkConfiguration, TransitGateway, VpnEcmpSupport]
       Tags:
         - Key: Name
-          Value: STNO-TGW
+          Value: !Sub STNO-TGW-${AWS::Region}
         - Key: AWS Solutions
           Value: !Ref 'AWS::StackId'
 
   FlatTGWRouteTable:
     Type: AWS::EC2::TransitGatewayRouteTable
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
-      TransitGatewayId: !Ref AWSTransitGateway
+      TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
       Tags:
         -
           Key: Name
@@ -274,8 +335,9 @@ Resources:
   OnPremTGWRouteTable:
     Type: AWS::EC2::TransitGatewayRouteTable
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
-      TransitGatewayId: !Ref AWSTransitGateway
+      TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
       Tags:
         -
           Key: Name
@@ -290,8 +352,9 @@ Resources:
   IsolatedTGWRouteTable:
     Type: AWS::EC2::TransitGatewayRouteTable
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
-      TransitGatewayId: !Ref AWSTransitGateway
+      TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
       Tags:
         -
           Key: Name
@@ -303,8 +366,9 @@ Resources:
   InfrastructureTGWRouteTable:
     Type: AWS::EC2::TransitGatewayRouteTable
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
-      TransitGatewayId: !Ref AWSTransitGateway
+      TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
       Tags:
         -
           Key: Name
@@ -323,7 +387,30 @@ Resources:
     Properties:
       Name: "Transit Gateway Resource Share"
       ResourceArns:
-        - !Join ['', ['arn:aws:ec2:', !Ref 'AWS::Region', ':', !Ref 'AWS::AccountId', ':transit-gateway/', !Ref AWSTransitGateway]]
+        - !Sub
+          - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/${TransitGatewayId}
+          - {TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]}
+      Principals: !Ref Principals
+      Tags:
+        - Key: AWS Serverless Transit Network Orchestrator
+          Value: !Ref 'AWS::StackId'
+
+  ConvertPrefixListIdsToArns:
+    Condition: ProvidedPrefixListIds
+    Type: Custom::GetPrefixListArns
+    Properties:
+      PrefixListIds: !Ref CustomerManagedPrefixListIds
+      AccountId: !Sub ${AWS::AccountId}
+      ServiceToken: !GetAtt CustomResourceLambda.Arn
+
+  CustomerManagedPrefixListResourceShare:
+    DependsOn:
+      - CustomServiceLinkedRole
+    Type: "AWS::RAM::ResourceShare"
+    Condition: ProvidedPrefixListIds
+    Properties:
+      Name: "Customer-managed Prefix Lists Resource Share"
+      ResourceArns: !GetAtt ConvertPrefixListIdsToArns.PrefixListArns
       Principals: !Ref Principals
       Tags:
         - Key: AWS Serverless Transit Network Orchestrator
@@ -380,35 +467,6 @@ Resources:
               Service: events.amazonaws.com
             Action: sns:Publish
             Resource: !Ref ApprovalTopic
-
-  # IAM Role for Serverless Transit Network Orchestrator Administration in the Hub account
-  TransitNetworkAdministrationRole:
-    Type: AWS::IAM::Role
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W11
-            reason: "Allow * in the ARN of the execution role to allow cross account access to user defined spoke accounts."
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: /
-      Policies:
-        - PolicyName: !Join ["-", ["AssumeRole-TransitNetworkExecutionRole", Ref: "AWS::Region"]]
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - sts:AssumeRole
-                Resource:
-                  - !Join ["-", ["arn:aws:iam::*:role/TransitNetworkExecutionRole", Ref: "AWS::Region"]]
 
   #
   # Cloudwatch Rule for Accounts in the AWS Organizations
@@ -551,7 +609,7 @@ Resources:
       Handler: lambda_custom_resource.lambda_handler
       MemorySize: 1536
       Role: !GetAtt 'CustomResourceLambdaRole.Arn'
-      Runtime: python3.7
+      Runtime: python3.8
       Timeout: 900
       TracingConfig:
           Mode: Active
@@ -702,6 +760,9 @@ permissions and require you to choose All resources"
           AttributeName: TimeToLive
           Enabled: true
         BillingMode: PAY_PER_REQUEST
+        SSESpecification:
+          SSEEnabled: True
+          SSEType: KMS
 
   StateMachineLambda:
     Type: AWS::Lambda::Function
@@ -711,12 +772,14 @@ permissions and require you to choose All resources"
           LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
           APPROVAL_NOTIFICATION: !Ref ApprovalNotification
           APPROVAL_NOTIFICATION_ARN: !Ref ApprovalTopic
-          TGW_ID: !Ref AWSTransitGateway
+          TGW_ID: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
           TABLE_NAME: !Ref DynamoDbTable
           ASSOCIATION_TAG: !Ref AssociationTag
           PROPAGATION_TAG: !Ref PropagationTag
           ATTACHMENT_TAG: !Ref AttachmentTag
           DEFAULT_ROUTE: !Ref DefaultRoute
+          CIDR_BLOCKS : !Ref ListOfCustomCidrBlocks
+          PREFIX_LISTS: !Ref CustomerManagedPrefixListIds
           ALL_TRAFFIC: !FindInMap ["SourceCode", "Variables", "AllTraffic"]
           RFC_1918_ROUTES: !FindInMap ["SourceCode", "Variables", "RFC1918Routes"]
           WAIT_TIME: !FindInMap ["SourceCode", "Variables", "WaitTime"]
@@ -725,7 +788,7 @@ permissions and require you to choose All resources"
           FIRST_PRINCIPAL: !Select [ 0, !Ref Principals ]
           RESOURCE_SHARE_ARN: !GetAtt TGWResourceShare.Arn
           METRICS_FLAG: !FindInMap ["Solution", "Metrics", "SendAnonymousData"]
-          SOLUTION_VERSION: v1.0.0
+          SOLUTION_VERSION: v2.0.0
           STNO_CONSOLE_LINK: !Sub https://${ConsoleCloudFront.DomainName}
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
@@ -735,7 +798,7 @@ permissions and require you to choose All resources"
       Handler: state_machine_router.lambda_handler
       MemorySize: 1536
       Role: !GetAtt 'StateMachineLambdaRole.Arn'
-      Runtime: python3.7
+      Runtime: python3.8
       Timeout: 900
       TracingConfig:
           Mode: Active
@@ -1228,6 +1291,420 @@ permissions and require you to choose All resources"
             }
           }
 
+
+  ################################################
+  # Transit Gateway Peering Attachment Resources #
+  ################################################
+
+  TgwTagEventRuleStateMachine:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Serverless Transit Network Orchestrator - Rule for tag on resource events from hub account
+      EventPattern:
+        {
+          "account": [
+          !Ref "AWS::AccountId"
+          ],
+          "source": [
+            "aws.tag"
+          ],
+          "detail-type": [
+            "Tag Change on Resource"
+          ],
+          "detail": {
+            "service": [
+              "ec2"
+            ],
+            "resource-type": [
+              "transit-gateway"
+            ]
+          }
+        }
+      State: ENABLED
+      Targets:
+        - Arn: !Ref TgwPeeringAttachmentStateMachine
+          Id: 'TgwPeeringAttachmentStateMachine'
+          RoleArn: !GetAtt StateMachineInvocationRole.Arn
+
+  StateMachineInvocationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+                Service: events.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: StateMachineInvocationPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:StartExecution
+                Resource: !Ref TgwPeeringAttachmentStateMachine
+
+  TgwPeeringAttachmentLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "Allow * because it is required for making Describe and xray API calls as they don't support resource-level permissions and require you to choose All resources."
+          - id: W28
+            reason: "The role name 'TransitNetworkOrchestratorSMLambda' has to be defined to allow cross account access from the hub account to make network changes."
+    Properties:
+      RoleName: !Sub TgwPeeringAttachmentLambdaRole-${AWS::Region}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: TgwPeeringAttachmentIamPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                Resource: '*'  # This actions in IAM policy does not support resource-level permissions and require you to choose All resources
+              - Effect: Allow
+                Action:
+                  - ec2:CreateTransitGatewayPeeringAttachment
+                  - ec2:DeleteTransitGatewayPeeringAttachment
+                Resource: # using * for the resource id since CFN template does not manage them
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/*
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway-attachment/*
+              - Effect: Allow
+                Action:
+                  - ec2:AcceptTransitGatewayPeeringAttachment
+                Resource:
+                  # using * for the region to allow cross region acceptance workflow
+                  # using * for the resource id since CFN template does not manage them
+                  - !Sub arn:aws:ec2:*:${AWS::AccountId}:transit-gateway-attachment/*
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeTransitGatewayPeeringAttachments
+                Resource: "*" #  # This actions in IAM policy does not support resource-level permissions and require you to choose All resources
+              - Effect: Allow
+                Resource:
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:TgwPeeringAttachmentLambda-STNO
+                Action:
+                  - lambda:InvokeFunction
+
+  TgwPeeringAttachmentStateMachineRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - !Sub "states.${AWS::Region}.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: "StateMachineLambdaInvocationPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Resource:
+                  - !GetAtt TgwPeeringAttachmentLambda.Arn
+                Action:
+                  - lambda:InvokeFunction
+
+  TgwPeeringAttachmentLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Environment:
+        Variables:
+          LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
+          TGW_PEERING_TAG_PREFIX: !Ref TgwPeeringTagPrefix
+          TGW_PEERING_TAG_DELIMITER: !Ref TgwPeeringTagDelimiter
+          TGW_ID: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
+          ATTACHMENT_TAG: !Ref AttachmentTag
+          METRICS_FLAG: !FindInMap ["Solution", "Metrics", "SendAnonymousData"]
+          SOLUTION_VERSION: v2.0.0
+      Code:
+        S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"aws-transit-network-orchestrator-tgw-peering.zip"]]
+      FunctionName: TgwPeeringAttachmentLambda-STNO
+      Description: Serverless Transit Network Orchestrator Transit Peering Attachment Handler
+      Handler: tgw_peering_attachment_handler.lambda_handler
+      MemorySize: 1536
+      Role: !GetAtt 'TgwPeeringAttachmentLambdaRole.Arn'
+      Runtime: python3.8
+      Timeout: 900
+      TracingConfig:
+          Mode: Active
+
+  TgwPeeringAttachmentStateMachine:
+    Type: 'AWS::StepFunctions::StateMachine'
+    Properties:
+      StateMachineName: TgwPeeringAttachmentStateMachine
+      RoleArn: !GetAtt 'TgwPeeringAttachmentStateMachineRole.Arn'
+      DefinitionString:
+        Fn::Sub: |-
+          {
+            "Comment": "A state machine that handles transit gateway peering attachments.",
+            "StartAt": "Validate and Update Event Pass",
+            "States": {
+              "Validate and Update Event Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "MethodName": "get_processed_tagging_event"
+                },
+                "ResultPath": "$.params",
+                "Next": "Validate and Update Event"
+              },
+              "Validate and Update Event": {
+                "Type": "Task",
+                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
+                "Next": "Is Valid Transit Gateway Tag Event?"
+              },
+              "Is Valid Transit Gateway Tag Event?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.IsTgwPeeringTagEvent",
+                    "StringEquals": "No",
+                    "Next": "Inapplicable Transit Gateway Tag Event"
+                  }
+                ],
+                "Default": "Get Transit Gateway Peering Attachment Id Pass"
+              },
+              "Inapplicable Transit Gateway Tag Event": {
+                "Type": "Succeed"
+              },
+              "Get Transit Gateway Peering Attachment Id Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "MethodName": "get_transit_gateway_peering_attachment_id"
+                },
+                "ResultPath": "$.params",
+                "Next": "Get Transit Gateway Peering Attachment Id"
+              },
+              "Get Transit Gateway Peering Attachment Id": {
+                "Type": "Task",
+                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
+                "Next": "Request Type?"
+              },
+              "Request Type?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.RequestType",
+                    "StringEquals": "Create",
+                    "Next": "Create Transit Gateway Peering Attachment Pass"
+                  },
+                  {
+                    "Variable": "$.RequestType",
+                    "StringEquals": "Delete",
+                    "Next": "Delete Transit Gateway Peering Attachment Pass"
+                  }
+                ],
+                "Default": "Create Transit Gateway Peering Attachment Pass"
+              },
+              "Create Transit Gateway Peering Attachment Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "MethodName": "create_transit_gateway_peering_attachment"
+                },
+                "ResultPath": "$.params",
+                "Next": "Create Transit Gateway Peering Attachment"
+              },
+              "Create Transit Gateway Peering Attachment": {
+                "Type": "Task",
+                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
+                "Next": "Is TGW Peering Attachment in Pending Acceptance State?"
+              },
+              "Is TGW Peering Attachment in Pending Acceptance State?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Variable": "$.TgwPeeringAttachmentState",
+                    "StringEquals": "initiatingRequest",
+                    "Next": "Waiting to be in Pending Acceptance State"
+                  }
+                ],
+                "Default": "Accept Transit Gateway Peering Attachment Pass"
+              },
+              "Waiting to be in Pending Acceptance State": {
+                "Type": "Wait",
+                "Seconds": 15,
+                "Next": "Get Tgw Peering Attachment State Pass"
+              },
+              "Get Tgw Peering Attachment State Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "MethodName": "get_transit_gateway_peering_attachment_state"
+                },
+                "ResultPath": "$.params",
+                "Next": "Get Tgw Peering Attachment State"
+              },
+              "Get Tgw Peering Attachment State": {
+                "Type": "Task",
+                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
+                "Next": "Is TGW Peering Attachment in Pending Acceptance State?"
+              },
+              "Accept Transit Gateway Peering Attachment Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "MethodName": "accept_transit_gateway_peering_attachment"
+                },
+                "ResultPath": "$.params",
+                "Next": "Accept Transit Gateway Peering Attachment"
+              },
+              "Accept Transit Gateway Peering Attachment": {
+                "Type": "Task",
+                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
+                "Next": "TGW Peering Attachment Change In Progress?"
+              },
+              "Delete Transit Gateway Peering Attachment Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "MethodName": "delete_transit_gateway_peering_attachment"
+                },
+                "ResultPath": "$.params",
+                "Next": "Delete Transit Gateway Peering Attachment"
+              },
+              "Delete Transit Gateway Peering Attachment": {
+                "Type": "Task",
+                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
+                "Next": "TGW Peering Attachment Change In Progress?"
+              },
+              "TGW Peering Attachment Change In Progress?": {
+                "Type": "Choice",
+                "Choices": [
+                  {
+                    "Or": [
+                      {
+                        "Variable": "$.TgwPeeringAttachmentState",
+                        "StringEquals": "deleting"
+                      },
+                      {
+                        "Variable": "$.TgwPeeringAttachmentState",
+                        "StringEquals": "pendingAcceptance"
+                      },
+                      {
+                        "Variable": "$.TgwPeeringAttachmentState",
+                        "StringEquals": "pending"
+                      }
+                    ],
+                    "Next": "Wait for TGW Peering Attachment Change To Finish"
+                  },
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Create"
+                      },
+                      {
+                        "Variable": "$.TgwPeeringAttachmentState",
+                        "StringEquals": "available"
+                      }
+                    ],
+                    "Next": "Transit Gateway Peering Attachment Created"
+                  },
+                  {
+                    "And": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete"
+                      },
+                      {
+                        "Or": [
+                          {
+                            "Variable": "$.TgwPeeringAttachmentState",
+                            "StringEquals": "deleted"
+                          },
+                          {
+                            "Variable": "$.TgwPeeringAttachmentState",
+                            "StringEquals": "does-not-exist"
+                          }
+                        ]
+                      }
+                    ],
+                    "Next": "Transit Gateway Peering Attachment Deleted"
+                  }
+                ],
+                "Default": "Transit Gateway Peering Attachment Failed"
+              },
+              "Wait for TGW Peering Attachment Change To Finish": {
+                "Type": "Wait",
+                "Seconds": 15,
+                "Next": "Get Transit Gateway Peering Attachment State Pass"
+              },
+              "Get Transit Gateway Peering Attachment State Pass": {
+                "Type": "Pass",
+                "Result": {
+                  "MethodName": "get_transit_gateway_peering_attachment_state"
+                },
+                "ResultPath": "$.params",
+                "Next": "Get Transit Gateway Peering Attachment State"
+              },
+              "Get Transit Gateway Peering Attachment State": {
+                "Type": "Task",
+                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
+                "Next": "TGW Peering Attachment Change In Progress?"
+              },
+              "Transit Gateway Peering Attachment Created": {
+                "Type": "Succeed"
+              },
+              "Transit Gateway Peering Attachment Deleted": {
+                "Type": "Succeed"
+              },
+              "Transit Gateway Peering Attachment Failed": {
+                "Type": "Fail"
+              }
+            }
+          }
+  ########################################
+  # AWS Network Manager - Global Network #
+  ########################################
+
+  GlobalNetworkSTNO:
+    Type: AWS::NetworkManager::GlobalNetwork
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Condition: CreateNewGlobalNetwork
+    Properties:
+      Description: !Sub Global Network created by Serverless Transit Network Solution deployed in ${AWS::Region}
+      Tags:
+        - Key: Name
+          Value: STNO-Global-Network
+        - Key: AWS Serverless Transit Network Orchestrator
+          Value: !Ref 'AWS::StackId'
+
+  GlobalNetworkRegistrationSTNO:
+    Type: AWS::NetworkManager::TransitGatewayRegistration
+    Properties:
+      GlobalNetworkId: !If [CreateNewGlobalNetwork, !Ref GlobalNetworkSTNO, !Ref ExistingGlobalNetworkId]
+      TransitGatewayArn: !Sub
+        - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/${TransitGatewayId}
+        - {TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]}
+
   ############################
   # AWS AppSync API       #
   ############################
@@ -1242,6 +1719,36 @@ permissions and require you to choose All resources"
         AwsRegion:
           Ref: AWS::Region
         DefaultAction: DENY
+      LogConfig:
+        CloudWatchLogsRoleArn: !GetAtt STNOAppSyncPushToCloudWatchLogsRole.Arn
+        ExcludeVerboseContent: False
+        FieldLogLevel: NONE
+
+  STNOAppSyncPushToCloudWatchLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - appsync.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: stno-appsync-graphqlapi-logs
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
 
   GraphQLSchema:
     Type: "AWS::AppSync::GraphQLSchema"
@@ -1382,7 +1889,6 @@ permissions and require you to choose All resources"
   STNOUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      MfaConfiguration: "OFF"
       AdminCreateUserConfig:
                 AllowAdminCreateUserOnly: true
                 InviteMessageTemplate:
@@ -1403,6 +1909,8 @@ permissions and require you to choose All resources"
           RequireSymbols: true
           RequireUppercase: true
           TemporaryPasswordValidityDays: 7
+      UserPoolAddOns:
+        AdvancedSecurityMode: ENFORCED
 
 
   UserPoolClient:
@@ -1582,16 +2090,21 @@ permissions and require you to choose All resources"
   ##########################
   ConsoleBucket:
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Type: 'AWS::S3::Bucket'
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W41
-            reason: "This buckect contains console content and does not require encryption."
     Properties:
       LoggingConfiguration:
         DestinationBucketName: !Ref LogsBucket
         LogFilePrefix: console_logs/
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
 
   ConsoleBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
@@ -1599,15 +2112,24 @@ permissions and require you to choose All resources"
       Bucket: !Ref ConsoleBucket
       PolicyDocument:
         Statement:
-          -
-            Effect: Allow
+          - Effect: Allow
             Principal:
               CanonicalUser: !GetAtt ConsoleOriginAccessIdentity.S3CanonicalUserId
             Action: 's3:GetObject'
-            Resource: !Join ["", ["arn:aws:s3:::", Ref: "ConsoleBucket", "/*"]]
+            Resource: !Join ["/", [!GetAtt ConsoleBucket.Arn, "*"]]
+          - Effect: Deny
+            Action: s3:*
+            Resource:
+              - !GetAtt ConsoleBucket.Arn
+              - !Join ["/", [!GetAtt ConsoleBucket.Arn, "*"]]
+            Condition:
+              Bool:
+                aws:SecureTransport: False
+            Principal: "*"
 
   LogsBucket:
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Type: AWS::S3::Bucket
     Metadata:
       cfn_nag:
@@ -1622,6 +2144,23 @@ permissions and require you to choose All resources"
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: True
+        BlockPublicPolicy: True
+        IgnorePublicAcls: True
+        RestrictPublicBuckets: True
+
+  LogsBucketS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LogsBucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyDeleteBucket
+            Effect: Deny
+            Principal: "*"
+            Action: s3:DeleteBucket
+            Resource: !Sub arn:${AWS::Partition}:s3:::${LogsBucket}
 
   ##########################
   # Cloud Front #
@@ -1634,6 +2173,13 @@ permissions and require you to choose All resources"
 
   ConsoleCloudFront:
       Type: AWS::CloudFront::Distribution
+      Metadata:
+        cfn_nag:
+          rules_to_suppress:
+            - id: W70
+              reason: Minimum protocol version property is not necessary if the distribution uses the CloudFront domain name such as d111111abcdef8.cloudfront.net
+        # Seems to be a bug with CFN Nag - adding this property didn't remove the warning.
+        # Reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-cloudfront-distribution-viewercertificate.html
       Properties:
           DistributionConfig:
               Comment: "Cloud Front distribution for Serverless Transit Network Orchestrator Console"
@@ -1739,7 +2285,8 @@ permissions and require you to choose All resources"
       AuditTrailRetentionPeriod: !Ref AuditTrailRetentionPeriod
       DefaultRoute: !Ref DefaultRoute
       MetricsFlag: !FindInMap [Solution, Metrics, SendAnonymousData]
-      SolutionVersion: v1.0.0
+      CreatedNewTransitGateway: !If [CreateNewTransitGateway, 'Yes', 'No']
+      SolutionVersion: v2.0.0
       ServiceToken: !GetAtt CustomResourceLambda.Arn
 
 ##########################
@@ -1749,7 +2296,9 @@ Outputs:
   SLRId:
     Value: !Ref CustomServiceLinkedRole
   TGWId:
-    Value: !Ref AWSTransitGateway
+    Value: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
+  GlobalNetworkId:
+    Value: !If [CreateNewGlobalNetwork, !Ref GlobalNetworkSTNO, !Ref ExistingGlobalNetworkId]
   FlatTGWRT:
     Value: !Ref FlatTGWRouteTable
   IsolatedTGWRT:
@@ -1762,7 +2311,7 @@ Outputs:
     Value: !GetAtt TGWResourceShare.Arn
   SolutionVersion:
     Description: Version Number
-    Value: v1.0.0
+    Value: v2.0.0
   Console:
     Description: The link to the console
     Value: !Sub https://${ConsoleCloudFront.DomainName}
