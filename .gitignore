@@ -10,7 +10,6 @@ source/scratch/
 **/pycache/
 **/__pycache__/
 /deployment/global-s3-assets/
-/deployment/manifest-generator/
 /deployment/regional-s3-assets/
 source/bin/
 source/pre-commit-hook.sh
