@@ -57,7 +57,7 @@ class EC2(object):
             next_token = response.get('NextToken', None)
 
             while next_token is not None:
-                response = self.ec2_client.describe_subnets(
+                response = self.ec2_client.describe_vpcs(
                     VpcIds=[vpc_id],
                     NextToken=next_token
                 )
