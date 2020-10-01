@@ -457,10 +457,8 @@ class TransitGateway(object):
     def _get_association_state(self, ec2, rtb, status):
         try:
             self.logger.info("Executing: " + self.__class__.__name__ + "/" + inspect.stack()[0][3])
-            if status != 'associated' or status != 'disassociated':
-                flag = True
-            else:
-                flag = False
+
+            flag = True
             while flag:
                 response = ec2.get_transit_gateway_route_table_associations(rtb,
                                                                             self.event.get('TransitGatewayAttachmentId'),
