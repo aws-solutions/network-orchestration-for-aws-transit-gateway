@@ -5,8 +5,9 @@ import clsx from 'clsx';
 
 import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import { makeStyles } from '@material-ui/core/styles';
-import primaryColor from "@material-ui/core/colors/indigo";
-import secondaryColor from "@material-ui/core/colors/indigo";
+import primaryColor from '@material-ui/core/colors/indigo';
+import secondaryColor from '@material-ui/core/colors/pink';
+import iconColor from '@material-ui/core/colors/orange';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Drawer from '@material-ui/core/Drawer';
 import Box from '@material-ui/core/Box';
@@ -16,7 +17,6 @@ import List from '@material-ui/core/List';
 import Typography from '@material-ui/core/Typography';
 import Divider from '@material-ui/core/Divider';
 import IconButton from '@material-ui/core/IconButton';
-import Badge from '@material-ui/core/Badge';
 import Container from '@material-ui/core/Container';
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
@@ -25,12 +25,16 @@ import MenuIcon from '@material-ui/icons/Menu';
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
 import ChevronLeftIcon from '@material-ui/icons/ChevronLeft';
-import NotificationsIcon from '@material-ui/icons/Notifications';
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import DashboardIcon from "@material-ui/icons/Dashboard";
 import AssignmentIcon from "@material-ui/icons/Assignment";
 import ExitToAppIcon from "@material-ui/icons/ExitToApp";
-import Tooltip from "@material-ui/core/Tooltip";
+import Tooltip from '@material-ui/core/Tooltip';
+import GithubIcon from '@material-ui/icons/GitHub';
+import VpnConnectionIcon from 'react-aws-icons/dist/aws/compute/VPNConnection';
+import VpcIcon from 'react-aws-icons/dist/aws/logo/VPC';
+import CloudIcon from 'react-aws-icons/dist/aws/compute/AWSCloud';
+import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 
 import TransitGwAttachments from './TransitGwAttachments';
 import TransitGwActions from './TransitGwActions';
@@ -172,9 +176,15 @@ export default function Dashboard() {
                         >
                             <MenuIcon />
                         </IconButton>
-                        <Typography component="h1" variant="h6" color="inherit" noWrap className={classes.title}>
+                        <CloudIcon size={66}/>
+                        <Typography component="h1" variant="h5" color="inherit" noWrap className={classes.title}>
                             Transit Network Management Console
                         </Typography>
+                        <Tooltip title="Github Repo">
+                            <IconButton color="inherit">
+                                <GithubIcon style={{ color: iconColor[500] }} fontSize="large" onClick={() => window.open("https://github.com/awslabs/serverless-transit-network-orchestrator", "_blank")}/>
+                            </IconButton>
+                        </Tooltip>
                     </Toolbar>
                 </AppBar>
                 <Drawer
@@ -185,6 +195,11 @@ export default function Dashboard() {
                     open={open}
                 >
                     <div className={classes.toolbarIcon}>
+                        <VpcIcon size={48} />
+                        <MoreHorizIcon color="secondary" />
+                        <VpnConnectionIcon size={52} />
+                        <MoreHorizIcon color="secondary" />
+                        <VpcIcon size={48} />
                         <IconButton onClick={handleDrawerClose}>
                             <ChevronLeftIcon />
                         </IconButton>

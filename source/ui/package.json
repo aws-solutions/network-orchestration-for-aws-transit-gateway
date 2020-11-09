@@ -13,6 +13,7 @@
     "jquery": "^3.4.1",
     "popper.js": "^1.16.0",
     "react": "^16.8.6",
+    "react-aws-icons": "^1.2.1",
     "react-bootstrap": "^1.0.0-beta.9",
     "react-dom": "^16.8.6",
     "react-icons": "^3.7.0",
