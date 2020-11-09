@@ -3,7 +3,10 @@ import {Route, Switch} from "react-router-dom";
 import {Auth} from "aws-amplify";
 import clsx from 'clsx';
 
+import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import { makeStyles } from '@material-ui/core/styles';
+import primaryColor from "@material-ui/core/colors/indigo";
+import secondaryColor from "@material-ui/core/colors/indigo";
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Drawer from '@material-ui/core/Drawer';
 import Box from '@material-ui/core/Box';
@@ -26,8 +29,8 @@ import NotificationsIcon from '@material-ui/icons/Notifications';
 import ListItemIcon from "@material-ui/core/ListItemIcon";
 import DashboardIcon from "@material-ui/icons/Dashboard";
 import AssignmentIcon from "@material-ui/icons/Assignment";
-import BarChartIcon from "@material-ui/icons/BarChart";
 import ExitToAppIcon from "@material-ui/icons/ExitToApp";
+import Tooltip from "@material-ui/core/Tooltip";
 
 import TransitGwAttachments from './TransitGwAttachments';
 import TransitGwActions from './TransitGwActions';
@@ -46,6 +49,13 @@ function Copyright() {
 }
 
 const drawerWidth = 240;
+
+const muiTheme = createMuiTheme({
+    palette: {
+        primary: primaryColor,
+        secondary: secondaryColor,
+    },
+});
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -130,6 +140,7 @@ const useStyles = makeStyles((theme) => ({
 
 export default function Dashboard() {
     const classes = useStyles();
+    const theme = muiTheme;
 
     const signOut = () => {
         console.log('Signing out...');
@@ -148,89 +159,86 @@ export default function Dashboard() {
 
     return (
         <div className={classes.root}>
-            <CssBaseline />
-            <AppBar position="absolute" className={clsx(classes.appBar, open && classes.appBarShift)}>
-                <Toolbar className={classes.toolbar}>
-                    <IconButton
-                        edge="start"
-                        color="inherit"
-                        aria-label="open drawer"
-                        onClick={handleDrawerOpen}
-                        className={clsx(classes.menuButton, open && classes.menuButtonHidden)}
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                    <Typography component="h1" variant="h6" color="inherit" noWrap className={classes.title}>
-                        Transit Network Management Console
-                    </Typography>
-                    <IconButton color="inherit">
-                        <Badge badgeContent={4} color="secondary">
-                            <NotificationsIcon />
-                        </Badge>
-                    </IconButton>
-                </Toolbar>
-            </AppBar>
-            <Drawer
-                variant="permanent"
-                classes={{
-                    paper: clsx(classes.drawerPaper, !open && classes.drawerPaperClose),
-                }}
-                open={open}
-            >
-                <div className={classes.toolbarIcon}>
-                    <IconButton onClick={handleDrawerClose}>
-                        <ChevronLeftIcon />
-                    </IconButton>
-                </div>
-                <Divider />
-                <List>
-                    <div>
-                        <ListItem button component="a" href="/">
-                            <ListItemIcon>
-                                <DashboardIcon />
-                            </ListItemIcon>
-                            <ListItemText primary="Dashboard" />
-                        </ListItem>
-                        <ListItem button component="a" href="/actions">
-                            <ListItemIcon>
-                                <AssignmentIcon />
-                            </ListItemIcon>
-                            <ListItemText primary="Actions" />
-                        </ListItem>
-                        <ListItem button component="a" href="/reports">
-                            <ListItemIcon>
-                                <BarChartIcon />
-                            </ListItemIcon>
-                            <ListItemText primary="Reports" />
-                        </ListItem>
-                        <ListItem button onClick={signOut}>
-                            <ListItemIcon>
-                                <ExitToAppIcon/>
-                            </ListItemIcon>
-                            <ListItemText primary="Logout"/>
-                        </ListItem>
+            <ThemeProvider theme={theme}>
+                <CssBaseline />
+                <AppBar position="absolute" className={clsx(classes.appBar, open && classes.appBarShift)}>
+                    <Toolbar className={classes.toolbar}>
+                        <IconButton
+                            edge="start"
+                            color="inherit"
+                            aria-label="open drawer"
+                            onClick={handleDrawerOpen}
+                            className={clsx(classes.menuButton, open && classes.menuButtonHidden)}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                        <Typography component="h1" variant="h6" color="inherit" noWrap className={classes.title}>
+                            Transit Network Management Console
+                        </Typography>
+                    </Toolbar>
+                </AppBar>
+                <Drawer
+                    variant="permanent"
+                    classes={{
+                        paper: clsx(classes.drawerPaper, !open && classes.drawerPaperClose),
+                    }}
+                    open={open}
+                >
+                    <div className={classes.toolbarIcon}>
+                        <IconButton onClick={handleDrawerClose}>
+                            <ChevronLeftIcon />
+                        </IconButton>
                     </div>
-                </List>
-                <Divider />
-            </Drawer>
-            <main className={classes.content}>
-                <div className={classes.appBarSpacer} />
-                <Container maxWidth="xl" className={classes.container}>
-                    <Grid container spacing={3}>
-                        <Grid item xs={12}>
-                            <Paper className={classes.paper}>
-                                <Switch>
-                                    <Route name="Dashboard" path="/" exact component={TransitGwAttachments}/>
-                                    <Route name="Action" path="/actions" component={TransitGwActions}/>
-                                </Switch>
-                            </Paper>
+                    <Divider />
+                    <List>
+                        <div>
+                            <Tooltip title="Dashboard" placement="right">
+                                <ListItem button component="a" href="/">
+                                    <ListItemIcon>
+                                        <DashboardIcon />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Dashboard" />
+                                </ListItem>
+                            </Tooltip>
+                            <Tooltip title="Actions" placement="right">
+                                <ListItem button component="a" href="/actions">
+                                    <ListItemIcon>
+                                        <AssignmentIcon />
+                                    </ListItemIcon>
+                                    <ListItemText primary="Actions" />
+                                </ListItem>
+                            </Tooltip>
+                            <Tooltip title="Logout" placement="right">
+                                <ListItem button onClick={signOut}>
+                                    <ListItemIcon>
+                                        <ExitToAppIcon/>
+                                    </ListItemIcon>
+                                    <ListItemText primary="Logout"/>
+                                </ListItem>
+                            </Tooltip>
+                        </div>
+                    </List>
+                    <Divider />
+                </Drawer>
+                <main className={classes.content}>
+                    <div className={classes.appBarSpacer} />
+                    <Container maxWidth="xl" className={classes.container}>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12}>
+                                <Paper className={classes.paper}>
+                                    <Switch>
+                                        <Route name="Dashboard" path="/" exact component={TransitGwAttachments}/>
+                                        <Route name="Action" path="/actions" component={TransitGwActions}/>
+                                    </Switch>
+                                </Paper>
+                            </Grid>
                         </Grid>
-                    </Grid>
-                    <Box pt={4}>
-                        <Copyright />
-                    </Box>
-                </Container>
-            </main>
+                        <Box pt={4}>
+                            <Copyright />
+                        </Box>
+                    </Container>
+                </main>
+            </ThemeProvider>
         </div>
     );
 }
