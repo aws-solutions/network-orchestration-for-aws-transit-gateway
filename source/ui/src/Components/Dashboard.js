@@ -7,10 +7,9 @@ import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import { makeStyles } from '@material-ui/core/styles';
 import primaryColor from '@material-ui/core/colors/indigo';
 import secondaryColor from '@material-ui/core/colors/pink';
-import iconColor from '@material-ui/core/colors/orange';
+import greenColor from '@material-ui/core/colors/green';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Drawer from '@material-ui/core/Drawer';
-import Box from '@material-ui/core/Box';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import List from '@material-ui/core/List';
@@ -20,7 +19,6 @@ import IconButton from '@material-ui/core/IconButton';
 import Container from '@material-ui/core/Container';
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
-import Link from '@material-ui/core/Link';
 import MenuIcon from '@material-ui/icons/Menu';
 import ListItem from "@material-ui/core/ListItem";
 import ListItemText from "@material-ui/core/ListItemText";
@@ -35,22 +33,10 @@ import VpnConnectionIcon from 'react-aws-icons/dist/aws/compute/VPNConnection';
 import VpcIcon from 'react-aws-icons/dist/aws/logo/VPC';
 import CloudIcon from 'react-aws-icons/dist/aws/compute/AWSCloud';
 import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
+import MenuBookIcon from '@material-ui/icons/MenuBook';
 
 import TransitGwAttachments from './TransitGwAttachments';
 import TransitGwActions from './TransitGwActions';
-
-function Copyright() {
-    return (
-        <Typography variant="body2" color="textSecondary" align="center">
-            {'Copyright © '}
-            <Link color="inherit" href="https://docs.aws.amazon.com/solutions/latest/serverless-transit-network-orchestrator/welcome.html">
-                Serverless Transit Network Orchestrator
-            </Link>{' '}
-            {new Date().getFullYear()}
-            {'.'}
-        </Typography>
-    );
-}
 
 const drawerWidth = 240;
 
@@ -180,9 +166,14 @@ export default function Dashboard() {
                         <Typography component="h1" variant="h5" color="inherit" noWrap className={classes.title}>
                             Transit Network Management Console
                         </Typography>
+                        <Tooltip title="Documentation">
+                            <IconButton color="inherit">
+                                <MenuBookIcon fontSize="md" onClick={() => window.open("https://docs.aws.amazon.com/solutions/latest/serverless-transit-network-orchestrator/welcome.html", "_blank")}/>
+                            </IconButton>
+                        </Tooltip>
                         <Tooltip title="Github Repo">
                             <IconButton color="inherit">
-                                <GithubIcon style={{ color: iconColor[500] }} fontSize="large" onClick={() => window.open("https://github.com/awslabs/serverless-transit-network-orchestrator", "_blank")}/>
+                                <GithubIcon fontSize="md" onClick={() => window.open("https://github.com/awslabs/serverless-transit-network-orchestrator", "_blank")}/>
                             </IconButton>
                         </Tooltip>
                     </Toolbar>
@@ -196,9 +187,9 @@ export default function Dashboard() {
                 >
                     <div className={classes.toolbarIcon}>
                         <VpcIcon size={48} />
-                        <MoreHorizIcon color="secondary" />
+                        <MoreHorizIcon style={{color: greenColor[500]}} />
                         <VpnConnectionIcon size={52} />
-                        <MoreHorizIcon color="secondary" />
+                        <MoreHorizIcon style={{color: greenColor[500]}} />
                         <VpcIcon size={48} />
                         <IconButton onClick={handleDrawerClose}>
                             <ChevronLeftIcon />
@@ -248,9 +239,6 @@ export default function Dashboard() {
                                 </Paper>
                             </Grid>
                         </Grid>
-                        <Box pt={4}>
-                            <Copyright />
-                        </Box>
                     </Container>
                 </main>
             </ThemeProvider>
