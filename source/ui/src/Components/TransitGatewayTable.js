@@ -16,7 +16,7 @@ import StatusTableCell from "./StatusTableCell";
 
 export default function TransitGatewayTable(items, viewType, actionCallback) {
     return (
-        <Table size="large" stickyHeader={true}>
+        <Table size="medium" stickyHeader={true}>
             <TableHead>
                 <TableRow>
                     <TableCell>Actions</TableCell>
@@ -35,12 +35,12 @@ export default function TransitGatewayTable(items, viewType, actionCallback) {
             </TableHead>
             <TableBody>
                 {items.map((row) => (
-                    <TableRow key={row.TgwId}>
+                    <TableRow>
                         <TableCell>
                             <Box>
                                 <Tooltip title="View History" placement="right">
-                                    <IconButton>
-                                        <HistoryIcon style={{fill: "brown"}} onClick={() => {actionCallback(row, 'history')}}/>
+                                    <IconButton onClick={() => {actionCallback(row, 'history')}}>
+                                        <HistoryIcon style={{fill: "brown"}}/>
                                     </IconButton>
                                 </Tooltip>
                                 {(() => {
@@ -48,13 +48,13 @@ export default function TransitGatewayTable(items, viewType, actionCallback) {
                                         return (
                                             <Box>
                                                 <Tooltip title="Accept" placement="right">
-                                                    <IconButton>
-                                                        <ApproveIcon style={{fill: "green"}} onClick={() => {actionCallback(row, 'accept')}}/>
+                                                    <IconButton onClick={() => {actionCallback(row, 'accept')}}>
+                                                        <ApproveIcon style={{fill: "green"}}/>
                                                     </IconButton>
                                                 </Tooltip>
                                                 <Tooltip title="Reject" placement="right">
-                                                    <IconButton>
-                                                        <RejectIcon style={{fill: "red"}} onClick={() => {actionCallback(row, 'reject')}}/>
+                                                    <IconButton onClick={() => {actionCallback(row, 'reject')}}>
+                                                        <RejectIcon style={{fill: "red"}}/>
                                                     </IconButton>
                                                 </Tooltip>
                                             </Box>

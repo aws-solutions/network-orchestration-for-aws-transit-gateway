@@ -110,8 +110,8 @@ export default function TransitGatewayEntries() {
                         <Button onClick={() => {getTgwAttachments('failed')}} color={filterStatus === 'failed' ? "secondary": "primary"}>Failed</Button>
                     </ButtonGroup>
                     <Tooltip title="Refresh">
-                        <IconButton color="primary">
-                            <RefreshIcon fontSize="medium" onClick={refreshTgwAttachments}/>
+                        <IconButton color="primary" onClick={refreshTgwAttachments}>
+                            <RefreshIcon fontSize="inherit"/>
                         </IconButton>
                     </Tooltip>
                 </Box>

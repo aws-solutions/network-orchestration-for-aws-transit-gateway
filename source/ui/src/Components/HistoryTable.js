@@ -12,7 +12,7 @@ import StatusTableCell from './StatusTableCell';
 export default function HistoryTable(versionHistoryItems) {
     return (
         <Box>
-            <Table size="large" stickyHeader={true}>
+            <Table size="medium" stickyHeader={true}>
                 <TableHead>
                     <TableRow>
                         <TableCell>VPC</TableCell>

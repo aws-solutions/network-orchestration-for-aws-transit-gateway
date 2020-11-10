@@ -167,13 +167,13 @@ export default function Dashboard() {
                             Transit Network Management Console
                         </Typography>
                         <Tooltip title="Documentation">
-                            <IconButton color="inherit">
-                                <MenuBookIcon fontSize="md" onClick={() => window.open("https://docs.aws.amazon.com/solutions/latest/serverless-transit-network-orchestrator/welcome.html", "_blank")}/>
+                            <IconButton color="inherit" onClick={() => window.open("https://docs.aws.amazon.com/solutions/latest/serverless-transit-network-orchestrator/welcome.html", "_blank")}>
+                                <MenuBookIcon fontSize="inherit"/>
                             </IconButton>
                         </Tooltip>
                         <Tooltip title="Github Repo">
-                            <IconButton color="inherit">
-                                <GithubIcon fontSize="md" onClick={() => window.open("https://github.com/awslabs/serverless-transit-network-orchestrator", "_blank")}/>
+                            <IconButton color="inherit" onClick={() => window.open("https://github.com/awslabs/serverless-transit-network-orchestrator", "_blank")}>
+                                <GithubIcon fontSize="inherit"/>
                             </IconButton>
                         </Tooltip>
                     </Toolbar>
