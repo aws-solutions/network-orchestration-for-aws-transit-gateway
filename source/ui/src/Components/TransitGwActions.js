@@ -11,14 +11,14 @@ import DialogContentText from '@material-ui/core/DialogContentText';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Slide from '@material-ui/core/Slide';
 
-import {API, Auth, graphqlOperation} from "aws-amplify";
+import {API, Auth, graphqlOperation} from 'aws-amplify';
 import {
     getActionItemsFromTransitNetworkOrchestratorTables,
     getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables
-} from "../graphql/queries";
-import {updateTransitNetworkOrchestratorTable} from "../graphql/mutations";
-import TransitGatewayTable from "./TransitGatewayTable";
-import TgwRequestInfo from "./TgwRequestInfo";
+} from '../graphql/queries';
+import {updateTransitNetworkOrchestratorTable} from '../graphql/mutations';
+import TransitGatewayTable from './TransitGatewayTable';
+import TgwRequestInfo from './TgwRequestInfo';
 import Title from './Title';
 import HistoryTable from "./HistoryTable";
 

@@ -15,16 +15,16 @@ import IconButton from '@material-ui/core/IconButton';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import Tooltip from '@material-ui/core/Tooltip';
 
-import {API, graphqlOperation} from "aws-amplify";
+import {API, graphqlOperation} from 'aws-amplify';
 import {
     getDashboarItemsFromTransitNetworkOrchestratorTables,
     getDashboarItemsForStatusFromTransitNetworkOrchestratorTables,
     getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables
-} from "../graphql/queries";
+} from '../graphql/queries';
 
 import Title from './Title';
-import HistoryTable from "./HistoryTable";
-import TransitGatewayTable from "./TransitGatewayTable";
+import HistoryTable from './HistoryTable';
+import TransitGatewayTable from './TransitGatewayTable';
 
 function preventDefault(event) {
     event.preventDefault();

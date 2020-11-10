@@ -1,16 +1,16 @@
-import React from "react";
+import React from 'react';
 
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
-import TableCell from "@material-ui/core/TableCell";
-import TableBody from "@material-ui/core/TableBody";
-import Box from "@material-ui/core/Box";
-import Tooltip from "@material-ui/core/Tooltip";
-import Table from "@material-ui/core/Table";
-import IconButton from "@material-ui/core/IconButton";
-import HistoryIcon from "@material-ui/icons/History";
-import ApproveIcon from "@material-ui/icons/CheckCircle";
-import RejectIcon from "@material-ui/icons/Cancel";
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import TableCell from '@material-ui/core/TableCell';
+import TableBody from '@material-ui/core/TableBody';
+import Box from '@material-ui/core/Box';
+import Tooltip from '@material-ui/core/Tooltip';
+import Table from '@material-ui/core/Table';
+import IconButton from '@material-ui/core/IconButton';
+import HistoryIcon from '@material-ui/icons/History';
+import ApproveIcon from '@material-ui/icons/CheckCircle';
+import RejectIcon from '@material-ui/icons/Cancel';
 
 import StatusTableCell from "./StatusTableCell";
 

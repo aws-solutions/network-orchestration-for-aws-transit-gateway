@@ -1,12 +1,12 @@
-import React from "react";
+import React from 'react';
 
-import Box from "@material-ui/core/Box";
-import Chip from "@material-ui/core/Chip";
-import ProcessingIcon from "@material-ui/icons/HourglassFull";
-import AssignmentLateIcon from "@material-ui/icons/AssignmentLate";
-import ErrorIcon from "@material-ui/icons/Error";
-import WarningIcon from "@material-ui/icons/Warning";
-import CheckCircleIcon from "@material-ui/icons/CheckCircle";
+import Box from '@material-ui/core/Box';
+import Chip from '@material-ui/core/Chip';
+import ProcessingIcon from '@material-ui/icons/HourglassFull';
+import AssignmentLateIcon from '@material-ui/icons/AssignmentLate';
+import ErrorIcon from '@material-ui/icons/Error';
+import WarningIcon from '@material-ui/icons/Warning';
+import CheckCircleIcon from '@material-ui/icons/CheckCircle';
 
 
 export default function StatusTableCell(row) {

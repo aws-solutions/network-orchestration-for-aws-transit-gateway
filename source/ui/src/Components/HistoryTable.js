@@ -1,13 +1,13 @@
-import React from "react";
+import React from 'react';
 
-import Table from "@material-ui/core/Table";
-import TableHead from "@material-ui/core/TableHead";
-import TableRow from "@material-ui/core/TableRow";
-import TableCell from "@material-ui/core/TableCell";
-import TableBody from "@material-ui/core/TableBody";
-import Box from "@material-ui/core/Box";
+import Table from '@material-ui/core/Table';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
+import TableCell from '@material-ui/core/TableCell';
+import TableBody from '@material-ui/core/TableBody';
+import Box from '@material-ui/core/Box';
 
-import StatusTableCell from "./StatusTableCell";
+import StatusTableCell from './StatusTableCell';
 
 export default function HistoryTable(versionHistoryItems) {
     return (
