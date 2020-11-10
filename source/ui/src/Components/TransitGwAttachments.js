@@ -11,6 +11,9 @@ import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import Slide from '@material-ui/core/Slide';
+import IconButton from '@material-ui/core/IconButton';
+import RefreshIcon from '@material-ui/icons/Refresh';
+import Tooltip from '@material-ui/core/Tooltip';
 
 import {API, graphqlOperation} from "aws-amplify";
 import {
@@ -82,6 +85,12 @@ export default function TransitGatewayEntries() {
         }
         console.log(`Finished fetching the TGW attachments`);
     };
+
+
+    const refreshTgwAttachments = async () => {
+        await getTgwAttachments(filterStatus);
+    };
+
     React.useEffect(getTgwAttachments,[]);
 
     // render the table
@@ -98,6 +107,11 @@ export default function TransitGatewayEntries() {
                         <Button onClick={() => {getTgwAttachments('auto-rejected')}} color={filterStatus === 'auto-rejected' ? "secondary": "primary"}>Auto Rejected</Button>
                         <Button onClick={() => {getTgwAttachments('failed')}} color={filterStatus === 'failed' ? "secondary": "primary"}>Failed</Button>
                     </ButtonGroup>
+                    <Tooltip title="Refresh">
+                        <IconButton color="primary">
+                            <RefreshIcon fontSize="medium" onClick={refreshTgwAttachments}/>
+                        </IconButton>
+                    </Tooltip>
                 </Box>
             </Grid>
             {TransitGatewayTable(items, 'attachments', handleClickOpen)}
