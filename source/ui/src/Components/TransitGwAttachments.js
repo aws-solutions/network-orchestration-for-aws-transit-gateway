@@ -59,13 +59,16 @@ export default function TransitGatewayEntries() {
         setDialogOpen(false);
     };
 
-    let [items, setItems] = React.useState([]);
+    const [items, setItems] = React.useState([]);
+    const [filterStatus, setFilterStatus] = React.useState('');
+
     // Get all the attachments
-    const getTgwAttachments = async (statuses) => {
-        console.log(`Fetching the TGW attachments for status ${statuses}...`);
+    const getTgwAttachments = async (state) => {
+        setFilterStatus(state);
+        console.log(`Fetching the TGW attachments for status ${state}...`);
         let graphQlOptions;
-        if (statuses) {
-            const filter = {Status: {eq: statuses}, Version: {ne: "latest"}};
+        if (state) {
+            const filter = {Status: {eq: state}, Version: {ne: "latest"}};
             graphQlOptions = graphqlOperation(getDashboarItemsForStatusFromTransitNetworkOrchestratorTables, {filter});
             graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
             const result = await API.graphql(graphQlOptions);
@@ -88,12 +91,12 @@ export default function TransitGatewayEntries() {
             <Grid container>
                 <Box pt={1} pb={1}>
                     <ButtonGroup variant="contained" color="primary" aria-label="contained primary button group">
-                        <Button onClick={() => {getTgwAttachments()}}>All</Button>
-                        <Button onClick={() => {getTgwAttachments('approved')}}>Approved</Button>
-                        <Button onClick={() => {getTgwAttachments('auto-approved')}}>Auto Approved</Button>
-                        <Button onClick={() => {getTgwAttachments('rejected')}}>Rejected</Button>
-                        <Button onClick={() => {getTgwAttachments('auto-rejected')}}>Auto Rejected</Button>
-                        <Button onClick={() => {getTgwAttachments('failed')}}>Failed</Button>
+                        <Button onClick={() => {getTgwAttachments()}} color={!filterStatus ? "secondary": "primary"}>All</Button>
+                        <Button onClick={() => {getTgwAttachments('approved')}} color={filterStatus === 'approved' ? "secondary": "primary"}>Approved</Button>
+                        <Button onClick={() => {getTgwAttachments('auto-approved')}} color={filterStatus === 'auto-approved' ? "secondary": "primary"}>Auto Approved</Button>
+                        <Button onClick={() => {getTgwAttachments('rejected')}} color={filterStatus === 'rejected' ? "secondary": "primary"}>Rejected</Button>
+                        <Button onClick={() => {getTgwAttachments('auto-rejected')}} color={filterStatus === 'auto-rejected' ? "secondary": "primary"}>Auto Rejected</Button>
+                        <Button onClick={() => {getTgwAttachments('failed')}} color={filterStatus === 'failed' ? "secondary": "primary"}>Failed</Button>
                     </ButtonGroup>
                 </Box>
             </Grid>
