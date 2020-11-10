@@ -52,7 +52,9 @@ export default function TransitGatewayEntries() {
             let graphQlOptions = graphqlOperation(getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables, {filter});
             graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
             const result = await API.graphql(graphQlOptions);
-            setVersionHistoryItems(result.data.getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables.items);
+            const data = result.data.getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables.items;
+            data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
+            setVersionHistoryItems(data);
         } catch (error) {
             console.error(error);
         }
@@ -75,13 +77,17 @@ export default function TransitGatewayEntries() {
             graphQlOptions = graphqlOperation(getDashboarItemsForStatusFromTransitNetworkOrchestratorTables, {filter});
             graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
             const result = await API.graphql(graphQlOptions);
-            setItems(result.data.getDashboarItemsForStatusFromTransitNetworkOrchestratorTables.items);
+            const data = result.data.getDashboarItemsForStatusFromTransitNetworkOrchestratorTables.items;
+            data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
+            setItems(data);
         }
         else {
             graphQlOptions = graphqlOperation(getDashboarItemsFromTransitNetworkOrchestratorTables);
             graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
             const result = await API.graphql(graphQlOptions);
-            setItems(result.data.getDashboarItemsFromTransitNetworkOrchestratorTables.items);
+            const data = result.data.getDashboarItemsFromTransitNetworkOrchestratorTables.items;
+            data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
+            setItems(data);
         }
         console.log(`Finished fetching the TGW attachments`);
     };

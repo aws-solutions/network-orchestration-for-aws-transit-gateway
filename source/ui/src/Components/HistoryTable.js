@@ -29,7 +29,7 @@ export default function HistoryTable(versionHistoryItems) {
                 </TableHead>
                 <TableBody>
                     {versionHistoryItems && versionHistoryItems.map((row) => (
-                        <TableRow>
+                        <TableRow key={row.id}>
                             <TableCell>{row.VpcId}
                                 <br/>
                                 {row.VpcCidr}

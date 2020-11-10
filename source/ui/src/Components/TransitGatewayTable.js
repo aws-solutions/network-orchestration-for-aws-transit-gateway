@@ -35,7 +35,7 @@ export default function TransitGatewayTable(items, viewType, actionCallback) {
             </TableHead>
             <TableBody>
                 {items.map((row) => (
-                    <TableRow>
+                    <TableRow key={row.id}>
                         <TableCell>
                             <Box>
                                 <Tooltip title="View History" placement="right">
