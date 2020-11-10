@@ -201,7 +201,7 @@ export default function Dashboard() {
                             <Tooltip title="Dashboard" placement="right">
                                 <ListItem button component="a" href="/">
                                     <ListItemIcon>
-                                        <DashboardIcon />
+                                        <DashboardIcon color="primary"/>
                                     </ListItemIcon>
                                     <ListItemText primary="Dashboard" />
                                 </ListItem>
@@ -209,7 +209,7 @@ export default function Dashboard() {
                             <Tooltip title="Actions" placement="right">
                                 <ListItem button component="a" href="/actions">
                                     <ListItemIcon>
-                                        <AssignmentIcon />
+                                        <AssignmentIcon color="primary"/>
                                     </ListItemIcon>
                                     <ListItemText primary="Actions" />
                                 </ListItem>
@@ -217,7 +217,7 @@ export default function Dashboard() {
                             <Tooltip title="Logout" placement="right">
                                 <ListItem button onClick={signOut}>
                                     <ListItemIcon>
-                                        <ExitToAppIcon/>
+                                        <ExitToAppIcon color="secondary"/>
                                     </ListItemIcon>
                                     <ListItemText primary="Logout"/>
                                 </ListItem>
