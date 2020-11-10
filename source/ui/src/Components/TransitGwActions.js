@@ -46,8 +46,8 @@ export default function TransitGatewayEntries() {
 
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [tgwAction, setTgwAction] = React.useState('');
-    let [versionHistoryItems, setVersionHistoryItems] = React.useState(false);
-    let [selectedItem, setSelectedItem] = React.useState({});
+    const [versionHistoryItems, setVersionHistoryItems] = React.useState(false);
+    const [selectedItem, setSelectedItem] = React.useState({});
 
     let [items, setItems] = React.useState([]);
     // Get all the attachments
