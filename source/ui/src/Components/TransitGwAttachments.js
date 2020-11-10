@@ -91,7 +91,9 @@ export default function TransitGatewayEntries() {
         await getTgwAttachments(filterStatus);
     };
 
-    React.useEffect(getTgwAttachments,[]);
+    React.useEffect(() => {
+        getTgwAttachments().then();
+    },[]);
 
     // render the table
     return (

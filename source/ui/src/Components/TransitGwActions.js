@@ -60,7 +60,9 @@ export default function TransitGatewayEntries() {
         setItems(result.data.getActionItemsFromTransitNetworkOrchestratorTables.items);
         console.log(`Finished fetching the TGW attachments`);
     };
-    React.useEffect(getTgwActions,[]);
+    React.useEffect(() => {
+        getTgwActions().then();
+    },[]);
 
     // handles opening of history or action confirmation dialog
     const handleClickOpen = async (row, action) => {
