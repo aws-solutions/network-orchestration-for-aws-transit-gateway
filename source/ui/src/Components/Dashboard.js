@@ -1,5 +1,5 @@
 import React from 'react';
-import {Route, Switch} from "react-router-dom";
+import {Route, Switch, Link} from "react-router-dom";
 import {Auth} from "aws-amplify";
 import clsx from 'clsx';
 
@@ -32,14 +32,17 @@ import VpcIcon from 'react-aws-icons/dist/aws/logo/VPC';
 import CloudIcon from 'react-aws-icons/dist/aws/compute/AWSCloud';
 import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 import MenuBookIcon from '@material-ui/icons/MenuBook';
+import LightThemeIcon from '@material-ui/icons/Brightness7';
+import DarkThemeIcon from '@material-ui/icons/Brightness6';
 
 import TransitGwAttachments from './TransitGwAttachments';
 import TransitGwActions from './TransitGwActions';
 
 const drawerWidth = 240;
 
-const muiTheme = createMuiTheme({
+const themeOptions = {
     palette: {
+        type: 'light',
         primary: {
             light: '#3f546f',
             main: '#232f3e',
@@ -51,7 +54,7 @@ const muiTheme = createMuiTheme({
             contrastText: '#fff'
         },
     },
-});
+};
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -136,7 +139,15 @@ const useStyles = makeStyles((theme) => ({
 
 export default function Dashboard() {
     const classes = useStyles();
-    const theme = muiTheme;
+
+    const lightTheme = createMuiTheme(themeOptions);
+    const darkThemeOptions = JSON.parse(JSON.stringify(themeOptions));
+    darkThemeOptions.palette.type = 'dark';
+    const darkTheme = createMuiTheme(darkThemeOptions);
+    const [darkMode, setDarkMode] = React.useState(false);
+    const toggleTheme = () => {
+        setDarkMode(!darkMode);
+    };
 
     const signOut = () => {
         console.log('Signing out...');
@@ -155,7 +166,7 @@ export default function Dashboard() {
 
     return (
         <div className={classes.root}>
-            <ThemeProvider theme={theme}>
+            <ThemeProvider theme={darkMode ? darkTheme : lightTheme}>
                 <CssBaseline />
                 <AppBar position="absolute" className={clsx(classes.appBar, open && classes.appBarShift)}>
                     <Toolbar className={classes.toolbar}>
@@ -182,6 +193,16 @@ export default function Dashboard() {
                                 <GithubIcon fontSize="inherit"/>
                             </IconButton>
                         </Tooltip>
+                        <Tooltip title="Light/Dark mode">
+                            <IconButton color="inherit" onClick={toggleTheme}>
+                                {(() => {
+                                    if (darkMode)
+                                        return (<DarkThemeIcon fontSize="inherit"/>)
+                                    else
+                                        return (<LightThemeIcon fontSize="inherit"/>)
+                                })()}
+                            </IconButton>
+                        </Tooltip>
                     </Toolbar>
                 </AppBar>
                 <Drawer
@@ -205,17 +226,17 @@ export default function Dashboard() {
                     <List>
                         <div>
                             <Tooltip title="Dashboard" placement="right">
-                                <ListItem button component="a" href="/">
+                                <ListItem button component={Link} to="/">
                                     <ListItemIcon>
-                                        <DashboardIcon color="primary"/>
+                                        <DashboardIcon/>
                                     </ListItemIcon>
                                     <ListItemText primary="Dashboard" />
                                 </ListItem>
                             </Tooltip>
                             <Tooltip title="Actions" placement="right">
-                                <ListItem button component="a" href="/actions">
+                                <ListItem button component={Link} to="/actions">
                                     <ListItemIcon>
-                                        <AssignmentIcon color="primary"/>
+                                        <AssignmentIcon/>
                                     </ListItemIcon>
                                     <ListItemText primary="Actions" />
                                 </ListItem>
@@ -223,7 +244,7 @@ export default function Dashboard() {
                             <Tooltip title="Logout" placement="right">
                                 <ListItem button onClick={signOut}>
                                     <ListItemIcon>
-                                        <ExitToAppIcon color="primary"/>
+                                        <ExitToAppIcon/>
                                     </ListItemIcon>
                                     <ListItemText primary="Logout"/>
                                 </ListItem>
