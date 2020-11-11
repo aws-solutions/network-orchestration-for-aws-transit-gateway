@@ -8,7 +8,6 @@ import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
-import DialogTitle from '@material-ui/core/DialogTitle';
 import Slide from '@material-ui/core/Slide';
 
 import {API, Auth, graphqlOperation} from 'aws-amplify';
@@ -71,7 +70,7 @@ export default function TransitGatewayEntries() {
         console.log(`Action: ${action}`);
         if (action === 'history') {
             try {
-                console.log(`Fetching history for selected attachment...`);
+                console.log(`Fetching history for selected action...`);
                 const filter = {SubnetId: {eq: row.SubnetId}, Version: {ne: "latest"}};
                 let graphQlOptions = graphqlOperation(getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables, {filter});
                 graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
@@ -132,7 +131,7 @@ export default function TransitGatewayEntries() {
             <Title>Pending actions</Title>
             {TransitGatewayTable(items, 'actions', handleClickOpen)}
             <div className={classes.seeMore}>
-                <Link color="primary" href="#" onClick={preventDefault}>
+                <Link href="#" onClick={preventDefault} color="textPrimary">
                     See more actions
                 </Link>
             </div>
@@ -146,7 +145,7 @@ export default function TransitGatewayEntries() {
                 maxWidth = {tgwAction === 'history' ? 'xl' : 'md'}
                 aria-labelledby="alert-dialog-slide-title"
                 aria-describedby="alert-dialog-slide-description">
-                <DialogTitle id="alert-dialog-slide-title">{tgwAction === 'history' ? "Viewing version history" : "Confirmation"}</DialogTitle>
+                <Box m={2}><Title>{tgwAction === 'history' ? "Viewing version history" : "Confirmation"}</Title></Box>
                 <DialogContent>
                     {(() => {
                             if (tgwAction === 'history') {

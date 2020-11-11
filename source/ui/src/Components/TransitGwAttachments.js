@@ -9,7 +9,6 @@ import ButtonGroup from '@material-ui/core/ButtonGroup';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
-import DialogTitle from '@material-ui/core/DialogTitle';
 import Slide from '@material-ui/core/Slide';
 import IconButton from '@material-ui/core/IconButton';
 import RefreshIcon from '@material-ui/icons/Refresh';
@@ -61,6 +60,7 @@ export default function TransitGatewayEntries() {
         setDialogOpen(true);
     };
     const handleClose = () => {
+        setVersionHistoryItems([]);
         setDialogOpen(false);
     };
 
@@ -116,7 +116,7 @@ export default function TransitGatewayEntries() {
                         <Button onClick={() => {getTgwAttachments('failed')}} color={filterStatus === 'failed' ? "secondary": "primary"}>Failed</Button>
                     </ButtonGroup>
                     <Tooltip title="Refresh">
-                        <IconButton color="primary" onClick={refreshTgwAttachments}>
+                        <IconButton onClick={refreshTgwAttachments}>
                             <RefreshIcon fontSize="inherit"/>
                         </IconButton>
                     </Tooltip>
@@ -124,7 +124,7 @@ export default function TransitGatewayEntries() {
             </Grid>
             {TransitGatewayTable(items, 'attachments', handleClickOpen)}
             <div className={classes.seeMore}>
-                <Link color="primary" href="#" onClick={preventDefault}>
+                <Link href="#" onClick={preventDefault} color="textPrimary">
                     See more attachments
                 </Link>
             </div>
@@ -138,7 +138,7 @@ export default function TransitGatewayEntries() {
                 maxWidth = {'xl'}
                 aria-labelledby="alert-dialog-slide-title"
                 aria-describedby="alert-dialog-slide-description">
-                <DialogTitle id="alert-dialog-slide-title">{"Viewing version history"}</DialogTitle>
+                <Box m={2}><Title>Viewing version history</Title></Box>
                 <DialogContent>
                     {HistoryTable(versionHistoryItems)}
                 </DialogContent>
