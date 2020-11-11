@@ -5,8 +5,6 @@ import clsx from 'clsx';
 
 import { createMuiTheme, ThemeProvider } from '@material-ui/core/styles';
 import { makeStyles } from '@material-ui/core/styles';
-import primaryColor from '@material-ui/core/colors/indigo';
-import secondaryColor from '@material-ui/core/colors/pink';
 import greenColor from '@material-ui/core/colors/green';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Drawer from '@material-ui/core/Drawer';
@@ -42,8 +40,16 @@ const drawerWidth = 240;
 
 const muiTheme = createMuiTheme({
     palette: {
-        primary: primaryColor,
-        secondary: secondaryColor,
+        primary: {
+            light: '#3f546f',
+            main: '#232f3e',
+            dark: '#1a232e',
+            contrastText: '#fff'
+        },
+        secondary: {
+            main: '#f90',
+            contrastText: '#fff'
+        },
     },
 });
 
@@ -217,7 +223,7 @@ export default function Dashboard() {
                             <Tooltip title="Logout" placement="right">
                                 <ListItem button onClick={signOut}>
                                     <ListItemIcon>
-                                        <ExitToAppIcon color="secondary"/>
+                                        <ExitToAppIcon color="primary"/>
                                     </ListItemIcon>
                                     <ListItemText primary="Logout"/>
                                 </ListItem>

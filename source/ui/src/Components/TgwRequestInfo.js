@@ -17,7 +17,7 @@ export default function TgwRequestInfo(request, classes) {
                 <Grid item xs={12} sm={6}>
                     <Paper className={classes.paper}>
                         <Box><h4>Request Details</h4></Box>
-                        <Table size="md">
+                        <Table size="medium">
                             <TableBody>
                                 <TableRow>
                                     <TableCell>Transit Gateway Id:</TableCell>
@@ -54,7 +54,7 @@ export default function TgwRequestInfo(request, classes) {
                 <Grid item xs={12} sm={6}>
                     <Paper className={classes.paper}>
                         <Box><h4>Networking Details</h4></Box>
-                        <Table size="md">
+                        <Table size="medium">
                             <TableBody>
                                 <TableRow>
                                     <TableCell>Spoke Account Id:</TableCell>

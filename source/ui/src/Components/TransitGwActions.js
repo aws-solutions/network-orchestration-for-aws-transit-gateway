@@ -187,10 +187,10 @@ export default function TransitGatewayEntries() {
                             return(
                                 <Box display="flex" flexDirection="row">
                                     <Box p={1}>
-                                        <Button variant="contained" onClick={() => {handleClose(true)}} color="primary">Yes</Button>
+                                        <Button variant="contained" onClick={() => {handleClose(true)}} color="secondary">Yes</Button>
                                     </Box>
                                     <Box p={1}>
-                                        <Button variant="contained" onClick={() => {handleClose(false)}} color="secondary">No</Button>
+                                        <Button variant="contained" onClick={() => {handleClose(false)}} color="primary">No</Button>
                                     </Box>
                                 </Box>
                             );
