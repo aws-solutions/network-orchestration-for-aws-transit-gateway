@@ -40,7 +40,7 @@ export default function TransitGatewayTable(items, viewType, actionCallback) {
                             <Box>
                                 <Tooltip title="View History" placement="right">
                                     <IconButton onClick={() => {actionCallback(row, 'history')}}>
-                                        <HistoryIcon style={{fill: "brown"}}/>
+                                        <HistoryIcon style={{fill: "#ff5722"}}/>
                                     </IconButton>
                                 </Tooltip>
                                 {(() => {
