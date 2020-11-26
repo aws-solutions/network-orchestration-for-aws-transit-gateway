@@ -16,11 +16,11 @@ Description: (SO0058) - The AWS CloudFormation template (Hub) for deployment of 
 Parameters:
   Principals:
     Type: CommaDelimitedList
-    Description: AWS account numbers eg. 123456789012 (comma seperated) OR the ARN of an Organization to share TGW with the principals eg. arn:aws:organizations::<ORG_MASTER_ACCOUNT_ID>:organization/o-exampleorgid.
+    Description: AWS account numbers eg. 123456789012 (comma separated) OR the ARN of an Organization to share TGW with the principals eg. arn:aws:organizations::<ORG_MASTER_ACCOUNT_ID>:organization/o-exampleorgid.
 
   PrincipalType:
     Type: String
-    Description: Either provide list of accounts (comma seperated) or AWS Organizations ARN
+    Description: Either provide list of accounts (comma separated) or AWS Organizations ARN
     Default: 'List of Accounts'
     AllowedValues:
       - 'AWS Organization ARN'
@@ -210,9 +210,9 @@ Metadata:
       ExistingGlobalNetworkId:
         default: (Optional) Provide the existing global network id.
       ListOfCustomCidrBlocks:
-        default: If selected 'Custom-Destinations', provide a comma seperated list of CIDR Blocks.
+        default: If selected 'Custom-Destinations', provide a comma separated list of CIDR Blocks.
       CustomerManagedPrefixListIds:
-        default: If selected 'Custom-Destinations', provide a comma seperated list of Customer-managed Prefix List IDs.
+        default: If selected 'Custom-Destinations', provide a comma separated list of Customer-managed Prefix List IDs.
 
 
 Conditions:
