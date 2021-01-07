@@ -128,13 +128,50 @@ class TransitGateway(object):
             self._update_ddb_failed(e)
             raise
 
+    def _check_list_length(self, array, length):
+        # compare the length of the list
+        if len(array) == length:
+            return None
+        else:
+            raise Exception("Length of the list in the response is more than {} values.".format(length))
+
+    def _fetch_vpc_name(self, ec2, vpc_id):
+        self.logger.info("Executing: " + self.__class__.__name__ + "/" + inspect.stack()[0][3])
+        self.logger.info("Fetching tags from VpcId {}".format(vpc_id))
+
+        response = ec2.describe_vpcs(vpc_id)
+        self._print('Describe VPC', response)
+
+        # the response should return a list with single item
+        self._check_list_length(response, 1)
+
+        # update event with subnet details
+        index = 0
+        vpc = response[index]
+
+        vpc_name = None
+
+        if vpc.get('Tags') is not None:
+            for tag in vpc.get('Tags'):
+                if tag.get('Key') == 'Name':
+                    vpc_name = tag.get('Value')
+                    break
+
+        if vpc_name is not None:
+            return vpc_name
+        else:
+            raise ValueError("Vpc to attach doesn't have tags")
+
     def _create_tgw_attachment(self, ec2):
         try:
             self.logger.info("Executing: " + self.__class__.__name__ + "/" + inspect.stack()[0][3])
             self.logger.info("Creating TGW Attachment with Subnet ID: {}".format(self.event.get('SubnetId')))
+            vpc_id = self.event.get('VpcId')
+            vpc_name = self._fetch_vpc_name(ec2,vpc_id)
             response = ec2.create_transit_gateway_vpc_attachment(environ.get('TGW_ID'),
-                                                                 self.event.get('VpcId'),
-                                                                 self.event.get('SubnetId'))
+                                                                 vpc_id,
+                                                                 self.event.get('SubnetId'),
+                                                                 "{}-vpc-attachment".format(vpc_name))
             self._print('Create Transit Gateway Attachment Response', response)
             self.event.update({'AttachmentState': response.get('TransitGatewayVpcAttachment', {}).get('State')})
             self.event.update({'TransitGatewayAttachmentId': response.get('TransitGatewayVpcAttachment', {}).get(
@@ -1379,4 +1416,3 @@ class GeneralFunctions(object):
             return self.event
         except:
             return self.event
-

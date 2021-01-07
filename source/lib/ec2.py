@@ -57,7 +57,7 @@ class EC2(object):
             next_token = response.get('NextToken', None)
 
             while next_token is not None:
-                response = self.ec2_client.describe_subnets(
+                response = self.ec2_client.describe_vpcs(
                     VpcIds=[vpc_id],
                     NextToken=next_token
                 )
@@ -232,7 +232,7 @@ class EC2(object):
             self.logger.exception(message)
             raise
 
-    def create_transit_gateway_vpc_attachment(self, tgw_id, vpc_id, subnet_id):
+    def create_transit_gateway_vpc_attachment(self, tgw_id, vpc_id, subnet_id, attachment_name):
         """
         :param tgw_id:
         :param vpc_id:
@@ -269,7 +269,9 @@ class EC2(object):
                 VpcId=vpc_id,
                 SubnetIds=[
                     subnet_id
-                ]
+                ],
+                TagSpecifications=[{ 'ResourceType': 'transit-gateway-attachment',
+                    'Tags':[{ 'Key': 'Name', 'Value': attachment_name }] }]
             )
             return response
         except Exception as e:
