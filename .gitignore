@@ -32,3 +32,4 @@ source/ui/package-lock.json
 /source/certifi*
 /source/idna*
 /source/requests*
+/deployment/manifest-generator/node_modules
