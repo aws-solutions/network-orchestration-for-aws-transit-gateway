@@ -20,6 +20,7 @@ import TransitGatewayTable from './TransitGatewayTable';
 import TgwRequestInfo from './TgwRequestInfo';
 import Title from './Title';
 import HistoryTable from "./HistoryTable";
+import {NotificationEventEmitter} from "./NotificationsTray";
 
 function preventDefault(event) {
     event.preventDefault();
@@ -51,15 +52,22 @@ export default function TransitGatewayEntries() {
     let [items, setItems] = React.useState([]);
     // Get all the attachments
     const getTgwActions = async () => {
-        setItems([]);
-        console.log(`Fetching the TGW actions...`);
-        let graphQlOptions = graphqlOperation(getActionItemsFromTransitNetworkOrchestratorTables);
-        graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
-        const result = await API.graphql(graphQlOptions);
-        const data = result.data.getActionItemsFromTransitNetworkOrchestratorTables.items;
-        data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
-        setItems(data);
-        console.log(`Finished fetching the TGW attachments`);
+        try {
+            setItems([]);
+            console.log(`Fetching the TGW actions...`);
+            let graphQlOptions = graphqlOperation(getActionItemsFromTransitNetworkOrchestratorTables);
+            graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
+            const result = await API.graphql(graphQlOptions);
+            const data = result.data.getActionItemsFromTransitNetworkOrchestratorTables.items;
+            data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
+            setItems(data);
+            console.log(`Finished fetching the TGW attachments`);
+        }
+        catch (error) {
+            console.error(error);
+            const msg = `Error: ${error.errors[0].errorType} <br> Message: ${error.errors[0].message}`;
+            NotificationEventEmitter.emit('error-event', msg);
+        }
     };
     React.useEffect(() => {
         getTgwActions().then();
@@ -80,6 +88,8 @@ export default function TransitGatewayEntries() {
                 setVersionHistoryItems(data);
             } catch (error) {
                 console.error(error);
+                const msg = `Error getting version history for subnet ID ${row.SubnetId} <br> Error: ${error.errors[0].errorType} <br> Message: ${error.errors[0].message}`;
+                NotificationEventEmitter.emit('error-event', msg);
             }
         }
         setSelectedItem(row);
@@ -110,6 +120,8 @@ export default function TransitGatewayEntries() {
             await getTgwActions();
         } catch (error) {
             console.error(error);
+            const msg = `Error processing TGW attachment request Subnet id = ${selectedItem.SubnetId}. <br> Error: ${error.errors[0].errorType} <br> Message: ${error.errors[0].message}`;
+            NotificationEventEmitter.emit('error-event', msg);
         }
     }
 

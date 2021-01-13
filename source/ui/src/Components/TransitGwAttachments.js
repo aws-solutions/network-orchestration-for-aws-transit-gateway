@@ -24,6 +24,7 @@ import {
 import Title from './Title';
 import HistoryTable from './HistoryTable';
 import TransitGatewayTable from './TransitGatewayTable';
+import {NotificationEventEmitter} from "./NotificationsTray";
 
 function preventDefault(event) {
     event.preventDefault();
@@ -56,6 +57,8 @@ export default function TransitGatewayEntries() {
             setVersionHistoryItems(data);
         } catch (error) {
             console.error(error);
+            const msg = `Error getting version history for subnet ID ${row.SubnetId} <br> Error: ${error.errors[0].errorType} <br> Message: ${error.errors[0].message}`;
+            NotificationEventEmitter.emit('error-event', msg);
         }
         setDialogOpen(true);
     };
@@ -69,27 +72,34 @@ export default function TransitGatewayEntries() {
 
     // Get all the attachments
     const getTgwAttachments = async (state) => {
-        setFilterStatus(state);
-        console.log(`Fetching the TGW attachments for status ${state}...`);
-        let graphQlOptions;
-        if (state) {
-            const filter = {Status: {eq: state}, Version: {ne: "latest"}};
-            graphQlOptions = graphqlOperation(getDashboarItemsForStatusFromTransitNetworkOrchestratorTables, {filter});
-            graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
-            const result = await API.graphql(graphQlOptions);
-            const data = result.data.getDashboarItemsForStatusFromTransitNetworkOrchestratorTables.items;
-            data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
-            setItems(data);
+        try {
+            setFilterStatus(state);
+            console.log(`Fetching the TGW attachments for status ${state}...`);
+            let graphQlOptions;
+            if (state) {
+                const filter = {Status: {eq: state}, Version: {ne: "latest"}};
+                graphQlOptions = graphqlOperation(getDashboarItemsForStatusFromTransitNetworkOrchestratorTables, {filter});
+                graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
+                const result = await API.graphql(graphQlOptions);
+                const data = result.data.getDashboarItemsForStatusFromTransitNetworkOrchestratorTables.items;
+                data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
+                setItems(data);
+            }
+            else {
+                graphQlOptions = graphqlOperation(getDashboarItemsFromTransitNetworkOrchestratorTables);
+                graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
+                const result = await API.graphql(graphQlOptions);
+                const data = result.data.getDashboarItemsFromTransitNetworkOrchestratorTables.items;
+                data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
+                setItems(data);
+            }
+            console.log(`Finished fetching the TGW attachments`);
         }
-        else {
-            graphQlOptions = graphqlOperation(getDashboarItemsFromTransitNetworkOrchestratorTables);
-            graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
-            const result = await API.graphql(graphQlOptions);
-            const data = result.data.getDashboarItemsFromTransitNetworkOrchestratorTables.items;
-            data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
-            setItems(data);
+        catch (error) {
+            console.error(JSON.stringify(error));
+            const msg = `<b>Error:</b> ${error.errors[0].errorType} <br> <b>Message:</b> ${error.errors[0].message}`;
+            NotificationEventEmitter.emit('error-event', msg);
         }
-        console.log(`Finished fetching the TGW attachments`);
     };
 
 

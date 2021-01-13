@@ -7,6 +7,7 @@
     "@material-ui/core": "^4.11.0",
     "@material-ui/data-grid": "^4.0.0-alpha.8",
     "@material-ui/icons": "^4.9.1",
+    "@material-ui/lab": "^4.0.0-alpha.57",
     "aws-amplify": "^1.1.28",
     "aws-amplify-react": "^2.3.8",
     "bootstrap": "^4.3.1",

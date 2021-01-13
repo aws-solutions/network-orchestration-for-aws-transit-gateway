@@ -37,6 +37,7 @@ import DarkThemeIcon from '@material-ui/icons/Brightness6';
 
 import TransitGwAttachments from './TransitGwAttachments';
 import TransitGwActions from './TransitGwActions';
+import {NotificationTray} from './NotificationsTray';
 
 const drawerWidth = 240;
 
@@ -268,6 +269,7 @@ export default function Dashboard() {
                         </Grid>
                     </Container>
                 </main>
+                <NotificationTray/>
             </ThemeProvider>
         </div>
     );
