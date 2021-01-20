@@ -1,7 +1,7 @@
-import React, {useEffect} from "react";
-import EventEmitter from "events";
-import MuiAlert from "@material-ui/lab/Alert";
-import Snackbar from "@material-ui/core/Snackbar";
+import React, {useEffect} from 'react';
+import EventEmitter from 'events';
+import MuiAlert from '@material-ui/lab/Alert';
+import Snackbar from '@material-ui/core/Snackbar';
 
 export const NotificationEventEmitter = new EventEmitter();
 
@@ -40,4 +40,16 @@ export const NotificationTray = () => {
             </Snackbar>
         </React.Fragment>
     );
+}
+
+export const emitErrorEvent = (error, errorMsg) => {
+    console.error(error);
+    if (error.errors && error.errors.length > 0) {
+        const msg = `${errorMsg} <br> Error: ${error.errors[0].errorType} <br> Message: ${error.errors[0].message}`;
+        NotificationEventEmitter.emit('error-event', msg);
+    }
+    else {
+        const msg = `<b>Unknown</b> ${error}`;
+        NotificationEventEmitter.emit('error-event', msg);
+    }
 }

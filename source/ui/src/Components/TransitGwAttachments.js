@@ -1,7 +1,5 @@
 import React from 'react';
 
-import {makeStyles} from '@material-ui/core/styles';
-import Link from '@material-ui/core/Link';
 import Grid from '@material-ui/core/Grid';
 import Box from '@material-ui/core/Box';
 import Button from '@material-ui/core/Button';
@@ -13,39 +11,30 @@ import Slide from '@material-ui/core/Slide';
 import IconButton from '@material-ui/core/IconButton';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import Tooltip from '@material-ui/core/Tooltip';
+import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
+import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 
 import {API, graphqlOperation} from 'aws-amplify';
 import {
-    getDashboarItemsFromTransitNetworkOrchestratorTables,
     getDashboarItemsForStatusFromTransitNetworkOrchestratorTables,
+    getDashboarItemsFromTransitNetworkOrchestratorTables,
     getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables
 } from '../graphql/queries';
 
 import Title from './Title';
 import HistoryTable from './HistoryTable';
 import TransitGatewayTable from './TransitGatewayTable';
-import {NotificationEventEmitter} from "./NotificationsTray";
-
-function preventDefault(event) {
-    event.preventDefault();
-}
-
-const useStyles = makeStyles((theme) => ({
-    seeMore: {
-        marginTop: theme.spacing(3),
-    },
-}));
+import {emitErrorEvent} from './NotificationsTray';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
 });
 
 export default function TransitGatewayEntries() {
-    const classes = useStyles();
 
     const [dialogOpen, setDialogOpen] = React.useState(false);
     let [versionHistoryItems, setVersionHistoryItems] = React.useState(false);
-    const handleClickOpen = async (row) => {
+    const openAttachmentHistoryDialog = async (row) => {
         try {
             console.log(`Fetching history for selected attachment...`);
             const filter = {SubnetId: {eq: row.SubnetId}, Version: {ne: "latest"}};
@@ -55,53 +44,78 @@ export default function TransitGatewayEntries() {
             const data = result.data.getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables.items;
             data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
             setVersionHistoryItems(data);
-        } catch (error) {
-            console.error(error);
-            const msg = `Error getting version history for subnet ID ${row.SubnetId} <br> Error: ${error.errors[0].errorType} <br> Message: ${error.errors[0].message}`;
-            NotificationEventEmitter.emit('error-event', msg);
+        }
+        catch (error) {
+            emitErrorEvent(error, `Error getting version history for subnet ID ${row.SubnetId}.`);
         }
         setDialogOpen(true);
     };
-    const handleClose = () => {
+    const closeAttachmentHistoryDialog = () => {
         setVersionHistoryItems([]);
         setDialogOpen(false);
     };
 
     const [items, setItems] = React.useState([]);
     const [filterStatus, setFilterStatus] = React.useState('');
+    const [nextToken, setNextToken] = React.useState();
+    const [nextNextToken, setNextNextToken] = React.useState();
+    const [previousTokens, setPreviousTokens] = React.useState([]);
 
     // Get all the attachments
-    const getTgwAttachments = async (state) => {
+    const getTgwAttachments = async (state, fetchAction) => {
         try {
             setFilterStatus(state);
-            console.log(`Fetching the TGW attachments for status ${state}...`);
+            console.log(`Fetching the TGW attachments for status ${state} and action ${fetchAction}...`);
             let graphQlOptions;
+            let resultData;
+            const params = {};
+            switch (fetchAction) {
+                case 'PREVIOUS':
+                    const token = previousTokens.pop();
+                    setNextToken(token);
+                    setPreviousTokens([...previousTokens]);
+                    setNextNextToken(null);
+                    params.nextToken = token;
+                    break;
+                case 'NEXT':
+                    setPreviousTokens((prev) => [...prev, nextToken]);
+                    setNextToken(nextNextToken);
+                    setNextNextToken(null);
+                    params.nextToken = nextNextToken;
+                    break;
+                default:
+                    console.log(`Resetting pagination tokens...`);
+                    setNextToken(null);
+                    setNextNextToken(null);
+                    setPreviousTokens([]);
+                    break;
+            }
+
             if (state) {
-                const filter = {Status: {eq: state}, Version: {ne: "latest"}};
-                graphQlOptions = graphqlOperation(getDashboarItemsForStatusFromTransitNetworkOrchestratorTables, {filter});
+                params.filter = {Status: {eq: state}, Version: {ne: "latest"}};
+                graphQlOptions = graphqlOperation(getDashboarItemsForStatusFromTransitNetworkOrchestratorTables, params);
                 graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
                 const result = await API.graphql(graphQlOptions);
-                const data = result.data.getDashboarItemsForStatusFromTransitNetworkOrchestratorTables.items;
-                data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
-                setItems(data);
+                resultData = result.data.getDashboarItemsForStatusFromTransitNetworkOrchestratorTables;
             }
             else {
-                graphQlOptions = graphqlOperation(getDashboarItemsFromTransitNetworkOrchestratorTables);
+                graphQlOptions = graphqlOperation(getDashboarItemsFromTransitNetworkOrchestratorTables, params);
                 graphQlOptions.authMode = 'AMAZON_COGNITO_USER_POOLS';
                 const result = await API.graphql(graphQlOptions);
-                const data = result.data.getDashboarItemsFromTransitNetworkOrchestratorTables.items;
-                data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
-                setItems(data);
+                resultData = result.data.getDashboarItemsFromTransitNetworkOrchestratorTables;
             }
+
+            setNextNextToken(resultData.nextToken);
+
+            const data = resultData.items;
+            data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
+            setItems(data);
             console.log(`Finished fetching the TGW attachments`);
         }
         catch (error) {
-            console.error(JSON.stringify(error));
-            const msg = `<b>Error:</b> ${error.errors[0].errorType} <br> <b>Message:</b> ${error.errors[0].message}`;
-            NotificationEventEmitter.emit('error-event', msg);
+            emitErrorEvent(error, '');
         }
     };
-
 
     const refreshTgwAttachments = async () => {
         await getTgwAttachments(filterStatus);
@@ -109,7 +123,7 @@ export default function TransitGatewayEntries() {
 
     React.useEffect(() => {
         getTgwAttachments().then();
-    },[]);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // render the table
     return (
@@ -118,12 +132,12 @@ export default function TransitGatewayEntries() {
             <Grid container>
                 <Box pt={1} pb={1}>
                     <ButtonGroup variant="contained" color="primary" aria-label="contained primary button group">
-                        <Button onClick={() => {getTgwAttachments()}} color={!filterStatus ? "secondary": "primary"}>All</Button>
-                        <Button onClick={() => {getTgwAttachments('approved')}} color={filterStatus === 'approved' ? "secondary": "primary"}>Approved</Button>
-                        <Button onClick={() => {getTgwAttachments('auto-approved')}} color={filterStatus === 'auto-approved' ? "secondary": "primary"}>Auto Approved</Button>
-                        <Button onClick={() => {getTgwAttachments('rejected')}} color={filterStatus === 'rejected' ? "secondary": "primary"}>Rejected</Button>
-                        <Button onClick={() => {getTgwAttachments('auto-rejected')}} color={filterStatus === 'auto-rejected' ? "secondary": "primary"}>Auto Rejected</Button>
-                        <Button onClick={() => {getTgwAttachments('failed')}} color={filterStatus === 'failed' ? "secondary": "primary"}>Failed</Button>
+                        <Button onClick={() => {getTgwAttachments().then()}} color={!filterStatus ? "secondary": "primary"}>All</Button>
+                        <Button onClick={() => {getTgwAttachments('approved').then()}} color={filterStatus === 'approved' ? "secondary": "primary"}>Approved</Button>
+                        <Button onClick={() => {getTgwAttachments('auto-approved').then()}} color={filterStatus === 'auto-approved' ? "secondary": "primary"}>Auto Approved</Button>
+                        <Button onClick={() => {getTgwAttachments('rejected').then()}} color={filterStatus === 'rejected' ? "secondary": "primary"}>Rejected</Button>
+                        <Button onClick={() => {getTgwAttachments('auto-rejected').then()}} color={filterStatus === 'auto-rejected' ? "secondary": "primary"}>Auto Rejected</Button>
+                        <Button onClick={() => {getTgwAttachments('failed').then()}} color={filterStatus === 'failed' ? "secondary": "primary"}>Failed</Button>
                     </ButtonGroup>
                     <Tooltip title="Refresh">
                         <IconButton onClick={refreshTgwAttachments}>
@@ -132,18 +146,21 @@ export default function TransitGatewayEntries() {
                     </Tooltip>
                 </Box>
             </Grid>
-            {TransitGatewayTable(items, 'attachments', handleClickOpen)}
-            <div className={classes.seeMore}>
-                <Link href="#" onClick={preventDefault} color="textPrimary">
-                    See more attachments
-                </Link>
-            </div>
+            {TransitGatewayTable(items, 'attachments', openAttachmentHistoryDialog)}
+            <Grid item xs={12} style={{textAlign: "center"}}>
+                <IconButton color="inherit" disabled={previousTokens.length === 0} p={2} onClick={() => {getTgwAttachments(filterStatus, 'PREVIOUS').then()}}>
+                    <KeyboardArrowLeftIcon fontSize="large"/>
+                </IconButton>
+                <IconButton color="inherit" disabled={!nextNextToken} p={2} onClick={() => {getTgwAttachments(filterStatus, 'NEXT').then()}}>
+                    <KeyboardArrowRightIcon fontSize="large"/>
+                </IconButton>
+            </Grid>
 
             <Dialog
                 open={dialogOpen}
                 TransitionComponent={Transition}
                 keepMounted
-                onClose={handleClose}
+                onClose={closeAttachmentHistoryDialog}
                 fullWidth={true}
                 maxWidth = {'xl'}
                 aria-labelledby="alert-dialog-slide-title"
@@ -153,7 +170,7 @@ export default function TransitGatewayEntries() {
                     {HistoryTable(versionHistoryItems)}
                 </DialogContent>
                 <DialogActions>
-                    <Button variant="contained" onClick={handleClose} color="primary">
+                    <Button variant="contained" onClick={closeAttachmentHistoryDialog} color="primary">
                         Close
                     </Button>
                 </DialogActions>
