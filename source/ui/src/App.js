@@ -70,12 +70,25 @@ class App extends React.Component {
 
 //customize authenticator theme
 const theme = {
+    formContainer: {
+        margin: '0px',
+    },
+    formSection: {
+        margin: '5% auto 0',
+    },
     sectionFooterSecondaryContent: {
         ...AmplifyTheme.sectionFooterSecondaryContent,
         display: "none"
     },
+    oAuthSignInButton: {
+        backgroundColor: '#1a232e',
+        color: '#fff',
+    },
     button: {
-        backgroundColor: "#3f51b5"
+        backgroundColor: "#1a232e"
+    },
+    a: {
+        color: "#1a232e"
     }
 };
 
