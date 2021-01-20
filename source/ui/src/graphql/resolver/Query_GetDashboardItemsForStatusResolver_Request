@@ -15,5 +15,11 @@
         "expressionNames": {
             "#s":"Status"
         }
-    }
+    },
+    #if($context.arguments.limit)
+        "limit": $context.arguments.limit,
+    #end
+    #if($context.arguments.nextToken)
+        "nextToken": "$context.arguments.nextToken"
+    #end
 }
