@@ -12,6 +12,7 @@ import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
 import IconButton from '@material-ui/core/IconButton';
 import Grid from '@material-ui/core/Grid';
+import TextField from '@material-ui/core/TextField';
 
 import {API, Auth, graphqlOperation} from 'aws-amplify';
 import {
@@ -24,6 +25,7 @@ import TgwRequestInfo from './TgwRequestInfo';
 import Title from './Title';
 import HistoryTable from "./HistoryTable";
 import {emitErrorEvent} from './NotificationsTray';
+
 
 const useStyles = makeStyles((theme) => ({
     seeMore: {
@@ -50,8 +52,36 @@ export default function TransitGatewayEntries() {
     const [nextToken, setNextToken] = React.useState();
     const [nextNextToken, setNextNextToken] = React.useState();
     const [previousTokens, setPreviousTokens] = React.useState([]);
-
     let [items, setItems] = React.useState([]);
+    const [filterText, setFilterText] = React.useState('');
+    const [filteredItems, setFilteredItems] = React.useState([]);
+
+    const filterData = (data) => {
+        if (filterText) {
+            console.log(`Filtering by ${filterText}...`);
+            let filtered = [];
+            data.forEach(item => {
+                for (const prop in item) {
+                    if (prop && item[prop] && item[prop].toString().includes(filterText)) {
+                        filtered.push(item);
+                        break;
+                    }
+                }
+            });
+            setFilteredItems(filtered);
+        }
+        else {
+            console.log(`No Filtering.. Show all data.`);
+            setFilteredItems(data);
+        }
+    };
+
+    const processKeyPress = (event) => {
+        if (event.key === 'Enter') {
+            filterData(items);
+        }
+    };
+
     // Get all the attachments
     const getTgwActions = async (fetchAction) => {
         try {
@@ -88,6 +118,7 @@ export default function TransitGatewayEntries() {
             const data = resultData.items;
             data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
             setItems(data);
+            filterData(data);
             console.log(`Finished fetching the TGW attachments`);
         }
         catch (error) {
@@ -164,7 +195,13 @@ export default function TransitGatewayEntries() {
     return (
         <React.Fragment>
             <Title>Pending actions</Title>
-            {TransitGatewayTable(items, 'actions', openHistoryOrConfirmationDialog)}
+            <Grid item xs={12} style={{textAlign: "center"}}>
+                <TextField id="filled-basic" label="Federated Local Search" variant="filled" size="medium" style={{width: "40%"}}
+                           value={filterText}
+                           onKeyDown={processKeyPress}
+                           onChange={(event) => {setFilterText(event.target.value)}}/>
+            </Grid>
+            {TransitGatewayTable(filteredItems, 'actions', openHistoryOrConfirmationDialog)}
             <Grid item xs={12} style={{textAlign: "center"}}>
                 <IconButton color="inherit" disabled={previousTokens.length === 0} p={2} onClick={() => {getTgwActions('PREVIOUS').then()}}>
                     <KeyboardArrowLeftIcon fontSize="large"/>

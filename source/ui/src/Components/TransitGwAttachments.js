@@ -13,6 +13,7 @@ import RefreshIcon from '@material-ui/icons/Refresh';
 import Tooltip from '@material-ui/core/Tooltip';
 import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
+import TextField from '@material-ui/core/TextField';
 
 import {API, graphqlOperation} from 'aws-amplify';
 import {
@@ -57,9 +58,37 @@ export default function TransitGatewayEntries() {
 
     const [items, setItems] = React.useState([]);
     const [filterStatus, setFilterStatus] = React.useState('');
+    const [filterText, setFilterText] = React.useState('');
+    const [filteredItems, setFilteredItems] = React.useState([]);
     const [nextToken, setNextToken] = React.useState();
     const [nextNextToken, setNextNextToken] = React.useState();
     const [previousTokens, setPreviousTokens] = React.useState([]);
+
+    const filterData = (data) => {
+        if (filterText) {
+            console.log(`Filtering by ${filterText}...`);
+            let filtered = [];
+            data.forEach(item => {
+                for (const prop in item) {
+                    if (prop && item[prop] && item[prop].toString().includes(filterText)) {
+                        filtered.push(item);
+                        break;
+                    }
+                }
+            });
+            setFilteredItems(filtered);
+        }
+        else {
+            console.log(`No Filtering.. Show all data.`);
+            setFilteredItems(data);
+        }
+    };
+
+    const processKeyPress = (event) => {
+        if (event.key === 'Enter') {
+            filterData(items);
+        }
+    };
 
     // Get all the attachments
     const getTgwAttachments = async (state, fetchAction) => {
@@ -110,6 +139,7 @@ export default function TransitGatewayEntries() {
             const data = resultData.items;
             data.forEach(item => item.id = `${item.TgwId}_${item.VpcId}_${item.RequestTimeStamp}`);
             setItems(data);
+            filterData(data);
             console.log(`Finished fetching the TGW attachments`);
         }
         catch (error) {
@@ -146,7 +176,13 @@ export default function TransitGatewayEntries() {
                     </Tooltip>
                 </Box>
             </Grid>
-            {TransitGatewayTable(items, 'attachments', openAttachmentHistoryDialog)}
+            <Grid item xs={12} style={{textAlign: "center"}}>
+                <TextField id="filled-basic" label="Federated Local Search" variant="filled" size="medium" style={{width: "40%"}}
+                           value={filterText}
+                           onKeyDown={processKeyPress}
+                           onChange={(event) => {setFilterText(event.target.value)}}/>
+            </Grid>
+            {TransitGatewayTable(filteredItems, 'attachments', openAttachmentHistoryDialog)}
             <Grid item xs={12} style={{textAlign: "center"}}>
                 <IconButton color="inherit" disabled={previousTokens.length === 0} p={2} onClick={() => {getTgwAttachments(filterStatus, 'PREVIOUS').then()}}>
                     <KeyboardArrowLeftIcon fontSize="large"/>
