@@ -129,6 +129,14 @@ Parameters:
     Description: New transit gateway will be created if no value is provided. Example, tgw-a1b2c3d4e5
     Type: String
 
+  RegisterTransitGatewayWithGobalNetwork:
+    Description: If 'Yes' the tansit gateway will be registered with the global network.
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    Default: 'Yes'
+    Type: String
+
   ExistingGlobalNetworkId:
     Description: New global network will be created if no value is provided. Example, global-network-01231231231231231
     Type: String
@@ -157,6 +165,7 @@ Metadata:
         Parameters:
           - ExistingTransitGatewayId
           - ExistingGlobalNetworkId
+          - RegisterTransitGatewayWithGobalNetwork
       - Label:
           default: VPC Route Table Settings
         Parameters:
@@ -203,6 +212,8 @@ Metadata:
         default: Audit Trail Retention Period
       ExistingTransitGatewayId:
         default: (Optional) Provide the existing transit gateway id.
+      RegisterTransitGatewayWithGobalNetwork:
+        default: Does the transit gateway need to be registered with the global network?
       TgwPeeringTagPrefix:
         default: Transit Gateway Tag Prefix
       TgwPeeringTagDelimiter:
@@ -222,6 +233,7 @@ Conditions:
   CreateNewTransitGateway: !Equals [!Ref ExistingTransitGatewayId, '']
   CreateNewGlobalNetwork: !Equals [!Ref ExistingGlobalNetworkId, '']
   ProvidedPrefixListIds: !Not [!Equals [!Ref CustomerManagedPrefixListIds, '']]
+  RegisterTransitGateway: !Equals [!Ref RegisterTransitGatewayWithGobalNetwork, 'Yes']
 
 Mappings:
   NetworkConfiguration:
@@ -1699,6 +1711,7 @@ permissions and require you to choose All resources"
 
   GlobalNetworkRegistrationSTNO:
     Type: AWS::NetworkManager::TransitGatewayRegistration
+    Condition: RegisterTransitGateway
     Properties:
       GlobalNetworkId: !If [CreateNewGlobalNetwork, !Ref GlobalNetworkSTNO, !Ref ExistingGlobalNetworkId]
       TransitGatewayArn: !Sub
