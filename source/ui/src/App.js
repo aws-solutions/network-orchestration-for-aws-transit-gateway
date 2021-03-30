@@ -93,7 +93,7 @@ class App extends React.Component {
         <div>
           <nav className="topnav">
             <FontAwesomeIcon icon={faAws} size="2x" color="#FF9900" id="logo" />
-            <h1 > Transit Network Managment Console</h1>
+            <h1 > Transit Network Management Console</h1>
             <Link to="" onClick={this.signOut}>Sign Out</Link>
           </nav>
 
