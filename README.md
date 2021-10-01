@@ -38,7 +38,12 @@ aws s3 cp deployment/regional-s3-assets/ s3://$BUILD_OUTPUT_BUCKET/$SOLUTION_NAM
  
 * Get the link of the aws-transit-network-orchestrator-hub.template and aws-transit-network-orchestrator-spoke.template uploaded to your Amazon S3 bucket. 
 * Deploy the Serverless Transit Network Orchestrator to your account by launching a new AWS CloudFormation stack using the link of the aws-transit-network-orchestrator-hub.template and aws-transit-network-orchestrator-spoke.template
- 
+
+
+## Collection of operational metrics
+This solution collects anonymous operational metrics to help AWS improve the quality and features of the solution. For more information, including how to disable this capability, please see the [implementation guide](https://docs.aws.amazon.com/solutions/latest/serverless-transit-network-orchestrator/operational-metrics.html).
+
+
 *** 
  
 Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved. 
