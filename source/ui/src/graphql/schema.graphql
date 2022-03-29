@@ -10,7 +10,7 @@ type Mutation {
 
 type Query {
   getActionItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
-  getDashboarItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
+  getDashboardItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
   getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableVersionHistoryFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
   }
 

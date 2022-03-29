@@ -4,27 +4,27 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /*font-size: 1rem; */
   font-size: 95%;
-  font-family: "Amazon Ember", "Helvetica", "sans-serif";
+  font-family: "Amazon Ember", Helvetica, sans-serif;
   font-weight: 200;
 }
 h1 {
   font-weight: 200;
   font-size: 1.2rem;
-  color:#31465F;
+  color: #31465f;
 }
 
 h2 {
   font-weight: 200;
   font-size: 1.1rem;
-  color:#31465F;
+  color: #31465f;
 }
 
 /*********** Layout ************/
 .topnav {
   overflow: hidden;
-  background-color: #31465F;
+  background-color: #31465f;
   height: 3.4rem;
-  padding-left:1rem;
+  padding-left: 1rem;
   position: fixed;
   top: 0;
   width: 100%;
@@ -32,21 +32,21 @@ h2 {
 }
 
 .topnav h1 {
-  color: #E1E4EA;
+  color: #e1e4ea;
   display: inline-block;
   padding-left: 1rem;
 }
 
-.topnav a  {
+.topnav a {
   float: right;
   margin-right: 1rem;
   padding: 1rem;
-  color: #E1E4EA;
+  color: #e1e4ea;
   text-decoration: none;
 }
 
 .topnav a:hover {
-  color: #FF9900;
+  color: #ff9900;
 }
 
 #logo {
@@ -55,23 +55,22 @@ h2 {
 
 .sidenav {
   height: 100%;
-  margin-top:3.4rem;
+  margin-top: 3.4rem;
   width: 11rem;
   position: fixed;
   z-index: 1;
   top: 0;
   left: 0;
-  background-color: #E1E4EA;
+  background-color: #e1e4ea;
   overflow-x: hidden;
   padding-top: 2rem;
-
 }
 
 .sidenav a {
   padding: 0.4rem;
-  margin-left:1.3rem;
+  margin-left: 1.3rem;
   text-decoration: none;
-  color: #31465F;
+  color: #31465f;
   display: block;
 }
 
@@ -87,7 +86,7 @@ h2 {
   margin: 2rem;
   padding: 0.5rem;
   border-collapse: collapse;
-  box-shadow: 1px 1px 4px 0 rgba(0,0,0,0.15);
+  box-shadow: 1px 1px 4px 0 rgba(0, 0, 0, 0.15);
 }
 
 .header {
@@ -102,11 +101,11 @@ h2 {
 /************ TD **************/
 
 th {
-  color:#31465F;
+  color: #31465f;
   font-weight: 400;
   padding: 0.75rem;
   text-align: left;
-  border-bottom: 1px solid #E1E4EA;
+  border-bottom: 1px solid #e1e4ea;
 }
 
 td {
@@ -115,17 +114,16 @@ td {
 }
 
 .dashboard {
-  width:100%;
+  width: 100%;
   padding-bottom: 1rem;
 }
 
-.dashboard  td {
-  border-bottom: 1px solid #E1E4EA;
+.dashboard td {
+  border-bottom: 1px solid #e1e4ea;
 }
 
 .summary {
   width: 100%;
-  
 }
 
 .final {
@@ -133,12 +131,12 @@ td {
   padding-bottom: 1rem;
 }
 
-.final  td {
-  border-bottom: 1px solid #E1E4EA;
+.final td {
+  border-bottom: 1px solid #e1e4ea;
 }
 
 .tablelink {
-  color: #31465F;
+  color: #31465f;
 }
 
 /*********** End TD ************/
@@ -148,22 +146,22 @@ form {
   padding: 1em;
 }
 
-input[type=submit]  {
+input[type="submit"] {
   width: 7rem;
   font-size: 0.8rem;
   font-weight: 400;
   text-align: center;
   vertical-align: middle;
   cursor: pointer;
-  background-color: #FF9900;
-  color: #FFF;;
+  background-color: #ff9900;
+  color: #fff;
   text-transform: uppercase;
   padding: 0.7rem 0;
-  margin: 1rem 0  0 auto;
+  margin: 1rem 0 0 auto;
 }
 
 li {
-  display:inline;
+  display: inline;
   margin: auto 1rem;
   padding: 1rem;
 }
@@ -174,19 +172,19 @@ li {
   margin-bottom: 5px;
 }
 
-.divright{
+.divright {
   position: relative;
   float: right;
 }
 
-.divleft{
+.divleft {
   position: relative;
   float: left;
 }
 
 .custom-modal {
   width: 80%;
-  max-width: none!important;
+  max-width: none !important;
 }
 
 .rag-red {

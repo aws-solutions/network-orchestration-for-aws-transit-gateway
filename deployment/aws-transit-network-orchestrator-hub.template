@@ -1,26 +1,17 @@
-# Copyright 2012-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License").
-# You may not use this file except in compliance with the License.
-# A copy of the License is located at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# or in the "license" file accompanying this file. This file is distributed
-# on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-# express or implied. See the License for the specific language governing
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 AWSTemplateFormatVersion: '2010-09-09'
-Description: (SO0058) - The AWS CloudFormation template (Hub) for deployment of the serverless-transit-network-orchestrator Solution. Version v2.0.0
+Description: (SO0058) - The AWS CloudFormation template (Hub) for deployment of the %SOLUTION_NAME% Solution. Version %VERSION%
 
 Parameters:
   Principals:
     Type: CommaDelimitedList
-    Description: AWS account numbers eg. 123456789012 (comma seperated) OR the ARN of an Organization to share TGW with the principals eg. arn:aws:organizations::<ORG_MASTER_ACCOUNT_ID>:organization/o-exampleorgid.
+    Description: AWS account numbers eg. 123456789012 (comma separated) OR the ARN of an Organization to share TGW with the principals eg. arn:aws:organizations::<ORG_MANAGEMENT_ACCOUNT_ID>:organization/o-exampleorgid.
 
   PrincipalType:
     Type: String
-    Description: Either provide list of accounts (comma seperated) or AWS Organizations ARN
+    Description: Either provide list of accounts (comma separated) or AWS Organizations ARN
     Default: 'List of Accounts'
     AllowedValues:
       - 'AWS Organization ARN'
@@ -37,12 +28,7 @@ Parameters:
   ApprovalNotificationEmail:
     Type: 'String'
     Description: Email for the network administrator(s)
-
-  AuditTrailRetentionPeriod:
-    Description: Specifies the number of days you want to retain audit history in Amazon DynamoDB
-    Type: Number
-    Default: 90
-    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    AllowedPattern: '(^$|^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)'
 
   UserPoolUsernameForAdminUser:
     Description: Cognito UserPool ADMIN username used in the solution. The ADMIN user has full read and write permissions.
@@ -90,22 +76,12 @@ Parameters:
     MaxLength: 20
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
 
-  TgwPeeringTagPrefix:
-    Description: Transit gateway tag prefix. The tag key must start with this string.
+  TgwPeeringTag:
+    Description: Transit Gateway tag key to monitor. The tag value must follow the format <tgw-id_aws-region> for eg. tgw-12345678_us-east-1/tgw-567890123_us-east-2
     Default: TgwPeer
     Type: String
     MinLength: 0
     MaxLength: 20
-
-  TgwPeeringTagDelimiter:
-    Description: Delimiter for transit gateway tag. This delimiter must be used before adding peer region in the tag key.
-    Type: String
-    Default: "Colon (:)"
-    AllowedValues:
-      - "Colon (:)"
-      - "Dot (.)"
-      - "Underscore (_)"
-      - "Pipe (|)"
 
   DefaultRoute:
     Description: Default/Static route(s) to Transit Gateway - applicable to spoke account route table associated with the tagged subnets.
@@ -120,18 +96,40 @@ Parameters:
   ListOfCustomCidrBlocks:
     Type: String
     Description: Option to provide CIDR block(s) (OPTIONAL if providing prefix list id(s)) Example - 192.168.1.0/24, 192.168.2.0/24
+    Default: ""
+    AllowedPattern: '(^$|^(([0-9]{1,3}\.){3}[0-9]{1,3}\/\d{1,2})(, (([0-9]{1,3}\.){3}[0-9]{1,3}\/\d{1,2}))*$)'
 
   CustomerManagedPrefixListIds:
     Type: String
     Description: Option to provide Customer-managed Prefix List Id(s) (OPTIONAL if providing CIDR blocks.) Example - pl-abcd1234, pl-efgh5678
+    Default: ""
 
   ExistingTransitGatewayId:
     Description: New transit gateway will be created if no value is provided. Example, tgw-a1b2c3d4e5
     Type: String
+    Default: ""
+    AllowedPattern: '(^$|^tgw-[0-9a-z]{17}$)'
 
   ExistingGlobalNetworkId:
     Description: New global network will be created if no value is provided. Example, global-network-01231231231231231
     Type: String
+    Default: ""
+    AllowedPattern: '(^$|^global-network-[0-9a-z]{17}$)'
+
+  ListOfVpcTagsForAttachment:
+    Description: Comma separated list of tag keys (do not include Name). If the VPC has these tag keys, the tag key/value is copied to any created TGW attachment.
+    Default: "Associate-with,Propagate-to"
+    Type: String
+
+  OrganizationManagementAccountRoleArn:
+    Description: >
+      (Optional) To tag attachments with the account name, and use OU membership for auto-approvals, 
+      either configure this account to be an AWS Organization delegated admin for any service, or configure
+      this parameter to include a role in the AWS Organizations Management account, that trusts this account, and has: 
+      organizations:DescribeAccount, organizations:ListParents and organizations:DescribeOrganizationalUnit 
+    Type: String
+    AllowedPattern: '^((arn:aws:iam::\d{12}:role/.+)|)$'
+    Default: ""
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -141,6 +139,7 @@ Metadata:
         Parameters:
           - PrincipalType
           - Principals
+          - OrganizationManagementAccountRoleArn
       - Label:
           default: Notification Settings
         Parameters:
@@ -169,12 +168,8 @@ Metadata:
           - AttachmentTag
           - AssociationTag
           - PropagationTag
-          - TgwPeeringTagPrefix
-          - TgwPeeringTagDelimiter
-      - Label:
-          default: Audit Trail Retention Settings
-        Parameters:
-          - AuditTrailRetentionPeriod
+          - ListOfVpcTagsForAttachment
+          - TgwPeeringTag
 
     ParameterLabels:
       Principals:
@@ -199,20 +194,21 @@ Metadata:
         default: Tag key for TGW Route Table Association with TGW Attachment
       PropagationTag:
         default: Tag key for Route Propagation to TGW Route Table(s)
-      AuditTrailRetentionPeriod:
-        default: Audit Trail Retention Period
       ExistingTransitGatewayId:
         default: (Optional) Provide the existing transit gateway id.
-      TgwPeeringTagPrefix:
-        default: Transit Gateway Tag Prefix
-      TgwPeeringTagDelimiter:
-        default: Transit Gateway Tag Delimiter
+      TgwPeeringTag:
+        default: Transit Gateway Peering Tag
       ExistingGlobalNetworkId:
         default: (Optional) Provide the existing global network id.
       ListOfCustomCidrBlocks:
-        default: If selected 'Custom-Destinations', provide a comma seperated list of CIDR Blocks.
+        default: If selected 'Custom-Destinations', provide a comma separated list of CIDR Blocks.
       CustomerManagedPrefixListIds:
-        default: If selected 'Custom-Destinations', provide a comma seperated list of Customer-managed Prefix List IDs.
+        default: If selected 'Custom-Destinations', provide a comma separated list of Customer-managed Prefix List IDs.
+      ListOfVpcTagsForAttachment:
+        default: (Optional) Comma separated list of VPC tag keys to copy from VPC to TGW Attachments
+      OrganizationManagementAccountRoleArn:
+        default: (Optional) IAM Role ARN of Management Account
+      
 
 
 Conditions:
@@ -221,7 +217,11 @@ Conditions:
   IsNotMemberOfOrganization: !Equals [!Ref PrincipalType, 'List of Accounts']
   CreateNewTransitGateway: !Equals [!Ref ExistingTransitGatewayId, '']
   CreateNewGlobalNetwork: !Equals [!Ref ExistingGlobalNetworkId, '']
+  CreateNewGlobalNetwork&CreateNewTransitGateway: !And
+    - !Condition CreateNewGlobalNetwork
+    - !Condition CreateNewTransitGateway
   ProvidedPrefixListIds: !Not [!Equals [!Ref CustomerManagedPrefixListIds, '']]
+  OrganizationManagementAccountRoleArn: !Not [ !Equals [!Ref OrganizationManagementAccountRoleArn, '']]
 
 Mappings:
   NetworkConfiguration:
@@ -271,11 +271,16 @@ Mappings:
   EventBridge:
     Bus:
       Name: "STNO-EventBridge"
+  LogRetention:
+    CloudWatchLogs:
+      RetentionPeriod: 90
+    AuditTrail:
+      RetentionPeriod: 90
   SourceCode:
     General:
-      S3Bucket: "solutions"
-      KeyPrefix: "serverless-transit-network-orchestrator/v2.0.0"
-      Version: "v2.0.0"
+      S3Bucket: "%DIST_BUCKET_NAME%"
+      KeyPrefix: "%SOLUTION_NAME%/%VERSION%"
+      Version: "%VERSION%"
     Variables:
       WaitTime: "10"
       AllTraffic: "0.0.0.0/0"
@@ -285,6 +290,8 @@ Mappings:
   Solution:
     Metrics:
       SendAnonymousData: "Yes"
+      SolutionId: "SO0058"
+      MetricsEndpoint: "https://metrics.awssolutionsbuilder.com/generic"
 
 
 Resources:
@@ -319,6 +326,7 @@ Resources:
     Type: AWS::EC2::TransitGatewayRouteTable
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
+    Condition: CreateNewTransitGateway
     Properties:
       TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
       Tags:
@@ -336,6 +344,7 @@ Resources:
     Type: AWS::EC2::TransitGatewayRouteTable
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
+    Condition: CreateNewTransitGateway
     Properties:
       TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
       Tags:
@@ -353,6 +362,7 @@ Resources:
     Type: AWS::EC2::TransitGatewayRouteTable
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
+    Condition: CreateNewTransitGateway
     Properties:
       TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
       Tags:
@@ -367,6 +377,7 @@ Resources:
     Type: AWS::EC2::TransitGatewayRouteTable
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
+    Condition: CreateNewTransitGateway
     Properties:
       TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
       Tags:
@@ -388,7 +399,7 @@ Resources:
       Name: "Transit Gateway Resource Share"
       ResourceArns:
         - !Sub
-          - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/${TransitGatewayId}
+          - arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/${TransitGatewayId}
           - {TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]}
       Principals: !Ref Principals
       Tags:
@@ -401,7 +412,7 @@ Resources:
     Properties:
       PrefixListIds: !Ref CustomerManagedPrefixListIds
       AccountId: !Sub ${AWS::AccountId}
-      ServiceToken: !GetAtt CustomResourceLambda.Arn
+      ServiceToken: !Sub ${CustomResourceLambda.Arn}
 
   CustomerManagedPrefixListResourceShare:
     DependsOn:
@@ -433,11 +444,6 @@ Resources:
 
   SNSNotificationPolicy:
     Type: AWS::SNS::TopicPolicy
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: F18
-            reason: "Condition restricts permissions to current account."
     Properties:
       Topics:
         - !Ref ApprovalTopic
@@ -446,7 +452,7 @@ Resources:
           - Sid: __default_statement_ID
             Effect: Allow
             Principal:
-              AWS: "*"
+              AWS: !Sub ${AWS::AccountId}
             Action:
             - SNS:GetTopicAttributes
             - SNS:SetTopicAttributes
@@ -458,65 +464,31 @@ Resources:
             - SNS:Publish
             - SNS:Receive
             Resource: !Ref ApprovalTopic
-            Condition:
-              StringEquals:
-                AWS:SourceOwner: !Sub ${AWS::AccountId}
           - Sid: TrustCWEToPublishEventsToMyTopic
             Effect: Allow
             Principal:
               Service: events.amazonaws.com
             Action: sns:Publish
             Resource: !Ref ApprovalTopic
+          - Sid: AllowPublishThroughSSLOnly
+            Effect: Deny
+            Principal: "*"
+            Action:
+            - SNS:Publish
+            Resource: !Ref ApprovalTopic
+            Condition:
+              Bool:
+                aws:SecureTransport: False
 
-  #
-  # Cloudwatch Rule for Accounts in the AWS Organizations
-  #
-  LambdaEventRuleOrganization:
-    Type: AWS::Events::Rule
-    Condition: IsMemberOfOrganization
-    Properties:
-      Description: Serverless Transit Network Orchestrator - Rule for tag on resource events in Organization
-      EventBusName: !Ref STNOCustomEventBus
-      EventPattern:
-        {
-          "source": [
-            "aws.tag"
-          ],
-          "detail-type": [
-            "Tag Change on Resource"
-          ],
-          "detail": {
-            "service": [
-              "ec2"
-            ],
-            "resource-type": [
-              "subnet",
-              "vpc"
-            ],
-            "changed-tag-keys": [
-              Ref: "AttachmentTag",
-              Ref: "AssociationTag",
-              Ref: "PropagationTag"
-            ]
-          }
-        }
-      State: ENABLED
-      Targets:
-        - Arn: !Sub ${CustomResourceLambda.Arn}
-          Id: 'Custom-Resource-Lambda-Function'
-
-  #
-  # Cloudwatch Rule for Accounts (not in organization)
-  #
+  # For spoke accounts:
   LambdaEventRuleSpokeAccounts:
     Type: AWS::Events::Rule
-    Condition: IsNotMemberOfOrganization
     Properties:
-      Description: Serverless Transit Network Orchestrator - Rule for tag on resource events from the spoke accounts
+      Description: Serverless Transit Network Orchestrator - Rule for tag changes in spokes
       EventBusName: !Ref STNOCustomEventBus
       EventPattern:
         {
-          "account": !Ref Principals,
+          "account": !If [ IsNotMemberOfOrganization, !Ref Principals, !Ref "AWS::NoValue" ],
           "source": [
             "aws.tag"
           ],
@@ -532,24 +504,46 @@ Resources:
               "vpc"
             ],
             "changed-tag-keys": [
-              Ref: "AttachmentTag",
-              Ref: "AssociationTag",
-              Ref: "PropagationTag"
+              !Ref "AttachmentTag",
+              !Ref "AssociationTag",
+              !Ref "PropagationTag"
             ]
           }
         }
       State: ENABLED
       Targets:
         - Arn: !Sub ${CustomResourceLambda.Arn}
-          Id: 'Custom-Resource-Lambda-Function'
+          Id: 'CustomResourceLambda'
+          InputTransformer: 
+            InputPathsMap: 
+              "detail" : "$.detail"
+              "source": "$.source"
+              "account": "$.account"
+              "resources": "$.resources"
+            InputTemplate: !Sub 
+              - |
+                {
+                  "state-machine": "${StateMachine}",
+                  "detail" : <detail>,
+                  "source" : <source>,
+                  "account" : <account>,
+                  "resources" : <resources>
+                } 
+              - StateMachine: !Ref OrchestratorStateMachine
 
-  #
-  # Cloudwatch Rule for Hub Account (not in organization)
-  #
+  PermissionForSpokeAccountRule: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref "CustomResourceLambda"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !Sub ${LambdaEventRuleSpokeAccounts.Arn}
+
+  # For hub account:
   LambdaEventRuleHubAccount:
     Type: AWS::Events::Rule
     Properties:
-      Description: Serverless Transit Network Orchestrator - Rule for tag on resource events from hub account
+      Description: Serverless Transit Network Orchestrator - Rule for tag changes in the hub
       EventPattern:
         {
           "account": [
@@ -570,16 +564,94 @@ Resources:
               "vpc"
             ],
             "changed-tag-keys": [
-              Ref: "AttachmentTag",
-              Ref: "AssociationTag",
-              Ref: "PropagationTag"
+              !Ref "AttachmentTag",
+              !Ref "AssociationTag",
+              !Ref "PropagationTag"
             ]
           }
         }
       State: ENABLED
       Targets:
         - Arn: !Sub ${CustomResourceLambda.Arn}
-          Id: 'Custom-Resource-Lambda-Function'
+          Id: 'CustomResourceLambda'
+          InputTransformer: 
+            InputPathsMap: 
+              "detail" : "$.detail"
+              "source": "$.source"
+              "account": "$.account"
+              "resources": "$.resources"
+            InputTemplate: !Sub 
+              - |
+                {
+                  "state-machine": "${StateMachine}",
+                  "detail" : <detail>,
+                  "source" : <source>,
+                  "account" : <account>,
+                  "resources" : <resources>
+                } 
+              - StateMachine: !Ref OrchestratorStateMachine
+
+  PermissionForHubAccountRule: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref "CustomResourceLambda"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !Sub ${LambdaEventRuleHubAccount.Arn}
+
+  LambdaEventRuleOnSubnetDeletion:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Serverless Transit Network Orchestrator - Rule for detecting CFN subnet deletions
+      EventBusName: !Ref STNOCustomEventBus
+      EventPattern:
+        {
+          "account": !If [ IsNotMemberOfOrganization, !Ref Principals, !Ref "AWS::NoValue" ],
+          "source": [
+            "aws.ec2"
+          ],
+          "detail-type": [
+            "AWS API Call via CloudTrail"
+          ],
+          "detail": {
+            "eventSource": [
+              "ec2.amazonaws.com"
+            ],
+            "eventName": [
+              "DeleteSubnet"
+            ],
+            "errorCode": [
+              "Client.DependencyViolation"
+            ],
+            "sourceIPAddress": [
+              "cloudformation.amazonaws.com"
+            ]
+          }
+        }
+      State: ENABLED
+      Targets:
+        - Arn: !Sub ${CustomResourceLambda.Arn}
+          Id: 'CustomResourceLambda'
+          InputTransformer: 
+            InputPathsMap: 
+              "detail" : "$.detail"
+              "source": "$.source"
+            InputTemplate: !Sub 
+              - |
+                {
+                  "state-machine": "${StateMachine}",
+                  "detail" : <detail>,
+                  "source" : <source>
+                } 
+              - StateMachine: !Ref OrchestratorStateMachine
+
+  PermissionForSubnetDeletionRule: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref "CustomResourceLambda"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !Sub ${LambdaEventRuleOnSubnetDeletion.Arn}
 
   STNOCustomEventBus:
     Type: AWS::Events::EventBus
@@ -591,41 +663,42 @@ Resources:
     Properties:
       Principals: !Ref Principals
       EventBusName: !Ref STNOCustomEventBus
-      ServiceToken: !GetAtt CustomResourceLambda.Arn
+      ServiceToken: !Sub ${CustomResourceLambda.Arn}
 
   CustomResourceLambda:
     Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W92
+            reason: "does not require concurrency reservation"
+          - id: W89
+            reason: "not a valid use-case for vpc"
+          - id: W58
+            reason: "log write permission added to CustomResourceLambdaRole"
     Properties:
       Environment:
         Variables:
           LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
-          STATE_MACHINE_ARN: !Ref OrchestratorStateMachine
-          METRICS_FLAG: !FindInMap [Solution, Metrics, SendAnonymousData]
+          SEND_METRIC: !FindInMap [Solution, Metrics, SendAnonymousData]
+          SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionId]
+          SOLUTION_VERSION: !FindInMap [SourceCode, General, Version]
+          METRICS_ENDPOINT: !FindInMap [Solution, Metrics, MetricsEndpoint]
+          USER_AGENT_STRING: !Sub AwsSolution/SO0058/${!FindInMap ["SourceCode", "General", "Version"]}
       Code:
-        S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"aws-transit-network-orchestrator-cr.zip"]]
-      FunctionName: TransitNetworkOrchestratorCRLambda
-      Description: AWS Serverless Transit Network Orchestrator Custom Resource
-      Handler: lambda_custom_resource.lambda_handler
+        S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], !Ref "AWS::Region"]]
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"custom_resource.zip"]]
+      FunctionName: STNO-Custom-Resource
+      Description: AWS Serverless Transit Network Orchestrator - custom resource handler
+      Handler: custom_resource.index.lambda_handler
       MemorySize: 1536
-      Role: !GetAtt 'CustomResourceLambdaRole.Arn'
-      Runtime: python3.8
+      Role: !Sub ${CustomResourceLambdaRole.Arn}
+      Runtime: python3.9
       Timeout: 900
-      TracingConfig:
-          Mode: Active
 
-  LambdaPermissionOrganization:
-    Type: AWS::Lambda::Permission
-    Condition: IsMemberOfOrganization
-    Properties:
-      Action: lambda:InvokeFunction
-      Principal: events.amazonaws.com
-      SourceArn: !GetAtt LambdaEventRuleOrganization.Arn
-      FunctionName: !Ref CustomResourceLambda
 
   LambdaPermissionSpokeAccount:
     Type: AWS::Lambda::Permission
-    Condition: IsNotMemberOfOrganization
     Properties:
       Action: lambda:InvokeFunction
       Principal: events.amazonaws.com
@@ -640,14 +713,16 @@ Resources:
       SourceArn: !GetAtt LambdaEventRuleHubAccount.Arn
       FunctionName: !Ref CustomResourceLambda
 
+  LambdaPermissionOnSubnetDeletion:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt LambdaEventRuleOnSubnetDeletion.Arn
+      FunctionName: !Ref CustomResourceLambda
+
   CustomResourceLambdaRole:
     Type: AWS::IAM::Role
-    Metadata:
-      cfn_nag:
-        rules_to_suppress:
-          - id: W11
-            reason: "Allow * in the ARN of the execution role to allow access to user created resource - IAM Service Message: The actions in your policy do not support resource-level
-permissions and require you to choose All resources"
     Properties:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -656,92 +731,111 @@ permissions and require you to choose All resources"
             Principal:
               Service:
                 - lambda.amazonaws.com
-                - appsync.amazonaws.com
             Action: sts:AssumeRole
       Path: /
       Policies:
-        - PolicyName: TransitNetworkOrchestratorCRLambdaRole
+        - PolicyName: STNO-CWLogs-Policy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
-              - Effect: Allow
-                Action:
-                  - xray:PutTraceSegments
-                  - xray:PutTelemetryRecords
-                Resource: '*'  # IAM Service Message: The actions in your policy do not support resource-level permissions and require you to choose All resources
-              - Effect: Allow
-                Action:
-                  - iam:GetRole
-                Resource: !Sub arn:aws:iam::${AWS::Region}:role/*
-              - Effect: Allow
-                Action:
-                  - ssm:PutParameter
-                  - ssm:GetParameter
-                  - ssm:GetParameters
-                  - ssm:DeleteParameter
-                  - ssm:GetParametersByPath
-                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
-              - Effect: Allow
-                Action:
-                  - ssm:DescribeParameters
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - ec2:DescribeSubnets
-                Resource: !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*
-              - Effect: Allow
-                Action:
-                  - ec2:DescribeVpcs
-                Resource: !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}::vpc/*
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+        - PolicyName: STNO-Events-Policy
+          PolicyDocument: 
+            Version: '2012-10-17'
+            Statement:
               - Effect: Allow
                 Action:
                   - events:DescribeEventBus
                   - events:RemovePermission
                   - events:PutPermission
-                Resource: !GetAtt STNOCustomEventBus.Arn
-              - Effect: Allow
-                Action:
-                  - states:DescribeStateMachine
-                  - states:DescribeStateMachineForExecution
-                  - states:DescribeExecution
-                  - states:ListExecutions
-                  - states:StartExecution
-                  - states:StopExecution
-                Resource:
-                  - !Ref OrchestratorStateMachine
+                Resource: !Sub ${STNOCustomEventBus.Arn}
+        - PolicyName: STNO-S3-Policy
+          PolicyDocument: 
+            Version: '2012-10-17'
+            Statement:
               - Effect: "Allow"
                 Action:
                   - "s3:PutObject"
-                  - "s3:PutObjectTagging"
-                  - "s3:GetObject"
-                  - "s3:GetObjectTagging"
-                  - "s3:DeleteBucket"
-                  - "s3:PutObjectAcl"
-                  - "s3:ListBucket"
                 Resource:
-                  - !Join ["", ["arn:aws:s3:::", !Ref ConsoleBucket]]
-                  - !Join ["", ["arn:aws:s3:::", !Ref ConsoleBucket, "/*"]]
+                  - !Sub ${ConsoleBucket.Arn}
+                  - !Sub ${ConsoleBucket.Arn}/*
               - Effect: "Allow"
                 Action:
                   - "s3:GetObject"
-                  - "s3:GetObjectTagging"
-                  - "s3:ListBucket"
-                  - "s3:GetObjectAcl"
                 Resource:
-                  - !Join ["", ["arn:aws:s3:::",!FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region"]]
-                  - !Join ["", ["arn:aws:s3:::", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region","/*"]]
-              - Effect: Allow
-                Resource:
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:TransitNetworkOrchestratorCRLambda
-                Action:
-                  - lambda:InvokeFunction
+                  - !Join ["", [!Sub "arn:${AWS::Partition}:s3:::", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", !Ref "AWS::Region"]]
+                  - !Join ["", [!Sub "arn:${AWS::Partition}:s3:::", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", !Ref "AWS::Region", "/*"]]
+  
+  PolicyIAMEC2:
+    Type: AWS::IAM::Policy
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W12
+            reason: given actions do not allow resource-level permissions or need read permissions on multiple resources
+    Properties:
+      PolicyName: STNO-MultipleResourcesPolicy
+      Roles: 
+        - !Ref StateMachineLambdaRole
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:DescribeSubnets
+              - ec2:DescribeVpcs
+              - ec2:DescribeTransitGatewayVpcAttachments
+              - ec2:DescribeTransitGatewayAttachments
+              - ec2:DescribeTransitGatewayRouteTables
+              - ec2:GetTransitGatewayAttachmentPropagations
+              - ec2:GetTransitGatewayRouteTableAssociations
+              - ec2:GetTransitGatewayRouteTablePropagations
+              - ec2:SearchTransitGatewayRoutes
+              - iam:GetRole
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - ec2:CreateTransitGatewayRoute
+              - ec2:DeleteTransitGatewayRoute
+              - ec2:ModifyTransitGatewayVpcAttachment
+              - ec2:CreateTransitGatewayVpcAttachment
+              - ec2:DeleteTransitGatewayVpcAttachment
+              - ec2:AssociateTransitGatewayRouteTable
+              - ec2:DisableTransitGatewayRouteTablePropagation
+              - ec2:DisassociateTransitGatewayRouteTable
+              - ec2:EnableTransitGatewayRouteTablePropagation
+              - ec2:CreateTags
+            Resource: # use * for account id as the owner of the resource is spoke account
+              - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:*:transit-gateway-route-table/*
+              - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/*
+              - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:*:transit-gateway-attachment/*
+              - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:*:vpc/*
+              - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:*:subnet/*
+              - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:*:route-table/*
 
+  PolicySNS:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: STNO-SNSPolicy
+      Roles: 
+        - !Ref StateMachineLambdaRole
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action: sns:Publish
+            Resource: 
+              - !Ref ApprovalTopic
+
+  CreateUUID:
+    Type: "Custom::CreateUUID"
+    Properties:
+      ServiceToken: !GetAtt CustomResourceLambda.Arn
 
   DynamoDbTable:
     Type: 'AWS::DynamoDB::Table'
@@ -763,9 +857,18 @@ permissions and require you to choose All resources"
         SSESpecification:
           SSEEnabled: True
           SSEType: KMS
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
 
   StateMachineLambda:
     Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W92
+            reason: "does not require concurrency reservation"
+          - id: W89
+            reason: "not a valid use-case for vpc"
     Properties:
       Environment:
         Variables:
@@ -783,29 +886,37 @@ permissions and require you to choose All resources"
           ALL_TRAFFIC: !FindInMap ["SourceCode", "Variables", "AllTraffic"]
           RFC_1918_ROUTES: !FindInMap ["SourceCode", "Variables", "RFC1918Routes"]
           WAIT_TIME: !FindInMap ["SourceCode", "Variables", "WaitTime"]
-          TTL: !Ref AuditTrailRetentionPeriod
+          TTL: !FindInMap ["LogRetention", "AuditTrail", "RetentionPeriod"]
           APPROVAL_KEY: !FindInMap ["SourceCode", "Variables", "ApprovalTagKey"]
           FIRST_PRINCIPAL: !Select [ 0, !Ref Principals ]
           RESOURCE_SHARE_ARN: !GetAtt TGWResourceShare.Arn
           METRICS_FLAG: !FindInMap ["Solution", "Metrics", "SendAnonymousData"]
-          SOLUTION_VERSION: v2.0.0
+          SOLUTION_VERSION: !FindInMap ["SourceCode", "General", "Version"]
           STNO_CONSOLE_LINK: !Sub https://${ConsoleCloudFront.DomainName}
+          VPC_TAGS_FOR_ATTACHMENT: !Ref ListOfVpcTagsForAttachment
+          ORGANIZATION_ACCOUNT_ROLE_ARN: !Ref OrganizationManagementAccountRoleArn
+          LOG_GROUP_FAILURES: !Ref CloudWatchLogFailures
+          LOG_GROUP_ACTIONS: !Ref CloudWatchLogActions
+          USER_AGENT_STRING: !Sub AwsSolution/SO0058/${!FindInMap ["SourceCode", "General", "Version"]}
+          SOLUTION_UUID: !GetAtt CreateUUID.UUID
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"aws-transit-network-orchestrator-sm.zip"]]
-      FunctionName: TransitNetworkOrchestratorSMLambda
-      Description: AWS Serverless Transit Network Orchestrator State Machine Handler
-      Handler: state_machine_router.lambda_handler
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"state_machine.zip"]]
+      FunctionName: STNO-State-Machine
+      Description: AWS Serverless Transit Network Orchestrator - State Machine Handler
+      Handler: state_machine.index.lambda_handler
       MemorySize: 1536
       Role: !GetAtt 'StateMachineLambdaRole.Arn'
-      Runtime: python3.8
+      Runtime: python3.9
       Timeout: 900
-      TracingConfig:
-          Mode: Active
-
 
   StateMachineRole:
     Type: "AWS::IAM::Role"
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "* needed for state machine logging configuration as highlighted here https://docs.aws.amazon.com/step-functions/latest/dg/cw-logs.html#monitoring-logging-configure"
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -819,7 +930,7 @@ permissions and require you to choose All resources"
               - "sts:AssumeRole"
       Path: "/"
       Policies:
-        - PolicyName: "lambda"
+        - PolicyName: STNO-LambdaInvoke
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -827,18 +938,28 @@ permissions and require you to choose All resources"
                 Action:
                   - "lambda:InvokeFunction"
                 Resource: !GetAtt StateMachineLambda.Arn
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogDelivery"
+                  - "logs:GetLogDelivery"
+                  - "logs:UpdateLogDelivery"
+                  - "logs:DeleteLogDelivery"
+                  - "logs:ListLogDeliveries"
+                  - "logs:PutResourcePolicy"
+                  - "logs:DescribeResourcePolicies"
+                  - "logs:DescribeLogGroups"
+                Resource:
+                  - "*"
 
   StateMachineLambdaRole:
     Type: AWS::IAM::Role
     Metadata:
       cfn_nag:
         rules_to_suppress:
-          - id: W11
-            reason: "Allow * because it is required for making Describe and xray API calls as they don't support resource-level permissions and require you to choose All resources."
           - id: W28
-            reason: "The role name 'TransitNetworkOrchestratorSMLambda' has to be defined to allow cross account access from the hub account to make network changes."
+            reason: "The role name 'StateMachineLambda' has to be defined to allow cross account access from the hub account to make network changes."
     Properties:
-      RoleName: !Join ["-", ["TransitNetworkOrchestratorSMLambdaRole", Ref: "AWS::Region"]]
+      RoleName: !Join ["-", ["STNO-StateMachineLambdaRole", Ref: "AWS::Region"]]
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -849,7 +970,7 @@ permissions and require you to choose All resources"
             Action: sts:AssumeRole
       Path: /
       Policies:
-        - PolicyName: TransitNetworkOrchestratorSMLambda
+        - PolicyName: STNO-StateMachine-Policy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -859,447 +980,868 @@ permissions and require you to choose All resources"
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource:
-                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
-              - Effect: Allow
-                Action:
-                  - xray:PutTraceSegments
-                  - xray:PutTelemetryRecords
-                Resource: '*'  # IAM Service Message: The actions in your policy do not support resource-level permissions and require you to choose All resources
-              - Effect: Allow
-                Action:
-                  - iam:GetRole
-                Resource: !Sub arn:aws:iam::${AWS::Region}:role/*
-              - Effect: Allow
-                Action:
-                  - ssm:PutParameter
-                  - ssm:GetParameter
-                  - ssm:GetParameters
-                  - ssm:DeleteParameter
-                  - ssm:GetParametersByPath
-                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
-              - Effect: Allow
-                Action:
-                  - ssm:DescribeParameters
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - ec2:CreateTransitGatewayRoute
-                  - ec2:DeleteTransitGatewayRoute
-                  - ec2:ModifyTransitGatewayVpcAttachment
-                  - ec2:CreateTransitGatewayVpcAttachment
-                  - ec2:DeleteTransitGatewayVpcAttachment
-                  - ec2:AssociateTransitGatewayRouteTable
-                  - ec2:DisableTransitGatewayRouteTablePropagation
-                  - ec2:DisassociateTransitGatewayRouteTable
-                  - ec2:EnableTransitGatewayRouteTablePropagation
-                Resource: # use * for account id as the owner of the resource is spoke account
-                  - !Sub arn:aws:ec2:${AWS::Region}:*:transit-gateway-route-table/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:*:transit-gateway-attachment/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:*:vpc/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:*:subnet/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:*:route-table/*
-              - Effect: Allow
-                Action:
-                  - ec2:DescribeTransitGatewayVpcAttachments
-                  - ec2:DescribeTransitGatewayAttachments
-                  - ec2:DescribeTransitGatewayRouteTables
-                  - ec2:GetTransitGatewayAttachmentPropagations
-                  - ec2:GetTransitGatewayRouteTableAssociations
-                  - ec2:GetTransitGatewayRouteTablePropagations
-                  - ec2:SearchTransitGatewayRoutes
-                Resource: "*"
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogActions}*
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogFailures}*
               - Effect: Allow
                 Action:
                   - sts:AssumeRole
-                Resource: !Join ["-", ["arn:aws:iam::*:role/TransitNetworkExecutionRole", Ref: "AWS::Region"]]
-              - Effect: Allow
-                Resource:
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:TransitNetworkOrchestratorSMLambda
-                Action:
-                  - lambda:InvokeFunction
+                Resource: !Join ["-", ["Fn::Sub": "arn:${AWS::Partition}:iam::*:role/TransitNetworkExecutionRole", Ref: "AWS::Region"]]
               - Effect: Allow
                 Action:
                   - dynamodb:PutItem
                 Resource: !GetAtt DynamoDbTable.Arn
-              - Effect: Allow
-                Action:
-                  - sns:Publish
-                Resource: !Ref ApprovalTopic
+              - !If
+                  - OrganizationManagementAccountRoleArn
+                  - Effect: Allow
+                    Action:
+                      - sts:AssumeRole
+                    Resource: !Ref OrganizationManagementAccountRoleArn
+                  - !Ref AWS::NoValue
 
   OrchestratorStateMachine:
     Type: 'AWS::StepFunctions::StateMachine'
     Properties:
-      StateMachineName: TransitNetworkOrchestratorStateMachine
+      StateMachineName: STNO-StateMachine
       RoleArn: !GetAtt 'StateMachineRole.Arn'
-      DefinitionString:
-        Fn::Sub: |-
-          {
-            "Comment": "A state machine that orchestrates transit network changes.",
-            "StartAt": "Describe Resources Pass",
-            "States": {
-              "Describe Resources Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "VPC",
-                  "FunctionName": "describe_resources"
+      LoggingConfiguration:
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt CloudWatchLogStateMachine.Arn
+        IncludeExecutionData: true
+        Level: ALL
+      DefinitionSubstitutions:
+        StateMachineLambdaArn: !GetAtt StateMachineLambda.Arn
+        AWSPartition: !Ref AWS::Partition
+      DefinitionString: |-
+        {
+          "Comment": "A state machine that orchestrates transit network changes.",
+          "StartAt": "Check Event Type",
+          "States": {
+            "Check Event Type": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Comment": "Approval message",
+                  "Variable": "$.detail-type",
+                  "IsPresent": false,
+                  "Next": "Describe Resources"
                 },
-                "ResultPath": "$.params",
-                "Next": "Describe Resources"
-              },
-              "Describe Resources": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Describe Transit Gateway VPC Attachments Pass"
-              },
-              "Describe Transit Gateway VPC Attachments Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "TransitGateway",
-                  "FunctionName": "describe_transit_gateway_vpc_attachments"
+                {
+                  "Comment": "Tag event",
+                  "Variable": "$.detail-type",
+                  "StringEquals": "Tag Change on Resource",
+                  "Next": "Describe Resources"
                 },
-                "ResultPath": "$.params",
-                "Next": "Describe Transit Gateway VPC Attachments"
-              },
-              "Describe Transit Gateway VPC Attachments": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Describe TGW Route Tables Pass"
-              },
-              "Describe TGW Route Tables Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "TransitGateway",
-                  "FunctionName": "describe_transit_gateway_route_tables"
-                },
-                "ResultPath": "$.params",
-                "Next": "Describe TGW Route Tables"
-              },
-              "Describe TGW Route Tables": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Requires Approval?"
-              },
-              "Requires Approval?": {
-                "Type": "Choice",
-                "Choices": [
-                  {
-                    "And": [
-                      {
-                        "Variable": "$.ApprovalRequired",
-                        "StringEquals": "yes"
-                      },
-                      {
-                        "Not": {
-                          "Variable": "$.AdminAction",
-                          "StringEquals": "accept"
-                        }
-                      }
-                    ],
-                    "Next": "Yes"
+                {
+                  "Comment": "CloudFormation stack deletion",
+                  "Variable": "$.detail.eventName",
+                  "StringEquals": "DeleteSubnet",
+                  "Next": "Delete Transit Gateway Attachment"
+                }
+              ]
+            },
+            "Delete Transit Gateway Attachment": {
+              "Comment": "This deletes the relevant TGW VPC attachment, and gets triggered when there is an attempt to delete a subnet.",
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "subnet_deletion_event"
                   }
-                ],
-                "Default": "No"
+                }
               },
-              "Yes": {
-                "Type": "Pass",
-                "ResultPath": "$.params",
-                "Next": "Send Approval Notification Pass"
-              },
-              "Send Approval Notification Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "ApprovalNotification",
-                  "FunctionName": "notify"
-                },
-                "ResultPath": "$.params",
-                "Next": "Send Approval Notification"
-              },
-              "Send Approval Notification": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Update DynamoDB Pass"
-              },
-              "No": {
-                "Type": "Pass",
-                "ResultPath": "$.params",
-                "Next": "Event Source?"
-              },
-              "Event Source?": {
-                "Type": "Choice",
-                "Choices": [
-                  {
-                    "Variable": "$.TagEventSource",
-                    "StringEquals": "subnet",
-                    "Next": "Resource Share Invitation Pass"
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],
+              "End": true
+            },    
+            "Describe Resources": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "VPC",
+                    "FunctionName": "describe_resources"
                   }
-                ],
-                "Default": "VPC Tagged?"
+                }
               },
-              "Resource Share Invitation Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "ResourceAccessManager",
-                  "FunctionName": "accept_resource_share_invitation"
-                },
-                "ResultPath": "$.params",
-                "Next": "Resource Share Invitation"
-              },
-              "Resource Share Invitation": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Get Transit Gateway VPC Attachment State Pass"
-              },
-              "Get Transit Gateway VPC Attachment State Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "TransitGateway",
-                  "FunctionName": "describe_transit_gateway_vpc_attachments"
-                },
-                "ResultPath": "$.params",
-                "Next": "Get Transit Gateway VPC Attachment State"
-              },
-              "Get Transit Gateway VPC Attachment State": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "TGW Attachment Change In Progress?"
-              },
-              "TGW Attachment Change In Progress?": {
-                "Type": "Choice",
-                "Choices": [
-                  {
-                    "Or": [
-                      {
-                        "Variable": "$.AttachmentState",
-                        "StringEquals": "modifying"
-                      },
-                      {
-                        "Variable": "$.AttachmentState",
-                        "StringEquals": "pending"
-                      }
-                    ],
-                    "Next": "Wait for TGW Attachment Change To Finish"
+              "Catch": [
+                {
+                  "ErrorEquals": ["ResourceNotFoundException"],
+                  "ResultPath": null,
+                  "Next": "Resource does not exist"
+                }
+              ],
+              "Retry": [
+                {
+                  "ErrorEquals": ["ResourceNotFoundException"],
+                  "MaxAttempts":0
+                },        
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],
+              "Next": "Describe Transit Gateway VPC Attachments"
+            }, 
+            "Describe Transit Gateway VPC Attachments": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "describe_transit_gateway_vpc_attachments"
                   }
-                ],
-                "Default": "TGW Attachment CRUD Operations Pass"
+                }
               },
-              "Wait for TGW Attachment Change To Finish": {
-                "Type": "Wait",
-                "Seconds": 15,
-                "Next": "Get Transit Gateway VPC Attachment State"
-              },
-              "TGW Attachment CRUD Operations Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "TransitGateway",
-                  "FunctionName": "tgw_attachment_crud_operations"
-                },
-                "ResultPath": "$.params",
-                "Next": "TGW Attachment CRUD Operations"
-              },
-              "TGW Attachment CRUD Operations": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "CRUD Operation Completed?"
-              },
-              "CRUD Operation Completed?": {
-                "Type": "Choice",
-                "Choices": [
-                  {
-                    "Variable": "$.AttachmentState",
-                    "StringEquals": "rejected",
-                    "Next": "Update DynamoDB Pass"
-                  },
-                  {
-                    "Variable": "$.AttachmentState",
-                    "StringEquals": "failed",
-                    "Next": "Update DynamoDB Pass"
-                  },
-                  {
-                    "Variable": "$.AttachmentState",
-                    "StringEquals": "deleted",
-                    "Next": "Route CRUD Operations Pass"
-                  },
-                  {
-                    "Variable": "$.AttachmentState",
-                    "StringEquals": "available",
-                    "Next": "Route CRUD Operations Pass"
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],      
+              "Next": "Describe TGW Route Tables"
+            },
+            "Describe TGW Route Tables": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "describe_transit_gateway_route_tables"
                   }
-                ],
-                "Default": "Wait for CRUD operation to finish"
+                }
               },
-              "Wait for CRUD operation to finish": {
-                "Type": "Wait",
-                "Seconds": 15,
-                "Next": "Get TGW Attachment State Pass"
-              },
-              "Get TGW Attachment State Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "TransitGateway",
-                  "FunctionName": "get_transit_gateway_vpc_attachment_state"
-                },
-                "ResultPath": "$.params",
-                "Next": "Get TGW Attachment State"
-              },
-              "Get TGW Attachment State": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "CRUD Operation Completed?"
-              },
-              "VPC Tagged?": {
-                "Type": "Choice",
-                "Choices": [
-                  {
-                    "And": [
-                      {
-                        "Variable": "$.VpcTagFound",
-                        "StringEquals": "yes"
-                      },
-                      {
-                        "Variable": "$.TgwAttachmentExist",
-                        "StringEquals": "yes"
-                      }
-                    ],
-                    "Next": "Association Changed?"
-                  }
-                ],
-                "Default": "Update DynamoDB Pass"
-              },
-              "Association Changed?": {
-                "Type": "Choice",
-                "Choices": [
-                  {
-                    "Variable": "$.UpdateAssociationRouteTableId",
-                    "StringEquals": "yes",
-                    "Next": "Existing Association?"
-                  }
-                ],
-                "Default": "Get TGW Attachment Propagations Pass"
-              },
-              "Existing Association?": {
-                "Type": "Choice",
-                "Choices": [
-                  {
-                    "Not": {
-                      "Variable": "$.ExistingAssociationRouteTableId",
-                      "StringEquals": "none"
+              "Retry": [
+                {
+                  "ErrorEquals": ["RouteTableNotFoundException"],
+                  "MaxAttempts":0
+                },        
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],        
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }
+              ],              
+              "Next": "Requires Approval?"
+            },
+            "Requires Approval?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "And": [
+                    {
+                      "Variable": "$.ApprovalRequired",
+                      "StringEquals": "yes"
                     },
-                    "Next": "Disassociate TGW Route Table Pass"
+                    {
+                      "Not": {
+                        "Variable": "$.AdminAction",
+                        "StringEquals": "accept"
+                      }
+                    }
+                  ],
+                  "Next": "Yes"
+                }
+              ],
+              "Default": "No"
+            },
+            "Yes": {
+              "Type": "Pass",
+              "ResultPath": "$.params",
+              "Next": "Send Approval Notification"
+            },
+            "Send Approval Notification": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "ApprovalNotification",
+                    "FunctionName": "notify"
                   }
-                ],
-                "Default": "Associate TGW Route Table Pass"
+                }
               },
-              "Disassociate TGW Route Table Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "TransitGateway",
-                  "FunctionName": "disassociate_transit_gateway_route_table"
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }
+              ],      
+              "Next": "Log Event"
+            },
+            "No": {
+              "Type": "Pass",
+              "ResultPath": "$.params",
+              "Next": "Event Source?"
+            },
+            "Event Source?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.TagEventSource",
+                  "StringEquals": "subnet",
+                  "Next": "Resource Share Invitation"
+                }
+              ],
+              "Default": "VPC Tagged?"
+            },
+            "Resource Share Invitation": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "ResourceAccessManager",
+                    "FunctionName": "accept_resource_share_invitation"
+                  }
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }
+              ],      
+              "Next": "Get Transit Gateway VPC Attachment State"
+            },
+            "Get Transit Gateway VPC Attachment State": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "describe_transit_gateway_vpc_attachments"
+                  }
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }
+              ],       
+              "Next": "TGW Attachment Change In Progress?"
+            },
+            "TGW Attachment Change In Progress?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Or": [
+                    {
+                      "Variable": "$.AttachmentState",
+                      "StringEquals": "modifying"
+                    },
+                    {
+                      "Variable": "$.AttachmentState",
+                      "StringEquals": "pending"
+                    }
+                  ],
+                  "Next": "Wait for TGW Attachment Change To Finish"
+                }
+              ],
+              "Default": "TGW Attachment CRUD Operations"
+            },
+            "Wait for TGW Attachment Change To Finish": {
+              "Type": "Wait",
+              "Seconds": 15,
+              "Next": "Get Transit Gateway VPC Attachment State"
+            },
+            "TGW Attachment CRUD Operations": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "tgw_attachment_crud_operations"
+                  }
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["AttachmentCreationInProgressException"],
+                  "MaxAttempts":0
                 },
-                "ResultPath": "$.params",
-                "Next": "Disassociate TGW Route Table"
-              },
-              "Disassociate TGW Route Table": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Associate TGW Route Table Pass"
-              },
-              "Associate TGW Route Table Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "TransitGateway",
-                  "FunctionName": "associate_transit_gateway_route_table"
+                {
+                  "ErrorEquals": ["ResourceBusyException"],
+                  "MaxAttempts":10, "IntervalSeconds":5, "BackoffRate":1.5
+                },               
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["AttachmentCreationInProgressException"],
+                  "ResultPath": null,
+                  "Next": "Get Transit Gateway VPC Attachment State"
                 },
-                "ResultPath": "$.params",
-                "Next": "Associate TGW Route Table"
-              },
-              "Associate TGW Route Table": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Get TGW Attachment Propagations Pass"
-              },
-              "Get TGW Attachment Propagations Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "TransitGateway",
-                  "FunctionName": "get_transit_gateway_attachment_propagations"
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }        
+              ],        
+              "Next": "CRUD Operation Completed?"
+            },
+            "CRUD Operation Completed?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.AttachmentState",
+                  "StringEquals": "rejected",
+                  "Next": "Log Event"
                 },
-                "ResultPath": "$.params",
-                "Next": "Get TGW Attachment Propagations"
-              },
-              "Get TGW Attachment Propagations": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Enable TGW Attachment Propagations Pass"
-              },
-              "Enable TGW Attachment Propagations Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "TransitGateway",
-                  "FunctionName": "enable_transit_gateway_route_table_propagation"
+                {
+                  "Variable": "$.AttachmentState",
+                  "StringEquals": "failed",
+                  "Next": "Log Event"
                 },
-                "ResultPath": "$.params",
-                "Next": "Enable TGW Attachment Propagations"
-              },
-              "Enable TGW Attachment Propagations": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Disable TGW Attachment Propagations Pass"
-              },
-              "Disable TGW Attachment Propagations Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "TransitGateway",
-                  "FunctionName": "disable_transit_gateway_route_table_propagation"
+                {
+                  "Variable": "$.AttachmentState",
+                  "StringEquals": "deleted",
+                  "Next": "Route CRUD Operations"
                 },
-                "ResultPath": "$.params",
-                "Next": "Disable TGW Attachment Propagations"
+                {
+                  "Variable": "$.AttachmentState",
+                  "StringEquals": "available",
+                  "Next": "Route CRUD Operations"
+                }
+              ],
+              "Default": "Wait for CRUD operation to finish"
+            },
+            "Wait for CRUD operation to finish": {
+              "Type": "Wait",
+              "Seconds": 15,
+              "Next": "Get TGW Attachment State"
+            },
+            "Get TGW Attachment State": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "get_transit_gateway_vpc_attachment_state"
+                  }
+                }
               },
-              "Disable TGW Attachment Propagations": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "Update DynamoDB Pass"
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }
+              ],        
+              "Next": "CRUD Operation Completed?"
+            },
+            "VPC Tagged?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "And": [
+                    {
+                      "Variable": "$.VpcTagFound",
+                      "StringEquals": "yes"
+                    },
+                    {
+                      "Variable": "$.TgwAttachmentExist",
+                      "StringEquals": "yes"
+                    }
+                  ],
+                  "Next": "Association Changed?"
+                }
+              ],
+              "Default": "Log Event"
+            },
+            "Association Changed?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.UpdateAssociationRouteTableId",
+                  "StringEquals": "yes",
+                  "Next": "Existing Association?"
+                }
+              ],
+              "Default": "Get TGW Attachment Propagations"
+            },
+            "Existing Association?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Not": {
+                    "Variable": "$.ExistingAssociationRouteTableId",
+                    "StringEquals": "none"
+                  },
+                  "Next": "Disassociate TGW Route Table"
+                }
+              ],
+              "Default": "Associate TGW Route Table"
+            },
+            "Disassociate TGW Route Table": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "disassociate_transit_gateway_route_table"
+                  }
+                }
               },
-              "Route CRUD Operations Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "VPC",
-                  "FunctionName": "default_route_crud_operations"
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }
+              ],         
+              "Next": "Associate TGW Route Table"
+            },
+            "Associate TGW Route Table": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "associate_transit_gateway_route_table"
+                  }
+                }
+              },    
+              "Retry": [
+                {
+                  "ErrorEquals": ["AlreadyConfiguredException"],
+                  "MaxAttempts":0
                 },
-                "ResultPath": "$.params",
-                "Next": "Route CRUD Operations"
-              },
-              "Route CRUD Operations": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "Next": "VPC Tagged?"
-              },
-              "Update DynamoDB Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "ClassName": "DynamoDb",
-                  "FunctionName": "put_item"
+                {
+                  "ErrorEquals": ["ResourceBusyException"],
+                  "MaxAttempts":10, "IntervalSeconds":5, "BackoffRate":1.5
+                },             
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":5, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ], 
+              "Catch": [
+                {
+                  "ErrorEquals": ["AlreadyConfiguredException"],
+                  "ResultPath": null,
+                  "Next": "TGW VPC Attachment Already Configured"
                 },
-                "ResultPath": "$.params",
-                "Next": "Update DynamoDB"
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }        
+              ],         
+              "Next": "Get TGW Attachment Propagations"
+            },
+            "Get TGW Attachment Propagations": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "get_transit_gateway_attachment_propagations"
+                  }
+                }
               },
-              "Update DynamoDB": {
-                "Type": "Task",
-                "Resource": "${StateMachineLambda.Arn}",
-                "End": true
-              }
-            }
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ], 
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }
+              ],      
+              "Next": "Enable TGW Attachment Propagations"
+            },
+            "Enable TGW Attachment Propagations": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "enable_transit_gateway_route_table_propagation"
+                  }
+                }
+              },    
+              "Retry": [
+                {
+                  "ErrorEquals": ["AlreadyConfiguredException"],
+                  "MaxAttempts":0
+                },        
+                {
+                  "ErrorEquals": ["ResourceBusyException"],
+                  "MaxAttempts":10, "IntervalSeconds":5, "BackoffRate":1.5
+                },             
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":5, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["AlreadyConfiguredException"],
+                  "ResultPath": null,
+                  "Next": "TGW VPC Attachment Already Configured"
+                },
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }        
+              ],  
+              "Next": "Disable TGW Attachment Propagations"
+            },
+            "Disable TGW Attachment Propagations": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "disable_transit_gateway_route_table_propagation"
+                  }
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":5, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ], 
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }
+              ],            
+              "Next": "Tag TGW Attachment"
+            },
+            "Tag TGW Attachment": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "TransitGateway",
+                    "FunctionName": "tag_transit_gateway_attachment"
+                  }
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }
+              ],        
+              "Next": "Log Event"
+            },
+            "TGW VPC Attachment Already Configured": {
+              "Type": "Pass",
+              "ResultPath": "$.params",
+              "Next": "Log Event"
+            },    
+            "Route CRUD Operations": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "VPC",
+                    "FunctionName": "default_route_crud_operations"
+                  }
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error-info",
+                  "Next": "Process Failure"
+                }
+              ],        
+              "Next": "VPC Tagged?"
+            },
+
+
+            "Process Failure": {
+              "Type": "Task",
+              "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "${StateMachineLambdaArn}",
+                "Payload": {
+                  "event.$": "$",
+                  "params": {
+                    "ClassName": "GeneralFunctions",
+                    "FunctionName": "process_failure"
+                  }
+                }
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                }
+              ],      
+              "Next": "Log Event"
+            },
+
+            "Log Event": {
+              "Type": "Parallel",
+              "ResultPath": null,
+              "Branches": [
+                {
+                  "StartAt": "Update DynamoDB",
+                  "States": {
+                    "Update DynamoDB": {
+                      "Type": "Task",
+                      "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+                      "OutputPath": "$.Payload",
+                      "Parameters": {
+                        "FunctionName": "${StateMachineLambdaArn}",
+                        "Payload": {
+                          "event.$": "$",
+                          "params": {
+                            "ClassName": "DynamoDb",
+                            "FunctionName": "put_item"
+                          }
+                        }
+                      },
+                      "Retry": [
+                        {
+                          "ErrorEquals": ["States.TaskFailed"],
+                          "MaxAttempts":3, "IntervalSeconds":5, "BackoffRate":2
+                        }
+                      ],
+                      "End": true
+                    }
+                  }
+                },
+
+                {
+                  "StartAt": "Update Tags",
+                  "States": {
+                    "Update Tags": {
+                      "Type": "Task",
+                      "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+                      "OutputPath": "$.Payload",
+                      "Parameters": {
+                        "FunctionName": "${StateMachineLambdaArn}",
+                        "Payload": {
+                          "event.$": "$",
+                          "params": {
+                            "ClassName": "TransitGateway",
+                            "FunctionName": "update_tags_if_failed"
+                          }
+                        }
+                      },
+                      "End": true
+                    }
+                  }
+                },
+
+                {
+                  "StartAt": "Log event in CloudWatch",
+                  "States": {
+                    "Log event in CloudWatch": {
+                      "Type": "Task",
+                      "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
+                      "OutputPath": "$.Payload",
+                      "Parameters": {
+                        "FunctionName": "${StateMachineLambdaArn}",
+                        "Payload": {
+                          "event.$": "$",
+                          "params": {
+                            "ClassName": "GeneralFunctions",
+                            "FunctionName": "log_in_cloudwatch"
+                          }
+                        }
+                      },
+                      "End": true
+                    }
+                  }
+                }        
+
+              ],
+              "Next": "Check Status"
+            },
+            
+            "Check Status": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.error-info",
+                  "IsPresent": true,
+                  "Next": "Execution failed"
+                }
+              ],
+              "Default": "Execution successful"
+            },
+          
+            "Resource does not exist": {
+              "Type": "Pass",
+              "End": true
+            },
+            "Execution failed": {
+              "Type": "Fail"
+            },
+            "Execution successful": {
+              "Type": "Pass",
+              "End": true
+            }    
+
           }
+        }
+
+  OrchestratorExecutionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: STNO-OrchestratorExecution-Policy
+      Roles: 
+        - !Ref CustomResourceLambdaRole
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - states:StartExecution
+            Resource:
+              - !Ref OrchestratorStateMachine
+          
+
 
 
   ################################################
   # Transit Gateway Peering Attachment Resources #
   ################################################
 
-  TgwTagEventRuleStateMachine:
+  TgwTagEventRule:
     Type: AWS::Events::Rule
     Properties:
-      Description: Serverless Transit Network Orchestrator - Rule for tag on resource events from hub account
+      Description: Serverless Transit Network Orchestrator - Rule for tag on Transit Gateway from hub account
       EventPattern:
         {
           "account": [
@@ -1317,48 +1859,42 @@ permissions and require you to choose All resources"
             ],
             "resource-type": [
               "transit-gateway"
+            ],
+            "changed-tag-keys": [
+              !Ref TgwPeeringTag,
             ]
           }
         }
       State: ENABLED
       Targets:
-        - Arn: !Ref TgwPeeringAttachmentStateMachine
-          Id: 'TgwPeeringAttachmentStateMachine'
-          RoleArn: !GetAtt StateMachineInvocationRole.Arn
+        - Arn: !Sub ${TgwPeeringLambda.Arn}
+          Id: 'TgwPeeringLambda'
+          InputTransformer: 
+            InputPathsMap: 
+              "detail" : "$.detail"
+              "source": "$.source"
+            InputTemplate: |
+              {
+                "detail" : <detail>,
+                "source" : <source>
+              }
 
-  StateMachineInvocationRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-                Service: events.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: /
-      Policies:
-        - PolicyName: StateMachineInvocationPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - states:StartExecution
-                Resource: !Ref TgwPeeringAttachmentStateMachine
+  PermissionForTGWTagRule: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref "TgwPeeringLambda"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !Sub ${TgwTagEventRule.Arn}
 
-  TgwPeeringAttachmentLambdaRole:
+  TgwPeeringLambdaRole:
     Type: AWS::IAM::Role
     Metadata:
       cfn_nag:
         rules_to_suppress:
           - id: W11
-            reason: "Allow * because it is required for making Describe and xray API calls as they don't support resource-level permissions and require you to choose All resources."
-          - id: W28
-            reason: "The role name 'TransitNetworkOrchestratorSMLambda' has to be defined to allow cross account access from the hub account to make network changes."
+            reason: "Allow * for describe calls"
     Properties:
-      RoleName: !Sub TgwPeeringAttachmentLambdaRole-${AWS::Region}
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -1369,7 +1905,7 @@ permissions and require you to choose All resources"
             Action: sts:AssumeRole
       Path: /
       Policies:
-        - PolicyName: TgwPeeringAttachmentIamPolicy
+        - PolicyName: !Sub TGWPeering
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -1379,307 +1915,58 @@ permissions and require you to choose All resources"
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource:
-                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
-              - Effect: Allow
-                Action:
-                  - xray:PutTraceSegments
-                  - xray:PutTelemetryRecords
-                Resource: '*'  # This actions in IAM policy does not support resource-level permissions and require you to choose All resources
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
               - Effect: Allow
                 Action:
                   - ec2:CreateTransitGatewayPeeringAttachment
                   - ec2:DeleteTransitGatewayPeeringAttachment
-                Resource: # using * for the resource id since CFN template does not manage them
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway-attachment/*
+                  - ec2:CreateTags
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/*
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway-attachment/*
               - Effect: Allow
                 Action:
                   - ec2:AcceptTransitGatewayPeeringAttachment
                 Resource:
-                  # using * for the region to allow cross region acceptance workflow
-                  # using * for the resource id since CFN template does not manage them
-                  - !Sub arn:aws:ec2:*:${AWS::AccountId}:transit-gateway-attachment/*
+                  - !Sub arn:${AWS::Partition}:ec2:*:*:transit-gateway-attachment/*
               - Effect: Allow
                 Action:
                   - ec2:DescribeTransitGatewayPeeringAttachments
-                Resource: "*" #  # This actions in IAM policy does not support resource-level permissions and require you to choose All resources
-              - Effect: Allow
-                Resource:
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:TgwPeeringAttachmentLambda-STNO
-                Action:
-                  - lambda:InvokeFunction
+                Resource: "*"
 
-  TgwPeeringAttachmentStateMachineRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          -
-            Effect: "Allow"
-            Principal:
-              Service:
-                - !Sub "states.${AWS::Region}.amazonaws.com"
-            Action:
-              - "sts:AssumeRole"
-      Path: "/"
-      Policies:
-        - PolicyName: "StateMachineLambdaInvocationPolicy"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Resource:
-                  - !GetAtt TgwPeeringAttachmentLambda.Arn
-                Action:
-                  - lambda:InvokeFunction
-
-  TgwPeeringAttachmentLambda:
+  TgwPeeringLambda:
     Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W92
+            reason: "does not require concurrency reservation"
+          - id: W89
+            reason: "not a valid use-case for vpc"
+          - id: W58
+            reason: "cw logs permission added to lambda role"
     Properties:
       Environment:
         Variables:
           LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
-          TGW_PEERING_TAG_PREFIX: !Ref TgwPeeringTagPrefix
-          TGW_PEERING_TAG_DELIMITER: !Ref TgwPeeringTagDelimiter
+          TGW_PEERING_TAG: !Ref TgwPeeringTag
           TGW_ID: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
           ATTACHMENT_TAG: !Ref AttachmentTag
-          METRICS_FLAG: !FindInMap ["Solution", "Metrics", "SendAnonymousData"]
-          SOLUTION_VERSION: v2.0.0
+          SOLUTION_VERSION: !FindInMap [SourceCode, General, Version]
+          SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionId]
+          USER_AGENT_STRING: !Sub AwsSolution/SO0058/${!FindInMap ["SourceCode", "General", "Version"]}
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"aws-transit-network-orchestrator-tgw-peering.zip"]]
-      FunctionName: TgwPeeringAttachmentLambda-STNO
-      Description: Serverless Transit Network Orchestrator Transit Peering Attachment Handler
-      Handler: tgw_peering_attachment_handler.lambda_handler
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"tgw_peering.zip"]]
+      FunctionName: STNO-TGW-Peering
+      Description: AWS Serverless Transit Network Orchestrator - TGW peering attachment handler
+      Handler: tgw_peering.index.lambda_handler
       MemorySize: 1536
-      Role: !GetAtt 'TgwPeeringAttachmentLambdaRole.Arn'
-      Runtime: python3.8
+      Role: !Sub ${TgwPeeringLambdaRole.Arn}
+      Runtime: python3.9
       Timeout: 900
-      TracingConfig:
-          Mode: Active
 
-  TgwPeeringAttachmentStateMachine:
-    Type: 'AWS::StepFunctions::StateMachine'
-    Properties:
-      StateMachineName: TgwPeeringAttachmentStateMachine
-      RoleArn: !GetAtt 'TgwPeeringAttachmentStateMachineRole.Arn'
-      DefinitionString:
-        Fn::Sub: |-
-          {
-            "Comment": "A state machine that handles transit gateway peering attachments.",
-            "StartAt": "Validate and Update Event Pass",
-            "States": {
-              "Validate and Update Event Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "MethodName": "get_processed_tagging_event"
-                },
-                "ResultPath": "$.params",
-                "Next": "Validate and Update Event"
-              },
-              "Validate and Update Event": {
-                "Type": "Task",
-                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
-                "Next": "Is Valid Transit Gateway Tag Event?"
-              },
-              "Is Valid Transit Gateway Tag Event?": {
-                "Type": "Choice",
-                "Choices": [
-                  {
-                    "Variable": "$.IsTgwPeeringTagEvent",
-                    "StringEquals": "No",
-                    "Next": "Inapplicable Transit Gateway Tag Event"
-                  }
-                ],
-                "Default": "Get Transit Gateway Peering Attachment Id Pass"
-              },
-              "Inapplicable Transit Gateway Tag Event": {
-                "Type": "Succeed"
-              },
-              "Get Transit Gateway Peering Attachment Id Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "MethodName": "get_transit_gateway_peering_attachment_id"
-                },
-                "ResultPath": "$.params",
-                "Next": "Get Transit Gateway Peering Attachment Id"
-              },
-              "Get Transit Gateway Peering Attachment Id": {
-                "Type": "Task",
-                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
-                "Next": "Request Type?"
-              },
-              "Request Type?": {
-                "Type": "Choice",
-                "Choices": [
-                  {
-                    "Variable": "$.RequestType",
-                    "StringEquals": "Create",
-                    "Next": "Create Transit Gateway Peering Attachment Pass"
-                  },
-                  {
-                    "Variable": "$.RequestType",
-                    "StringEquals": "Delete",
-                    "Next": "Delete Transit Gateway Peering Attachment Pass"
-                  }
-                ],
-                "Default": "Create Transit Gateway Peering Attachment Pass"
-              },
-              "Create Transit Gateway Peering Attachment Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "MethodName": "create_transit_gateway_peering_attachment"
-                },
-                "ResultPath": "$.params",
-                "Next": "Create Transit Gateway Peering Attachment"
-              },
-              "Create Transit Gateway Peering Attachment": {
-                "Type": "Task",
-                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
-                "Next": "Is TGW Peering Attachment in Pending Acceptance State?"
-              },
-              "Is TGW Peering Attachment in Pending Acceptance State?": {
-                "Type": "Choice",
-                "Choices": [
-                  {
-                    "Variable": "$.TgwPeeringAttachmentState",
-                    "StringEquals": "initiatingRequest",
-                    "Next": "Waiting to be in Pending Acceptance State"
-                  }
-                ],
-                "Default": "Accept Transit Gateway Peering Attachment Pass"
-              },
-              "Waiting to be in Pending Acceptance State": {
-                "Type": "Wait",
-                "Seconds": 15,
-                "Next": "Get Tgw Peering Attachment State Pass"
-              },
-              "Get Tgw Peering Attachment State Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "MethodName": "get_transit_gateway_peering_attachment_state"
-                },
-                "ResultPath": "$.params",
-                "Next": "Get Tgw Peering Attachment State"
-              },
-              "Get Tgw Peering Attachment State": {
-                "Type": "Task",
-                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
-                "Next": "Is TGW Peering Attachment in Pending Acceptance State?"
-              },
-              "Accept Transit Gateway Peering Attachment Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "MethodName": "accept_transit_gateway_peering_attachment"
-                },
-                "ResultPath": "$.params",
-                "Next": "Accept Transit Gateway Peering Attachment"
-              },
-              "Accept Transit Gateway Peering Attachment": {
-                "Type": "Task",
-                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
-                "Next": "TGW Peering Attachment Change In Progress?"
-              },
-              "Delete Transit Gateway Peering Attachment Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "MethodName": "delete_transit_gateway_peering_attachment"
-                },
-                "ResultPath": "$.params",
-                "Next": "Delete Transit Gateway Peering Attachment"
-              },
-              "Delete Transit Gateway Peering Attachment": {
-                "Type": "Task",
-                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
-                "Next": "TGW Peering Attachment Change In Progress?"
-              },
-              "TGW Peering Attachment Change In Progress?": {
-                "Type": "Choice",
-                "Choices": [
-                  {
-                    "Or": [
-                      {
-                        "Variable": "$.TgwPeeringAttachmentState",
-                        "StringEquals": "deleting"
-                      },
-                      {
-                        "Variable": "$.TgwPeeringAttachmentState",
-                        "StringEquals": "pendingAcceptance"
-                      },
-                      {
-                        "Variable": "$.TgwPeeringAttachmentState",
-                        "StringEquals": "pending"
-                      }
-                    ],
-                    "Next": "Wait for TGW Peering Attachment Change To Finish"
-                  },
-                  {
-                    "And": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Create"
-                      },
-                      {
-                        "Variable": "$.TgwPeeringAttachmentState",
-                        "StringEquals": "available"
-                      }
-                    ],
-                    "Next": "Transit Gateway Peering Attachment Created"
-                  },
-                  {
-                    "And": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Delete"
-                      },
-                      {
-                        "Or": [
-                          {
-                            "Variable": "$.TgwPeeringAttachmentState",
-                            "StringEquals": "deleted"
-                          },
-                          {
-                            "Variable": "$.TgwPeeringAttachmentState",
-                            "StringEquals": "does-not-exist"
-                          }
-                        ]
-                      }
-                    ],
-                    "Next": "Transit Gateway Peering Attachment Deleted"
-                  }
-                ],
-                "Default": "Transit Gateway Peering Attachment Failed"
-              },
-              "Wait for TGW Peering Attachment Change To Finish": {
-                "Type": "Wait",
-                "Seconds": 15,
-                "Next": "Get Transit Gateway Peering Attachment State Pass"
-              },
-              "Get Transit Gateway Peering Attachment State Pass": {
-                "Type": "Pass",
-                "Result": {
-                  "MethodName": "get_transit_gateway_peering_attachment_state"
-                },
-                "ResultPath": "$.params",
-                "Next": "Get Transit Gateway Peering Attachment State"
-              },
-              "Get Transit Gateway Peering Attachment State": {
-                "Type": "Task",
-                "Resource": "${TgwPeeringAttachmentLambda.Arn}",
-                "Next": "TGW Peering Attachment Change In Progress?"
-              },
-              "Transit Gateway Peering Attachment Created": {
-                "Type": "Succeed"
-              },
-              "Transit Gateway Peering Attachment Deleted": {
-                "Type": "Succeed"
-              },
-              "Transit Gateway Peering Attachment Failed": {
-                "Type": "Fail"
-              }
-            }
-          }
+  
   ########################################
   # AWS Network Manager - Global Network #
   ########################################
@@ -1699,11 +1986,10 @@ permissions and require you to choose All resources"
 
   GlobalNetworkRegistrationSTNO:
     Type: AWS::NetworkManager::TransitGatewayRegistration
+    Condition: CreateNewGlobalNetwork&CreateNewTransitGateway
     Properties:
-      GlobalNetworkId: !If [CreateNewGlobalNetwork, !Ref GlobalNetworkSTNO, !Ref ExistingGlobalNetworkId]
-      TransitGatewayArn: !Sub
-        - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/${TransitGatewayId}
-        - {TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]}
+      GlobalNetworkId: !Ref GlobalNetworkSTNO
+      TransitGatewayArn: !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/${AWSTransitGateway}
 
   ############################
   # AWS AppSync API       #
@@ -1720,35 +2006,10 @@ permissions and require you to choose All resources"
           Ref: AWS::Region
         DefaultAction: DENY
       LogConfig:
-        CloudWatchLogsRoleArn: !GetAtt STNOAppSyncPushToCloudWatchLogsRole.Arn
+        CloudWatchLogsRoleArn: !GetAtt AppSyncRole.Arn
         ExcludeVerboseContent: False
         FieldLogLevel: NONE
 
-  STNOAppSyncPushToCloudWatchLogsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - appsync.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: /
-      Policies:
-        - PolicyName: stno-appsync-graphqlapi-logs
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource:
-                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
 
   GraphQLSchema:
     Type: "AWS::AppSync::GraphQLSchema"
@@ -1772,7 +2033,7 @@ permissions and require you to choose All resources"
         Fn::GetAtt:
         - "AppSyncPipelineApi"
         - ApiId
-      ServiceRoleArn: !GetAtt AppSyncSTNODynamoDBRole.Arn
+      ServiceRoleArn: !GetAtt AppSyncRole.Arn
       DynamoDBConfig:
         TableName:
           Ref: DynamoDbTable
@@ -1789,7 +2050,7 @@ permissions and require you to choose All resources"
         Fn::GetAtt:
         - "AppSyncPipelineApi"
         - ApiId
-      ServiceRoleArn: !GetAtt CustomResourceLambdaRole.Arn
+      ServiceRoleArn: !GetAtt AppSyncRole.Arn
       LambdaConfig:
         LambdaFunctionArn: !GetAtt CustomResourceLambda.Arn
 
@@ -1818,13 +2079,12 @@ permissions and require you to choose All resources"
     Properties:
       ApiId: !GetAtt AppSyncPipelineApi.ApiId
       TypeName: "Query"
-      FieldName: "getDashboarItemsFromTransitNetworkOrchestratorTables"
+      FieldName: "getDashboardItemsFromTransitNetworkOrchestratorTables"
       DataSourceName: !GetAtt DynamoDBSTNOTableDatasource.Name
       RequestMappingTemplateS3Location:
         !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/resolver/Query_GetDashboardItemsResolver_Request"]]
       ResponseMappingTemplateS3Location:
         !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/resolver/Query_GetDashboardItemsResolver_Response"]]
-
 
   GetVersionHistoryResolver:
     Type: "AWS::AppSync::Resolver"
@@ -2034,7 +2294,7 @@ permissions and require you to choose All resources"
                           Action:
                             - "cognito-identity:GetId"
                           Resource:
-                            - !Join ["",["arn:aws:cognito-identity:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":identitypool/", !Ref IdentityPool]]
+                            - !Join ["",[!Sub "arn:${AWS::Partition}:cognito-identity:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":identitypool/", !Ref IdentityPool]]
 
   IdentityPoolRoleAttachment:
     Type: "AWS::Cognito::IdentityPoolRoleAttachment"
@@ -2056,11 +2316,9 @@ permissions and require you to choose All resources"
   ##########################
   # Amazon DynamoDB Role #
   ##########################
-  AppSyncSTNODynamoDBRole:
+  AppSyncRole:
     Type: AWS::IAM::Role
     Properties:
-      ManagedPolicyArns:
-      - Ref: AppSyncSTNODynamoDBPolicy
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -2070,20 +2328,37 @@ permissions and require you to choose All resources"
           Principal:
             Service:
             - appsync.amazonaws.com
-
-  AppSyncSTNODynamoDBPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      Description: Managed policy to allow AWS AppSync to access the tables created by this template.
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-        - Effect: Allow
-          Action:
-          - dynamodb:UpdateItem
-          - dynamodb:Scan
-          - dynamodb:Query
-          Resource: !GetAtt DynamoDbTable.Arn
+      Path: /
+      Policies:
+        - PolicyName: STNO-Lambda-Policy
+          PolicyDocument: 
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: 
+                - !Sub ${CustomResourceLambda.Arn}
+        - PolicyName: STNO-Logs-Policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+        - PolicyName: STNO-DDB-Policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                - dynamodb:UpdateItem
+                - dynamodb:Scan
+                - dynamodb:Query
+                Resource: !GetAtt DynamoDbTable.Arn
 
   ##########################
   # S3 Bucket #
@@ -2105,6 +2380,8 @@ permissions and require you to choose All resources"
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
 
   ConsoleBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
@@ -2136,8 +2413,6 @@ permissions and require you to choose All resources"
         rules_to_suppress:
           - id: W35
             reason: "This is an access log bucket for the resource 'ConsoleBucket' and does not require access logging to be configured."
-          - id: W41
-            reason: "This is logs bucket and does not require encryption."
     Properties:
       AccessControl: LogDeliveryWrite
       BucketEncryption:
@@ -2149,6 +2424,10 @@ permissions and require you to choose All resources"
         BlockPublicPolicy: True
         IgnorePublicAcls: True
         RestrictPublicBuckets: True
+      LoggingConfiguration:
+        LogFilePrefix: logsbucket_logs/
+      VersioningConfiguration:
+        Status: Enabled
 
   LogsBucketS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -2227,11 +2506,6 @@ permissions and require you to choose All resources"
 
   ConsoleIAMPolicy:
     Type: "AWS::IAM::Policy"
-    Metadata:
-      cfn_nag:
-          rules_to_suppress:
-              - id: W12
-                reason: Allow * to grant proper access to contents in one specific bucket for a specific account and region.
     Properties:
       PolicyName: "STNOConsolePolicy"
       Roles:
@@ -2246,48 +2520,73 @@ permissions and require you to choose All resources"
               - s3:deleteObject
               - s3:deleteBucket
             Resource:
-              - !Join ["", ["arn:aws:s3:::", Ref: "ConsoleBucket"]]
-              - !Join ["", ["arn:aws:s3:::", Ref: "ConsoleBucket", "/*" ]]
+              - !Join ["", [!Sub "arn:${AWS::Partition}:s3:::", Ref: "ConsoleBucket"]]
+              - !Join ["", [!Sub "arn:${AWS::Partition}:s3:::", Ref: "ConsoleBucket", "/*" ]]
           -
             Effect: "Allow"
             Action:
               - s3:getObject
             Resource:
-              - !Join ["", ["arn:aws:s3:::",!FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region"]]
-              - !Join ["", ["arn:aws:s3:::",!FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region","/*"]]
+              - !Join ["", [!Sub "arn:${AWS::Partition}:s3:::",!FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region"]]
+              - !Join ["", [!Sub "arn:${AWS::Partition}:s3:::",!FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region","/*"]]
 
   Console:
-    DependsOn: ConsoleIAMPolicy
     Type: "Custom::ConsoleDeploy"
     Properties:
-      ServiceToken: !GetAtt CustomResourceLambda.Arn
-      Resource: Console
+      ServiceToken: !Sub ${CustomResourceLambda.Arn}
       SrcBucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
       SrcPath: !FindInMap ["SourceCode", "General", "KeyPrefix"]
       ConsoleBucket: !Ref ConsoleBucket
-      CustomAction: "consoleDeploy"
-      AwsProjectRegion: !Sub "${AWS::Region}"
-      AwsCognitoRegion: !Sub "${AWS::Region}"
       AwsUserPoolsId: !Ref STNOUserPool
       AwsUserPoolsWebClientId: !Ref UserPoolClient
       AwsCognitoIdentityPoolId: !Ref IdentityPool
       AwsAppsyncGraphqlEndpoint: !GetAtt AppSyncPipelineApi.GraphQLUrl
-      AwsAppsyncRegion: !Sub "${AWS::Region}"
       AwsContentDeliveryBucket: !Ref ConsoleBucket
-      AwsContentDeliveryBucketRegion: !Sub "${AWS::Region}"
       AwsContentDeliveryUrl: !Sub "https://${ConsoleCloudFront.DomainName}"
 
   SendCFNParameters:
     Type: Custom::SendCFNParameters
     Properties:
+      Uuid: !GetAtt CreateUUID.UUID
       PrincipalType: !Ref PrincipalType
       ApprovalNotification: !Ref ApprovalNotification
-      AuditTrailRetentionPeriod: !Ref AuditTrailRetentionPeriod
+      AuditTrailRetentionPeriod: !FindInMap ["LogRetention", "AuditTrail", "RetentionPeriod"]
       DefaultRoute: !Ref DefaultRoute
-      MetricsFlag: !FindInMap [Solution, Metrics, SendAnonymousData]
       CreatedNewTransitGateway: !If [CreateNewTransitGateway, 'Yes', 'No']
-      SolutionVersion: v2.0.0
-      ServiceToken: !GetAtt CustomResourceLambda.Arn
+      ServiceToken: !Sub ${CustomResourceLambda.Arn}
+
+  CloudWatchLogFailures:
+    Type: AWS::Logs::LogGroup
+    Metadata:
+      cfn_nag:
+          rules_to_suppress:
+              - id: W84
+                reason: Using service default encryption https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/data-protection.html
+    Properties:
+      RetentionInDays: !FindInMap ["LogRetention", "CloudWatchLogs", "RetentionPeriod"]
+      LogGroupName: STNO-Hub-Failures
+
+  CloudWatchLogActions:
+    Type: AWS::Logs::LogGroup
+    Metadata:
+      cfn_nag:
+          rules_to_suppress:
+              - id: W84
+                reason: Using service default encryption https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/data-protection.html
+    Properties:
+      RetentionInDays: !FindInMap ["LogRetention", "CloudWatchLogs", "RetentionPeriod"]
+      LogGroupName: STNO-Hub-Actions
+
+  CloudWatchLogStateMachine:
+    Type: AWS::Logs::LogGroup
+    Metadata:
+      cfn_nag:
+          rules_to_suppress:
+              - id: W84
+                reason: Using service default encryption https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/data-protection.html
+    Properties:
+      RetentionInDays: !FindInMap ["LogRetention", "CloudWatchLogs", "RetentionPeriod"]
+      LogGroupName: STNO-StateMachine
 
 ##########################
   # Outputs #
@@ -2300,18 +2599,22 @@ Outputs:
   GlobalNetworkId:
     Value: !If [CreateNewGlobalNetwork, !Ref GlobalNetworkSTNO, !Ref ExistingGlobalNetworkId]
   FlatTGWRT:
+    Condition: CreateNewTransitGateway
     Value: !Ref FlatTGWRouteTable
   IsolatedTGWRT:
+    Condition: CreateNewTransitGateway
     Value: !Ref IsolatedTGWRouteTable
   OnpremTGWRT:
-      Value: !Ref OnPremTGWRouteTable
+    Condition: CreateNewTransitGateway
+    Value: !Ref OnPremTGWRouteTable
   InfrastructureTGWRT:
+    Condition: CreateNewTransitGateway
     Value: !Ref InfrastructureTGWRouteTable
   ResourceShareArn:
     Value: !GetAtt TGWResourceShare.Arn
   SolutionVersion:
     Description: Version Number
-    Value: v2.0.0
+    Value: !FindInMap [SourceCode, General, Version]
   Console:
     Description: The link to the console
     Value: !Sub https://${ConsoleCloudFront.DomainName}

@@ -35,12 +35,12 @@ export const getActionItemsFromTransitNetworkOrchestratorTables = `query GetActi
   }
 }
 `;
-export const getDashboarItemsFromTransitNetworkOrchestratorTables = `query GetDashboarItemsFromTransitNetworkOrchestratorTables(
+export const getDashboardItemsFromTransitNetworkOrchestratorTables = `query getDashboardItemsFromTransitNetworkOrchestratorTables(
   $filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput
   $limit: Int
   $nextToken: String
 ) {
-  getDashboarItemsFromTransitNetworkOrchestratorTables(
+  getDashboardItemsFromTransitNetworkOrchestratorTables(
     filter: $filter
     limit: $limit
     nextToken: $nextToken

@@ -1,0 +1,67 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# This is an optional CloudFormation template for the AWS Organizations Management account
+# This template creates an IAM role can be used to enhance the information
+# in STNO, specifically allowing the UI and TGW attachment tags to include the 
+# account name, and OU. 
+
+# (An alternative to creating this CloudFormation stack is to register the STNO hub account 
+# as the delegated administrator for any service, for example service catalog:
+# https://docs.aws.amazon.com/organizations/latest/userguide/orgs_integrate_services_list.html
+# This will allow the STNO hub account to query the AWS Organization information directly 
+# without needing an IAM role
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: (SO0058o) - The AWS CloudFormation template (Organization role) for deployment of the %SOLUTION_NAME% Solution. Version %VERSION%
+
+Parameters:
+  HubAccount:
+    Description: Account Id for the STNO hub account, eg. 123456789012
+    Type: String
+    AllowedPattern: ^\d{12}$
+
+Resources:
+  OrganizationInformationRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "Using * for the Resources as we cannot predict the account IDs or Organization Units that needs to be queried"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                # The Condition below restricts it to a specific Role in the Hub account.
+                # The reason the Role ARN was put as a Condition instead of just having it 
+                # directly here is to allow this template to be created without the role 
+                # existing (which will be the case if this template is deployed before STNO 
+                # is installed on the Hub account)
+                - !Ref HubAccount
+            Action:
+              - sts:AssumeRole
+            Condition:
+              ArnEquals:
+                aws:PrincipalArn:
+                - !Sub arn:aws:iam::${HubAccount}:role/STNO-StateMachineLambdaRole-${AWS::Region}
+      Policies:
+        - PolicyName: OrganizationDetailsReadOnly
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - organizations:DescribeAccount
+                  - organizations:ListParents
+                  - organizations:DescribeOrganizationalUnit
+                Resource:
+                  - '*'
+
+Outputs:
+  RoleArn:
+    Description: Role ARN, for use in STNO
+    Value: !GetAtt OrganizationInformationRole.Arn

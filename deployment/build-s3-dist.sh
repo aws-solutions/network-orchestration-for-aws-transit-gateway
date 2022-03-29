@@ -14,131 +14,131 @@
 #
 #  - version-code: version of the package
 
+[ "$DEBUG" == 'true' ] && set -x
+set -e
+
 if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
     echo "Please provide the base source bucket name, trademark approved solution name and version where the lambda code will eventually reside."
     echo "For example: ./build-s3-dist.sh solutions trademarked-solution-name v1.0.0"
     exit 1
 fi
 
-# Get reference for all important folders
- template_dir="$PWD"
- template_dist_dir="$template_dir/global-s3-assets"
- build_dist_dir="$template_dir/regional-s3-assets"
- source_dir="$template_dir/../source"
+# function to print headers
+function headline(){
+  echo "------------------------------------------------------------------------------"
+  echo "$1"
+  echo "------------------------------------------------------------------------------"
+}
 
- echo "------------------------------------------------------------------------------"
- echo "[Init] Clean old dist, node_modules and bower_components folders"
- echo "------------------------------------------------------------------------------"
- echo "rm -rf $template_dist_dir"
- rm -rf $template_dist_dir
- echo "mkdir -p $template_dist_dir"
- mkdir -p $template_dist_dir
- echo "rm -rf $build_dist_dir"
- rm -rf $build_dist_dir
- echo "mkdir -p $build_dist_dir"
- mkdir -p $build_dist_dir
 
-# Create zip file for AWS Lambda functions
-echo -e "\n >> Creating all lambda functions for Serverless Transit Network Orchestrator Solution"
-python source/scripts/build_scripts/lambda_build.py custom_resource_lambda state_machine_lambda tgw_peering_attach_sm_lambda
-python $source_dir/scripts/build_scripts/lambda_build.py custom_resource_lambda state_machine_lambda tgw_peering_attach_sm_lambda
+headline "[Init] Setting up paths"
+template_dir="$PWD"
+template_dist_dir="$template_dir/global-s3-assets"
+build_dist_dir="$template_dir/regional-s3-assets"
+source_dir="$template_dir/../source"
+lambda_dir="$source_dir/lambda"
 
-# Clean up tests and ui dir from the zip files
-echo -e "\n >> Cleaning up the tests and ui folder from the lambda zip files \n"
-zip_files=("aws-transit-network-orchestrator-cr.zip" "aws-transit-network-orchestrator-sm.zip" "aws-transit-network-orchestrator-tgw-peering.zip")
-echo "Removing junk files"
-for zip_file in "${zip_files[@]}";
-  do
-    echo "Deleting: zip -d $build_dist_dir/$zip_file tests/* ui/*"
-    zip -d "$build_dist_dir"/"$zip_file" tests/* ui/*
-  done
 
-# Copy ui files to regional-s3-assets and zip them
-echo "pwd"
-pwd
-echo "ls -al"
-ls -al
-echo "== cp -R $source_dir/ui $build_dist_dir/"
+headline "[Init] Clean old folders"
+rm -rf $template_dist_dir
+mkdir -p $template_dist_dir
+rm -rf $build_dist_dir
+mkdir -p $build_dist_dir
+
+headline "[Init] Clean python generated files & folders"
+cd $lambda_dir
+find . -iname ".venv" -type d | xargs rm -rf
+find . -iname "__pycache__" -type d | xargs rm -rf
+find . -iname "dist" -type d | xargs rm -rf
+find . -type f -name ".pytest_cache" -delete
+find . -type f -name ".coverage" -delete
+
+headline "[Init] Initiating virtual environment"
+python3 -m venv .venv --upgrade-deps
+source .venv/bin/activate
+pip3 install -r requirements.txt
+
+headline "[Build] Lambda zips for STNO Solution"
+for microservices in */ ; do
+  echo "building $microservices"
+  microservice_name=$(basename $microservices)
+  cd $lambda_dir/$microservice_name
+  mkdir -p dist/$microservice_name
+  rsync -av $lambda_dir/.venv/lib/python3.9/site-packages/ ./dist/
+  cp -R lib __init__.py index.py ./dist/$microservice_name/
+  if [ $microservices == 'state_machine/' ]
+  then
+      cp -R utils state_machine_handler.py ./dist/$microservice_name/
+  fi
+  cd dist
+  zip -r "$microservice_name.zip" .
+  cp -R "$microservice_name.zip" $build_dist_dir
+  rm -rf $lambda_dir/$microservice_name/dist
+done
+deactivate
+
+headline "[Stage] Copy ui files to regional-s3-assets, build console and zip"
 cp -R $source_dir/ui $build_dist_dir/
-echo "== mkdir -p $build_dist_dir/graphql"
 mkdir -p $build_dist_dir/graphql
-echo "== copy graphql files to $build_dist_dir/graphql"
-echo "== cp -R $source_dir/ui/src/graphql/schema.graphql $source_dir/ui/src/graphql/resolver $source_dir/ui/src/graphql/function $build_dist_dir/graphql"
 cp -R $source_dir/ui/src/graphql/schema.graphql $source_dir/ui/src/graphql/resolver $source_dir/ui/src/graphql/function $build_dist_dir/graphql
-echo "== cd $build_dist_dir/ui/"
 cd $build_dist_dir/ui/ 
-echo "== [ -e node_modules ] && rm -rf node_modules "
 [ -e node_modules ] && rm -rf node_modules 
-echo "== npm install"
-npm install
-echo "rm package-lock.json"
-rm package-lock.json
-echo "== zip -q -r9 ../aws-transit-network-orchestrator-console.zip ../ui"
-zip -q -r9 ../aws-transit-network-orchestrator-console.zip ../ui
-echo "pwd"
-pwd
-echo "ls -al"
-ls -al
-
-# Build console files
+npm ci
 [ -e build ] && rm -r build 
-echo "== npm run build"
 npm run build
 cp -R ./build ../console
-echo "== ls -al ../console"
-ls -al ../console
-echo "== cd ../../.. && rm -rf $build_dist_dir/ui"
 cd ../../.. && rm -rf $build_dist_dir/ui
-echo "pwd"
-pwd
-echo "ls -al"
-ls -al
 
-# Generate console manifest and add it to aws-transit-network-orchestrator-cr.zip
-echo "== cd $template_dir/manifest-generator"
+headline "[Build] Generate console manifest and add it to custom_resource.zip"
 cd $template_dir/manifest-generator
-echo "== [ -e node_modules ] && rm -rf node_modules"
 [ -e node_modules ] && rm -rf node_modules
-echo "== npm install"
-npm install
+npm ci
 node app.js --target "$build_dist_dir/console" --output "$build_dist_dir/console-manifest.json"
-echo "== rm package-lock.json"
-rm package-lock.json
-echo "== ls -al $build_dist_dir/console"
-ls -al $build_dist_dir/console
-echo "Add console-manifest.json to aws-transit-network-orchestrator-cr.zip file" 
-echo "cd $build_dist_dir && zip -rv ./aws-transit-network-orchestrator-cr.zip ./console-manifest.json"
-cd $build_dist_dir && zip -rv ./aws-transit-network-orchestrator-cr.zip ./console-manifest.json
-echo "return to root directory: cd ../.."
+cd $build_dist_dir && zip -rv ./custom_resource.zip ./console-manifest.json
 cd ../..
 
-# Copy template files to global-s3-assets directory
-echo "cp -f $template_dir/aws-transit-network-orchestrator-hub.template $template_dist_dir"
+headline "[Stage] Copy templates to global-s3-assets directory"
 cp -f $template_dir/aws-transit-network-orchestrator-hub.template $template_dist_dir
-echo "cp -f $template_dir/aws-transit-network-orchestrator-spoke.template $template_dist_dir"
 cp -f $template_dir/aws-transit-network-orchestrator-spoke.template $template_dist_dir
+cp -f $template_dir/aws-transit-network-orchestrator-organization-role.template $template_dist_dir
 
-# Replace source code s3 bucket name with real value
-echo -e "\n >> Updating code source bucket in the template with $1"
-replace="s/%DIST_BUCKET_NAME%/$1/g"
-echo "sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template"
-sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
-echo "sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template"
-sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
+# Find and replace bucket_name, solution_name, and version
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # Mac OS
+    # Replace source code s3 bucket name with real value
+    replace="s/%DIST_BUCKET_NAME%/$1/g"
+    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
+    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
+    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
 
-# Replace solution name with real value
-echo -e "\n >> Updating solution name in the template with $2"
-replace="s/%SOLUTION_NAME%/$2/g"
-echo "sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template"
-sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
-echo "sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template"
-sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
+    # Replace solution name with real value
+    replace="s/%SOLUTION_NAME%/$2/g"
+    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
+    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
+    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
 
-# Replace version variable with real value
-echo -e "\n >> Updating version number in the template with $3"
-replace="s/%VERSION%/$3/g"
-echo "sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template"
-sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
-echo "sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template"
-sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
+    # Replace version variable with real value
+    replace="s/%VERSION%/$3/g"
+    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
+    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
+    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
+else
+    # Other linux
+    # Replace source code s3 bucket name with real value
+    replace="s/%DIST_BUCKET_NAME%/$1/g"
+    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
+    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
+    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
 
+    # Replace solution name with real value
+    replace="s/%SOLUTION_NAME%/$2/g"
+    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
+    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
+    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
+
+    # Replace version variable with real value
+    replace="s/%VERSION%/$3/g"
+    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
+    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
+    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
+fi
