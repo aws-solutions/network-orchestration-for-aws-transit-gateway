@@ -1,8 +1,6 @@
 {
   "name": "aws-serverless-transit-network-orchestrator",
   "version": "3.0.0",
-  "private": true,
-  "homepage": "https://s3.amazonaws.com/",
   "dependencies": {
     "@aws-amplify/api-graphql": "^2.2.22",
     "@aws-amplify/auth": "^4.4.2",
@@ -15,18 +13,15 @@
     "ag-grid-community": "^27.0.1",
     "ag-grid-react": "^27.0.1",
     "bootstrap": "^4.3.1",
-    "jquery": "^3.4.1",
-    "popper.js": "^1.16.0",
     "react": "^17.0.2",
     "react-bootstrap": "^2.2.0",
     "react-dom": "^17.0.2",
     "react-icons": "^3.7.0",
-    "react-modal": "^3.8.1",
-    "react-router-dom": "^5.0.0",
-    "react-scripts": "^5.0.0"
+    "react-router-dom": "^5.0.0"
   },
   "devDependencies": {
-    "prettier": "~2.4.1"
+    "prettier": "~2.4.1",
+    "react-scripts": "^5.0.0"
   },
   "scripts": {
     "start": "react-scripts start",
