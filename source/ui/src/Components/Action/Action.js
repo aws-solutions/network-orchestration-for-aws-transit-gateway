@@ -3,21 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import React, { Component } from "react";
-import { AgGridReact } from "ag-grid-react";
+import React, {Component} from "react";
+import {AgGridReact} from "ag-grid-react";
 import "ag-grid-community/dist/styles/ag-grid.css";
 import "ag-grid-community/dist/styles/ag-theme-blue.css";
 import "bootstrap/js/dist/dropdown";
 import "bootstrap/dist/css/bootstrap.css";
-import { FaSyncAlt } from "react-icons/fa";
+import {FaSyncAlt} from "react-icons/fa";
 
 //appsync
-import { GraphQLAPI, graphqlOperation } from "@aws-amplify/api-graphql";
+import {GraphQLAPI, graphqlOperation} from "@aws-amplify/api-graphql";
 import {
-  getActionItemsFromTransitNetworkOrchestratorTables,
-  getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables,
+    getActionItemsFromTransitNetworkOrchestratorTables,
+    getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables,
 } from "../../graphql/queries";
-import { updateTransitNetworkOrchestratorTable } from "../../graphql/mutations";
+import {updateTransitNetworkOrchestratorTable} from "../../graphql/mutations";
 
 import VersionHistoryModal from "./VersionHistoryModal";
 import ConfirmRejectModal from "./ConfirmRejectModal";
@@ -384,13 +384,13 @@ class Action extends Component {
           </div>
         </div>
         <AgGridReact
-          onGridReady={this.onGridReady}
-          rowSelection="single"
-          defaultColDef={{ resizable: true, sortable: true, filter: true }}
-          columnDefs={this.state.columnDefs}
-          rowData={this.state.items}
-          onRowSelected={this.onRowSelected}
-        ></AgGridReact>
+            onGridReady={this.onGridReady}
+            rowSelection="single"
+            defaultColDef={{resizable: true, sortable: true, filter: true}}
+            columnDefs={this.state.columnDefs}
+            rowData={this.state.items}
+            onRowSelected={this.onRowSelected}
+        />
       </div>
     );
   } //end render

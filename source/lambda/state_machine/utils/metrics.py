@@ -40,5 +40,6 @@ class Metrics(object):
                 r = requests.post(url, data=json_data, headers=headers)
                 code = r.status_code
                 return code
-        except Exception:
+        except Exception as err:
+            self.logger.error(str(err))
             pass

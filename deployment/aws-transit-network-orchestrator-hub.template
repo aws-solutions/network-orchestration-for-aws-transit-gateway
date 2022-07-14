@@ -131,6 +131,28 @@ Parameters:
     AllowedPattern: '^((arn:aws:iam::\d{12}:role/.+)|)$'
     Default: ""
 
+  CognitoDomainPrefixParameter:
+    Type: String
+    AllowedPattern: ^$|^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$
+    Description: The prefix to the Cognito hosted domain name that will be associated with the user pool.
+
+  CognitoSAMLProviderNameParameter:
+    Type: String
+    AllowedPattern: ^[a-zA-Z]*$
+    Description: (Optional) The identity provider name.
+    MaxLength: 32
+
+  CognitoSAMLProviderMetadataUrlParameter:
+    Type: String
+    Description: (Optional) MetadataURL for the identity provider details.
+
+  AllowListedRanges:
+    Type: CommaDelimitedList
+    Description: |
+      Comma separated list of CIDR ranges that allow to console to access the API.
+      To allow all the entire internet, use 0.0.0.0/1,128.0.0.0/1
+
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -140,6 +162,10 @@ Metadata:
           - PrincipalType
           - Principals
           - OrganizationManagementAccountRoleArn
+      - Label:
+          default: Web UI Security Settings
+        Parameters:
+          - AllowListedRanges
       - Label:
           default: Notification Settings
         Parameters:
@@ -156,6 +182,12 @@ Metadata:
         Parameters:
           - ExistingTransitGatewayId
           - ExistingGlobalNetworkId
+      - Label:
+          default: Amazon Cognito Configuration
+        Parameters:
+          - CognitoDomainPrefixParameter
+          - CognitoSAMLProviderNameParameter
+          - CognitoSAMLProviderMetadataUrlParameter
       - Label:
           default: VPC Route Table Settings
         Parameters:
@@ -208,7 +240,13 @@ Metadata:
         default: (Optional) Comma separated list of VPC tag keys to copy from VPC to TGW Attachments
       OrganizationManagementAccountRoleArn:
         default: (Optional) IAM Role ARN of Management Account
-      
+      CognitoDomainPrefixParameter:
+        default: Cognito Domain Prefix
+      CognitoSAMLProviderNameParameter:
+        default: SAML Provider Name
+      CognitoSAMLProviderMetadataUrlParameter:
+        default: SAML Provider Metadata URL
+
 
 
 Conditions:
@@ -222,6 +260,16 @@ Conditions:
     - !Condition CreateNewTransitGateway
   ProvidedPrefixListIds: !Not [!Equals [!Ref CustomerManagedPrefixListIds, '']]
   OrganizationManagementAccountRoleArn: !Not [ !Equals [!Ref OrganizationManagementAccountRoleArn, '']]
+  FrontEndCognitoSAMLCondition:
+    Fn::And:
+      - Fn::Not:
+          - Fn::Equals:
+              - Ref: CognitoSAMLProviderNameParameter
+              - ""
+      - Fn::Not:
+          - Fn::Equals:
+              - Ref: CognitoSAMLProviderMetadataUrlParameter
+              - ""
 
 Mappings:
   NetworkConfiguration:
@@ -2010,6 +2058,11 @@ Resources:
         ExcludeVerboseContent: False
         FieldLogLevel: NONE
 
+  STNOGraphQLApiWebACLAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      WebACLArn: !GetAtt STNOGraphQLApiWebACL.Arn
+      ResourceArn: !GetAtt AppSyncPipelineApi.Arn
 
   GraphQLSchema:
     Type: "AWS::AppSync::GraphQLSchema"
@@ -2149,6 +2202,23 @@ Resources:
   STNOUserPool:
     Type: AWS::Cognito::UserPool
     Properties:
+      Schema:
+        - AttributeDataType: String
+          DeveloperOnlyAttribute: false
+          Mutable: false
+          Name: sub
+          Required: false
+          StringAttributeConstraints:
+            MaxLength: 2048
+            MinLength: 1
+        - AttributeDataType: String
+          DeveloperOnlyAttribute: false
+          Mutable: false
+          Name: custom:CognitoUserGr
+          Required: false
+          StringAttributeConstraints:
+            MaxLength: 256
+            MinLength: 1
       AdminCreateUserConfig:
                 AllowAdminCreateUserOnly: true
                 InviteMessageTemplate:
@@ -2169,6 +2239,14 @@ Resources:
           RequireSymbols: true
           RequireUppercase: true
           TemporaryPasswordValidityDays: 7
+      LambdaConfig:
+        Fn::If:
+          - FrontEndCognitoSAMLCondition
+          - PostConfirmation:
+              Fn::GetAtt:
+                - FrontEndCognitoTriggerFunction
+                - Arn
+          - { }
       UserPoolAddOns:
         AdvancedSecurityMode: ENFORCED
 
@@ -2176,12 +2254,135 @@ Resources:
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: "simpleClient"
-      ExplicitAuthFlows:
-      - "ADMIN_NO_SRP_AUTH"
-      GenerateSecret: FALSE
       UserPoolId:
         Ref: STNOUserPool
+      ClientName: "stno-app-client"
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthScopes:
+        - phone
+        - email
+        - openid
+        - profile
+        - aws.cognito.signin.user.admin
+      CallbackURLs:
+        - !Sub "https://${ConsoleCloudFront.DomainName}/"
+      GenerateSecret: false
+      LogoutURLs:
+        - !Sub "https://${ConsoleCloudFront.DomainName}/"
+      PreventUserExistenceErrors: ENABLED
+      RefreshTokenValidity: 1
+      SupportedIdentityProviders:
+        Fn::If:
+          - FrontEndCognitoSAMLCondition
+          - - COGNITO
+            - Ref: CognitoSAMLProviderNameParameter
+          - - COGNITO
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain:
+        Ref: CognitoDomainPrefixParameter
+      UserPoolId:
+        Ref: STNOUserPool
+
+  FrontEndCognitoSAMLProvider:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    Properties:
+      ProviderName:
+        Ref: CognitoSAMLProviderNameParameter
+      ProviderType: SAML
+      UserPoolId:
+        Ref: STNOUserPool
+      AttributeMapping:
+        email: email
+      ProviderDetails:
+        MetadataURL:
+          Ref: CognitoSAMLProviderMetadataUrlParameter
+    Condition: FrontEndCognitoSAMLCondition
+
+  ############################
+  # UserPool Cognito Trigger #
+  ############################
+  FrontEndCognitoTriggerFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      Path: /
+      Policies:
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Effect: Allow
+                Resource:
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+            Version: "2012-10-17"
+          PolicyName: CloudWatchLogsPolicy
+        - PolicyDocument:
+            Statement:
+              - Action:
+                  - cognito-idp:AdminAddUserToGroup
+                Effect: Allow
+                Resource:
+                  # referencing ReadOnlyUserPool instead of userpool/* creates a circular dependency
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:userpool/*
+            Version: "2012-10-17"
+          PolicyName: AddUserToReadOnlyUserGroupPolicy
+    Condition: FrontEndCognitoSAMLCondition
+
+  FrontEndCognitoTriggerFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"cognito-trigger.zip"]]
+      Role:
+        Fn::GetAtt:
+          - FrontEndCognitoTriggerFunctionRole
+          - Arn
+      Description: "AWS STNO Solution (%VERSION%): Cognito Trigger. Used when a new user is confirmed in the user pool to allow for custom actions to be taken"
+      Environment:
+        Variables:
+          LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
+          SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionId]
+          SOLUTION_VERSION: !FindInMap [SourceCode, General, Version]
+      Handler: index.handler
+      Runtime: nodejs14.x
+      Timeout: 60
+    DependsOn:
+      - FrontEndCognitoTriggerFunctionRole
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W89
+            reason: VPC for Lambda is not needed. This serverless architecture does not deploy a VPC.
+          - id: W92
+            reason: ReservedConcurrentExecutions is not needed for this Lambda function.
+    Condition: FrontEndCognitoSAMLCondition
+
+  FrontEndCognitoTriggerFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: FrontEndCognitoTriggerFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - STNOUserPool
+          - Arn
+    Condition: FrontEndCognitoSAMLCondition
 
   ############################
   # UserPool Groups          #
@@ -2450,6 +2651,78 @@ Resources:
       CloudFrontOriginAccessIdentityConfig:
         Comment: !Sub "access-identity-${ConsoleBucket}"
 
+  AllowListedCidr:
+    Type: AWS::WAFv2::IPSet
+    Properties:
+      Name: STNO-Api-Allowlist
+      Scope: REGIONAL
+      Description: CIDR ranges allowed access to STNO web UI
+      IPAddressVersion: IPV4
+      Addresses: !Ref AllowListedRanges
+
+  STNOGraphQLApiWebACL:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: "STNO-Api-WebACL"
+      Scope: REGIONAL
+      DefaultAction:
+        Block: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: "STNO-Api-WebACL-Metrics"
+      Rules:
+        - Name: "AllowlistRule"
+          Priority: 0
+          Action:
+            Allow: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "STNO-Api-AllowlistRuleMetric"
+          Statement:
+            IPSetReferenceStatement:
+              Arn: !GetAtt AllowListedCidr.Arn
+        - Name: "AWSManagedRules"
+          Priority: 1
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "STNO-Api-AWSManagedRulesMetric"
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: "AWSManagedRulesCommonRuleSet"
+              ExcludedRules: []
+
+  SecurityHeaderFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub "STNO-SecurityHeaderFunction-${AWS::Region}"
+      AutoPublish: true
+      FunctionCode: |
+        function handler = (event) => {
+            const response = event.response;
+            const headers = response.headers;
+
+            //Set new headers
+            headers['strict-transport-security'] = [{
+                key: 'Strict-Transport-Security',
+                value: 'max-age=63072000; includeSubdomains; preload'
+            }];
+            headers['x-content-type-options'] = [{key: 'X-Content-Type-Options', value: 'nosniff'}];
+            headers['x-frame-options'] = [{key: 'X-Frame-Options', value: 'DENY'}];
+            headers['x-xss-protection'] = [{key: 'X-XSS-Protection', value: '1; mode=block'}];
+            headers['referrer-policy'] = [{key: 'Referrer-Policy', value: 'same-origin'}];
+
+            return response;
+          };
+      FunctionConfig:
+        Runtime: cloudfront-js-1.0
+        Comment: "Adds recommended security-related http headers to CloudFront responses"
+
   ConsoleCloudFront:
       Type: AWS::CloudFront::Distribution
       Metadata:
@@ -2543,6 +2816,7 @@ Resources:
       AwsAppsyncGraphqlEndpoint: !GetAtt AppSyncPipelineApi.GraphQLUrl
       AwsContentDeliveryBucket: !Ref ConsoleBucket
       AwsContentDeliveryUrl: !Sub "https://${ConsoleCloudFront.DomainName}"
+      AwsCognitoDomainPrefix: !Ref CognitoDomainPrefixParameter
 
   SendCFNParameters:
     Type: Custom::SendCFNParameters
@@ -2627,6 +2901,16 @@ Outputs:
   UserPoolID:
     Description: The User Pool ID
     Value: !Ref STNOUserPool
+  CognitoDomain:
+    Description: Cognito hosted domain
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: UserPoolDomain
+          - .auth.
+          - Ref: AWS::Region
+          - .amazoncognito.com
   IdentityPoolID:
     Description: The Identity Pool ID.
     Value: !Ref IdentityPool

@@ -1,0 +1,28 @@
+{
+  "name": "cognito-trigger",
+  "version": "3.1.0",
+  "description": "Triggered when a new user is confirmed in the user pool to allow for custom actions to be taken",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.102.0",
+    "winston": "^3.3.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.24",
+    "@types/node": "^16.4.5",
+    "jest": "^26.0.0",
+    "ts-jest": "^26.0.0",
+    "ts-node": "^10.1.0",
+    "typescript": "^3.9.7",
+    "aws-sdk-client-mock": "^0.6.2"
+  },
+  "scripts": {
+    "build:clean": "rm -rf ./node_modules && rm -rf ./dist",
+    "build:install": "npm ci",
+    "build:ts": "./node_modules/typescript/bin/tsc --project ./tsconfig.json",
+    "build:copy": "cp -RL ./node_modules ./dist/node_modules && rm -rf ./dist/__tests__",
+    "build:zip": "cd ./dist && zip -r cognito-trigger.zip .",
+    "build:all": "npm run build:clean && npm run build:install && npm run build:ts && npm prune --production && npm run build:copy && npm run build:zip"
+  },
+  "license": "Apache-2.0"
+}

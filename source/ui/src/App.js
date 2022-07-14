@@ -3,52 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import React from "react";
-import { BrowserRouter as Router, Route, Link, Switch } from "react-router-dom";
-import { withAuthenticator } from "@aws-amplify/ui-react";
-import { Amplify } from "@aws-amplify/core";
-import { Auth } from "@aws-amplify/auth";
+import React, {useContext} from "react";
+import {BrowserRouter as Router, Link, Route, Switch} from "react-router-dom";
+import {Logger} from "@aws-amplify/core";
+import {Auth} from "@aws-amplify/auth";
 
 //Icons
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faAws } from "@fortawesome/free-brands-svg-icons";
-import {
-  faBars,
-  faCog,
-  faPlusSquare,
-  faArrowAltCircleRight,
-  faSyncAlt,
-} from "@fortawesome/free-solid-svg-icons";
+import {library} from "@fortawesome/fontawesome-svg-core";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faAws} from "@fortawesome/free-brands-svg-icons";
+import {faArrowAltCircleRight, faBars, faCog, faPlusSquare, faSyncAlt,} from "@fortawesome/free-solid-svg-icons";
 
-//Components
 import Dashboard from "./Components/Dashboard/Dashboard";
 import Action from "./Components/Action/Action";
 
-//css
 import "bootstrap/dist/css/bootstrap.css";
+import {UserContext} from "./contexts/UserContext";
 
-declare var stno_config;
-
-Amplify.configure({
-  Auth: {
-    region: stno_config.aws_project_region,
-    userPoolId: stno_config.aws_user_pools_id,
-    userPoolWebClientId: stno_config.aws_user_pools_web_client_id,
-    identityPoolId: stno_config.aws_cognito_identity_pool_id,
-  },
-});
-
-let myAppSyncConfig = {
-  aws_appsync_graphqlEndpoint: stno_config.aws_appsync_graphqlEndpoint,
-  aws_appsync_region: stno_config.aws_appsync_region,
-  aws_appsync_authenticationType: stno_config.aws_appsync_authenticationType,
-  aws_content_delivery_bucket: stno_config.aws_content_delivery_bucket,
-  aws_content_delivery_bucket_region: stno_config.aws_project_region,
-  aws_content_delivery_url: stno_config.aws_content_delivery_url,
-};
-
-Amplify.configure(myAppSyncConfig);
+const LOGGER = new Logger("App", "DEBUG");
 
 library.add(
   faAws,
@@ -59,7 +31,7 @@ library.add(
   faSyncAlt
 );
 
-function NoMatch({ location }) {
+function NoMatch({location}) {
   return (
     <div>
       <h3>
@@ -69,54 +41,55 @@ function NoMatch({ location }) {
   );
 }
 
-class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.signOut = this.signOut.bind(this);
-  }
+const signOut = async () => {
+  await Auth.signOut().catch((error) => {
+    LOGGER.error("Error occurred while signing out.", error);
+  });
+  window.location.reload();
+}
 
-  signOut() {
-    Auth.signOut()
-      .then((data) => console.log(data))
-      .catch((err) => console.log(err));
-  }
+function App() {
+  const {user} = useContext(UserContext);
+  LOGGER.debug(`User: ${JSON.stringify(user)}`);
+  const groups = user && user.signInUserSession.idToken.payload["cognito:groups"] || ["none"];
+  LOGGER.debug(`User Groups: ${groups}`);
 
-  render() {
+  if (!user) {
+    Auth.federatedSignIn().then((response) => {
+      LOGGER.debug(`Federated sign in successful: ${response}`);
+    });
+    return <div>Redirecting to login...</div>
+  } else {
     return (
       <Router>
         <div>
           <nav className="topnav">
-            <FontAwesomeIcon icon={faAws} size="2x" color="#FF9900" id="logo" />
+            <FontAwesomeIcon icon={faAws} size="2x" color="#FF9900" id="logo"/>
             <h1> Transit Network Managment Console</h1>
-            <Link to="" onClick={this.signOut}>
+            <Link to="" onClick={signOut}>
               Sign Out
             </Link>
           </nav>
 
           <nav className="sidenav">
             <Link to="/">
-              <FontAwesomeIcon icon={faBars} /> Dashboard
+              <FontAwesomeIcon icon={faBars}/> Dashboard
             </Link>
             <Link
               to={{
-                pathname: "/action/" + this.props.user.username,
-                state:
-                  this.props.user.username +
-                  "," +
-                  this.props.user.signInUserSession.idToken.payload[
-                    "cognito:groups"
-                  ].join(),
+                pathname: "/action/" + user.username,
+                state: user.username + "," + groups.join(),
               }}
             >
-              <FontAwesomeIcon icon={faBars} /> Action Items
+              <FontAwesomeIcon icon={faBars}/> Action Items
             </Link>
           </nav>
 
           <div className="main">
             <Switch>
-              <Route name="Dashboard" path="/" exact component={Dashboard} />
-              <Route name="Action" path="/action/" component={Action} />
-              <Route component={NoMatch} />
+              <Route name="Dashboard" path="/" exact component={Dashboard}/>
+              <Route name="Action" path="/action/" component={Action}/>
+              <Route component={NoMatch}/>
             </Switch>
           </div>
         </div>
@@ -125,4 +98,5 @@ class App extends React.Component {
   }
 }
 
-export default withAuthenticator(App, { hideSignUp: true });
+
+export default App;

@@ -53,7 +53,9 @@ _Note: All templates need to be deployed in the same preferred region_
 
 - **Principal Type**: Choose to provide list of accounts (comma separated) or AWS Organizations ARN
 - **Account List or AWS Organizations ARN**: AWS account numbers eg. 123456789012 (comma separated) OR the ARN of an Organization
+- **AllowListedRanges**: Comma separated list of CIDR ranges that allow to console to access the API. To allow all the entire internet, use 0.0.0.0/1,128.0.0.0/1
 - **Console Login Information Email**: Cognito user email where the temporary password will be sent
+- **Cognito Domain Prefix**: A unique string that becomes part of the URL of the Cognito Hosted UI for your console instance
 
 _Note: You may leave rest of the parameters to default value. For more details on the parameters, please refer to the guide [here](https://docs.aws.amazon.com/solutions/latest/serverless-transit-network-orchestrator/deployment.html#step1)._
 
@@ -105,8 +107,8 @@ _Note: For PROFILE_NAME, substitute the name of an AWS CLI profile that contains
 You can use the following commands to create this bucket
 
 ```
-ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account --profile <PROFILE_NAME>)
-REGION=$(aws configure get region --profile <PROFILE_NAME>)
+ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account --profile thiemo-stno)
+REGION=$(aws configure get region --profile thiemo-stno)
 BUCKET_NAME=stno-$ACCOUNT_ID-$REGION
 aws s3 mb s3://$BUCKET_NAME/
 
@@ -146,14 +148,8 @@ Deploy the distributable to an Amazon S3 bucket in your account
 ```
 aws s3 ls s3://$BUCKET_NAME  # should not give an error
 cd ./deployment
-
-# copy templates
-for file in global-s3-assets/*; do (aws s3api put-object --bucket $BUCKET_NAME --key $SOLUTION_NAME/$VERSION/$(basename $file) --body $file --acl bucket-owner-full-control --expected-bucket-owner $ACCOUNT_ID --profile <PROFILE_NAME>); done;
-
-# copy lambda binaries and console files
-cd ./regional-s3-assets
-for file in **/*; do (aws s3api put-object --bucket $BUCKET_NAME --key $SOLUTION_NAME/$VERSION/$file --body $file --acl bucket-owner-full-control --expected-bucket-owner $ACCOUNT_ID --profile <PROFILE_NAME>); done;
-cd ..
+aws s3 cp global-s3-assets/  s3://$BUCKET_NAME/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control --expected-bucket-owner $ACCOUNT_ID --profile <PROFILE_NAME>
+aws s3 cp regional-s3-assets/  s3://$BUCKET_NAME/$SOLUTION_NAME/$VERSION/ --recursive --acl bucket-owner-full-control --expected-bucket-owner $ACCOUNT_ID --profile <PROFILE_NAME>
 ```
 
 _✅ All assets are now staged on your S3 bucket. You or any user may use S3 links for deployments_
