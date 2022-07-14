@@ -3,16 +3,20 @@
 # SPDX-License-Identifier: Apache-2.0
 """Custom resource helper module"""
 
-import threading
-from os import environ, path
-import time
 import json
-from uuid import uuid4
 import logging
+import threading
+import time
+from os import environ, path
+from uuid import uuid4
+
+import boto3
 import requests
-from custom_resource.lib.step_functions import StepFunctions
+
 from custom_resource.lib.cloudwatch_events import CloudWatchEvents
-from custom_resource.lib.s3 import S3
+from custom_resource.lib.console_deployment import ConsoleDeployment
+from custom_resource.lib.step_functions import StepFunctions
+from custom_resource.lib.utils import boto3_config
 from custom_resource.lib.utils import (
     sanitize,
     send_metrics,
@@ -120,7 +124,8 @@ def cfn_handler(event, context):
             handle_cwe_permissions(event)
 
         if event["ResourceType"] == "Custom::ConsoleDeploy":
-            handle_console_deploy(event)
+            s3_client = boto3.client("s3", config=boto3_config)
+            ConsoleDeployment(s3_client, open, path.exists).deploy(event)
 
         if event["ResourceType"] == "Custom::GetPrefixListArns":
             response_data = handle_prefix(event)
@@ -195,76 +200,6 @@ def handle_cwe_permissions(event):
             cwe.put_permission(principal, event_bus_name)
 
 
-def handle_console_deploy(event):
-    """Handler for STNO web ui deployment
-
-    Args:
-        event (dict): event from CloudFormation on create, update or delete
-
-    Returns:
-        None
-    """
-    if event["RequestType"] == "Create" or event["RequestType"] == "Update":
-        s3client = S3()
-
-        properties = event["ResourceProperties"]
-        file_path = path.join(
-            path.dirname(__file__), "../../console-manifest.json"
-        )
-        logger.debug("file path for console manifest: %s", file_path)
-        if path.exists(file_path):
-            with open(file_path, "r") as json_data:
-                data = json.load(json_data)
-
-            destination_bucket = properties.get("ConsoleBucket")
-            source_bucket = properties.get("SrcBucket")
-            key_prefix = properties.get("SrcPath") + "/"
-
-            for file in data["files"]:
-                key = "console/" + file
-                s3client.copy_object(
-                    src_bucket_name=source_bucket,
-                    src_object=key_prefix + key,
-                    dest_bucket_name=destination_bucket,
-                    dest_object=key,
-                )
-
-            # geenrating config file
-            stno_config = {
-                "aws_project_region": environ.get("AWS_REGION"),
-                "aws_cognito_region": environ.get("AWS_REGION"),
-                "aws_user_pools_id": properties.get("AwsUserPoolsId"),
-                "aws_user_pools_web_client_id": properties.get(
-                    "AwsUserPoolsWebClientId"
-                ),
-                "aws_cognito_identity_pool_id": properties.get(
-                    "AwsCognitoIdentityPoolId"
-                ),
-                "oauth": {},
-                "aws_appsync_graphqlEndpoint": properties.get(
-                    "AwsAppsyncGraphqlEndpoint"
-                ),
-                "aws_appsync_region": environ.get("AWS_REGION"),
-                "aws_appsync_authenticationType": "AMAZON_COGNITO_USER_POOLS",
-                "aws_content_delivery_bucket": properties.get(
-                    "AwsContentDeliveryBucket"
-                ),
-                "aws_content_delivery_bucket_region": environ.get("AWS_REGION"),
-                "aws_content_delivery_url": properties.get(
-                    "AwsContentDeliveryUrl"
-                ),
-            }
-
-            configurations = (
-                    "const stno_config = " + json.dumps(stno_config) + ";"
-            )
-            console_bucket = properties.get("ConsoleBucket")
-            key = "console/assets/stno_config.js"
-
-            s3client.put_object(console_bucket, key, configurations)
-        else:
-            logger.error("console manifest file not found")
-            raise FileNotFoundError("console manifest file not found")
 
 
 def handle_prefix(event):

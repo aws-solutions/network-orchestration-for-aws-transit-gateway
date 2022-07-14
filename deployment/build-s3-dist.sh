@@ -58,7 +58,15 @@ python3 -m venv .venv --upgrade-deps
 source .venv/bin/activate
 pip3 install -r requirements.txt
 
+headline "[Build] Build cognito-trigger function"
+echo "cd $source_dir/cognito-trigger"
+cd $source_dir/cognito-trigger
+echo "npm run build:all"
+npm run build:all
+cp -R "dist/cognito-trigger.zip" $build_dist_dir
+
 headline "[Build] Lambda zips for STNO Solution"
+cd $lambda_dir
 for microservices in */ ; do
   echo "building $microservices"
   microservice_name=$(basename $microservices)
@@ -81,7 +89,7 @@ headline "[Stage] Copy ui files to regional-s3-assets, build console and zip"
 cp -R $source_dir/ui $build_dist_dir/
 mkdir -p $build_dist_dir/graphql
 cp -R $source_dir/ui/src/graphql/schema.graphql $source_dir/ui/src/graphql/resolver $source_dir/ui/src/graphql/function $build_dist_dir/graphql
-cd $build_dist_dir/ui/ 
+cd $build_dist_dir/ui/
 [ -e node_modules ] && rm -rf node_modules 
 npm ci
 [ -e build ] && rm -r build 

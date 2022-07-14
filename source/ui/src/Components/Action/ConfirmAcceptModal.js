@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import React, { Component } from "react";
-import { Modal, Button } from "react-bootstrap";
+import React, {Component} from "react";
+import {Button, Modal} from "react-bootstrap";
 
 class ConfirmAcceptModal extends Component {
   constructor(props) {
@@ -47,40 +47,40 @@ class ConfirmAcceptModal extends Component {
             <div style={{ background: "#FFFFE0" }}>
               <p>
                 <b>Transit Gateway Id:</b> {this.props.params.selectedRow.TgwId}
-                <br></br>
+                <br/>
                 <b>Subnet Id:</b> {this.props.params.selectedRow.SubnetId}
-                <br></br>
+                <br/>
                 <b>VPC Id:</b> {this.props.params.selectedRow.VpcId}
-                <br></br>
+                <br/>
                 <b>Status:</b> {this.props.params.selectedRow.Status}
-                <br></br>
+                <br/>
                 <b>VPC CIDR:</b> {this.props.params.selectedRow.VpcCidr}
-                <br></br>
+                <br/>
                 <b>Availability Zone:</b>{" "}
                 {this.props.params.selectedRow.AvailabilityZone}
-                <br></br>
+                <br/>
                 <b>Association RT:</b>{" "}
                 {this.props.params.selectedRow.AssociationRouteTable}
-                <br></br>
+                <br/>
                 <b>Propagation RTs:</b>{" "}
                 {this.props.params.selectedRow.PropagationRouteTablesString}
-                <br></br>
+                <br/>
                 <b>Tag Event Source:</b>{" "}
                 {this.props.params.selectedRow.TagEventSource}
-                <br></br>
+                <br/>
                 <b>Spoke Account:</b>{" "}
                 {this.props.params.selectedRow.AWSSpokeAccountId}
-                <br></br>
+                <br/>
                 <b>Action:</b> {this.props.params.selectedRow.Action}
-                <br></br>
+                <br/>
                 <b>User Id:</b> {this.props.params.selectedRow.UserId}
-                <br></br>
+                <br/>
                 <b>Request Time:</b>{" "}
                 {this.props.params.selectedRow.RequestTimeStamp}
-                <br></br>
+                <br/>
                 <b>Response Time:</b>{" "}
                 {this.props.params.selectedRow.ResponseTimeStamp}
-                <br></br>
+                <br/>
                 <b>Comment</b> {this.props.params.selectedRow.Comment}
               </p>
             </div>

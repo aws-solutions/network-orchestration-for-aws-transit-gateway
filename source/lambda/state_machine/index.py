@@ -4,9 +4,16 @@
 """State Machine Router module"""
 
 import os.path
-import botocore
+
 import boto3
-from state_machine.utils.logger import Logger
+import botocore
+
+from state_machine.lib.exceptions import (
+    ResourceNotFoundException,
+    AttachmentCreationInProgressException,
+    AlreadyConfiguredException,
+    ResourceBusyException,
+)
 from state_machine.state_machine_handler import (
     TransitGateway,
     VPC,
@@ -15,13 +22,7 @@ from state_machine.state_machine_handler import (
     ApprovalNotification,
     GeneralFunctions,
 )
-from state_machine.lib.exceptions import (
-    ResourceNotFoundException,
-    AttachmentCreationInProgressException,
-    AlreadyConfiguredException,
-    ResourceBusyException,
-)
-
+from state_machine.utils.logger import Logger
 
 # initialise logger
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
@@ -95,7 +96,7 @@ def vpc(event, function_name):
     return response
 
 
-def ddb(event, function_name):
+def dynamo_db(event, function_name):
     """
     Method to handle event for executing ddb functions
     :param event:
@@ -114,7 +115,7 @@ def ddb(event, function_name):
     return response
 
 
-def ram(event, function_name):
+def resource_access_manager(event, function_name):
     """
     Method to handle event for executing RAM functions
     :param event:
@@ -188,9 +189,9 @@ def lambda_handler(event, context):
             elif class_name == "VPC":
                 return vpc(event, function_name)
             elif class_name == "DynamoDb":
-                return ddb(event, function_name)
+                return dynamo_db(event, function_name)
             elif class_name == "ResourceAccessManager":
-                return ram(event, function_name)
+                return resource_access_manager(event, function_name)
             elif class_name == "ApprovalNotification":
                 return sns(event, function_name)
             elif class_name == "GeneralFunctions":

@@ -1,12 +1,14 @@
 # !/bin/python
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""STS module"""
+"""Security Token Service module"""
 
 import json
 import logging
+
 import boto3
 from botocore.exceptions import ClientError
+
 from state_machine.lib.boto3_config import boto3_config
 
 

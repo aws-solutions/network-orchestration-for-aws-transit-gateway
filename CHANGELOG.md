@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2022-06-17
+
+### Added
+- CF template allows to connect external SAML identity provider to cognito user pool
+- If SAML IdP is used, cognito-trigger function will add any federated user to ReadOnlyUserGroup after first login
+- Added WAF protection to the CloudFront distribution
+- Added Security relevant http headers in CloudFront responses
+
+### Changed
+- Creation of ServiceLinkedRole can be skipped if it exists in spoke account
+- Web UI will utilize Cognito Hosted UI instead of Amplify Authenticator component
+
 ## [3.0.1] - 2022-04-15
 
 ### Changed

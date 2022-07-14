@@ -1,27 +1,37 @@
 {
   "name": "aws-serverless-transit-network-orchestrator",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "dependencies": {
-    "@aws-amplify/api-graphql": "^2.2.22",
-    "@aws-amplify/auth": "^4.4.2",
-    "@aws-amplify/core": "^4.4.0",
-    "@aws-amplify/ui-react": "^2.8.0",
+    "@aws-amplify/api-graphql": "^2.3.8",
+    "@aws-amplify/auth": "^4.5.8",
+    "@aws-amplify/core": "^4.5.8",
     "@fortawesome/fontawesome-svg-core": "^1.2.18",
     "@fortawesome/free-brands-svg-icons": "^5.8.2",
     "@fortawesome/free-solid-svg-icons": "^5.8.2",
     "@fortawesome/react-fontawesome": "^0.1.4",
-    "ag-grid-community": "^27.0.1",
-    "ag-grid-react": "^27.0.1",
+    "ag-grid-community": "^27.3.0",
+    "ag-grid-react": "^27.3.0",
     "bootstrap": "^4.3.1",
-    "react": "^17.0.2",
-    "react-bootstrap": "^2.2.0",
-    "react-dom": "^17.0.2",
-    "react-icons": "^3.7.0",
+    "react": "^18.2.0",
+    "react-bootstrap": "^2.4.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.4.0",
     "react-router-dom": "^5.0.0"
   },
   "devDependencies": {
-    "prettier": "~2.4.1",
-    "react-scripts": "^5.0.0"
+    "prettier": "~2.7.1",
+    "react-scripts": "^5.0.1"
+  },
+  "overrides": {
+    "@aws-sdk/client-cloudwatch-logs": {
+      "@aws-sdk/middleware-retry": "~3.110.0"
+    },
+    "@aws-sdk/client-cognito-identity": {
+      "@aws-sdk/middleware-retry": "~3.110.0"
+    },
+    "svgo": {
+      "css-select": "~4.3.0"
+    }
   },
   "scripts": {
     "start": "react-scripts start",

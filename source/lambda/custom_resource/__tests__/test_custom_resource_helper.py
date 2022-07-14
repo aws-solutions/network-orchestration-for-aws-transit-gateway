@@ -3,22 +3,20 @@
 # SPDX-License-Identifier: Apache-2.0
 """Custom resource helper test module"""
 
-from copy import deepcopy
-import json
 import logging
+from copy import deepcopy
 from os import environ
-from unittest.mock import Mock, mock_open
+from unittest.mock import Mock
+
 import pytest
 from custom_resource.lib.custom_resource_helper import (
     cfn_handler,
     handle_cwe_permissions,
-    handle_console_deploy,
     handle_prefix,
     handle_metrics,
     trigger_sm,
     send,
 )
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel("DEBUG")
@@ -111,20 +109,6 @@ class TestClassCfnHandler:
             CREATE_CWE_PERMISSIONS, context, "SUCCESS", {}, None
         )
 
-    def test__success__create_console_deploy(self, mocker):
-        """success, create cwe event permissions"""
-        m1 = mocker.patch(
-            "custom_resource.lib.custom_resource_helper.handle_console_deploy",
-        )
-        m2 = mocker.patch("custom_resource.lib.custom_resource_helper.send")
-
-        cfn_handler(CREATE_CONSOLE_DEPLOY, context)
-        assert m1.call_count == 1
-        assert m2.call_count == 1
-        m2.assert_called_once_with(
-            CREATE_CONSOLE_DEPLOY, context, "SUCCESS", {}, None
-        )
-
 
 @pytest.mark.BDD
 class TestClassCWEPermissions:
@@ -189,99 +173,6 @@ class TestClassCWEPermissions:
         )
         with pytest.raises(Exception):
             handle_cwe_permissions(CREATE_CWE_PERMISSIONS)
-
-
-class TestClassConsoleDeploy:
-    """TDD/BDD test class for custom_resource_helper handle_console_deploy"""
-
-    @pytest.mark.TDD
-    def test__failed__file_not_found(self):
-        """failed, manifest file not found"""
-        with pytest.raises(FileNotFoundError) as err:
-            handle_console_deploy(CREATE_CONSOLE_DEPLOY)
-        assert str(err.value) == "console manifest file not found"
-
-    @pytest.mark.BDD
-    def test__success(self, mocker):
-        """success, console deploy"""
-        environ["AWS_REGION"] = "my-region"
-        CREATE_CONSOLE_DEPLOY["ResourceProperties"] = {
-            "SrcBucket": "solutionBucker",
-            "SrcPath": "stno/version",
-            "ConsoleBucket": "myBucket",
-            "AwsUserPoolsId": "myUserPoolId",
-            "AwsUserPoolsWebClientId": "myWebClient",
-            "AwsCognitoIdentityPoolId": "myCognitoIdp",
-            "AwsAppsyncGraphqlEndpoint": "myAppSyncEndpoint",
-            "AwsContentDeliveryBucket": "myCDNBucket",
-            "AwsContentDeliveryUrl": "muCDNUrl",
-        }
-        properties = CREATE_CONSOLE_DEPLOY["ResourceProperties"]
-        app_config = deepcopy(
-            {
-                "aws_project_region": environ.get("AWS_REGION"),
-                "aws_cognito_region": environ.get("AWS_REGION"),
-                "aws_user_pools_id": properties.get("AwsUserPoolsId"),
-                "aws_user_pools_web_client_id": properties.get(
-                    "AwsUserPoolsWebClientId"
-                ),
-                "aws_cognito_identity_pool_id": properties.get(
-                    "AwsCognitoIdentityPoolId"
-                ),
-                "oauth": {},
-                "aws_appsync_graphqlEndpoint": properties.get(
-                    "AwsAppsyncGraphqlEndpoint"
-                ),
-                "aws_appsync_region": environ.get("AWS_REGION"),
-                "aws_appsync_authenticationType": "AMAZON_COGNITO_USER_POOLS",
-                "aws_content_delivery_bucket": properties.get(
-                    "AwsContentDeliveryBucket"
-                ),
-                "aws_content_delivery_bucket_region": environ.get("AWS_REGION"),
-                "aws_content_delivery_url": properties.get(
-                    "AwsContentDeliveryUrl"
-                ),
-            }
-        )
-
-        # mocking file
-        mocker.patch(
-            "os.path.exists",
-        )
-        files = ["ui_file_1", "ui_file_2"]
-        mocker.patch(
-            "custom_resource.lib.custom_resource_helper.open",
-            mock_open(read_data=json.dumps({"files": files})),
-        )
-
-        # mocking methods
-        m1 = mocker.patch(
-            "custom_resource.lib.s3.S3.copy_object",
-        )
-        m2 = mocker.patch(
-            "custom_resource.lib.s3.S3.put_object",
-        )
-
-        handle_console_deploy(CREATE_CONSOLE_DEPLOY)
-
-        # verifying copy_calls
-        for file in files:
-            logger.debug(file)
-            key = "console/" + file
-            m1.assert_any_call(
-                src_bucket_name=properties["SrcBucket"],
-                src_object=properties["SrcPath"] + "/" + key,
-                dest_bucket_name=properties["ConsoleBucket"],
-                dest_object=key,
-            )
-
-        # verifying app config upload to console bucker
-        configurations = "const stno_config = " + json.dumps(app_config) + ";"
-        m2.assert_called_once_with(
-            properties.get("ConsoleBucket"),
-            "console/assets/stno_config.js",
-            configurations,
-        )
 
 
 class TestClassPrefix:
