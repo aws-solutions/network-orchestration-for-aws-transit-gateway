@@ -107,8 +107,8 @@ _Note: For PROFILE_NAME, substitute the name of an AWS CLI profile that contains
 You can use the following commands to create this bucket
 
 ```
-ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account --profile thiemo-stno)
-REGION=$(aws configure get region --profile thiemo-stno)
+ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account --profile <PROFILE_NAME>)
+REGION=$(aws configure get region --profile <PROFILE_NAME>)
 BUCKET_NAME=stno-$ACCOUNT_ID-$REGION
 aws s3 mb s3://$BUCKET_NAME/
 
