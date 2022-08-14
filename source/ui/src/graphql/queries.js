@@ -13,6 +13,7 @@ export const getActionItemsFromTransitNetworkOrchestratorTables = `query GetActi
   ) {
     items {
       AWSSpokeAccountId
+      AWSAccountName
       Action
       AdminAction
       AvailabilityZone
@@ -47,6 +48,7 @@ export const getDashboardItemsFromTransitNetworkOrchestratorTables = `query getD
   ) {
     items {
       AWSSpokeAccountId
+      AWSAccountName
       Action
       AdminAction
       AvailabilityZone

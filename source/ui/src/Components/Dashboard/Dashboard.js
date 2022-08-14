@@ -43,6 +43,7 @@ class Dashboard extends Component {
           TagEventSource: "",
           Action: "",
           AWSSpokeAccountId: "",
+          AWSAccountName:"",
           TimeToLive: "",
           AvailabilityZone: "",
           VpcCidr: "",
@@ -96,6 +97,10 @@ class Dashboard extends Component {
         {
           headerName: "Spoke Account",
           field: "AWSSpokeAccountId",
+        },
+        {
+          headerName: "Account Name",
+          field: "AWSAccountName",
         },
         {
           headerName: "Subnet Id",
