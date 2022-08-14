@@ -61,6 +61,7 @@ class Action extends Component {
           TagEventSource: "",
           Action: "",
           AWSSpokeAccountId: "",
+          AWSAccountName:"",
           TimeToLive: "",
           AvailabilityZone: "",
           VpcCidr: "",
@@ -110,6 +111,10 @@ class Action extends Component {
         {
           headerName: "Spoke Account",
           field: "AWSSpokeAccountId",
+        },
+        {
+          headerName: "Account Name",
+          field: "AWSAccountName"
         },
         {
           headerName: "Subnet Id",

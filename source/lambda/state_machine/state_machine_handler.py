@@ -2363,6 +2363,7 @@ class DynamoDb:
                 "Action": self.is_none(self.event.get("Action")),
                 "Status": self.is_none(self.event.get("Status")),
                 "AWSSpokeAccountId": self.is_none(self.event.get("account")),
+                "AWSAccountName": self.is_none(Organizations().get_account_name(self.event.get("account"))),
                 "UserId": "StateMachine"
                 if self.event.get("UserId") is None
                 else self.event.get("UserId"),
@@ -2411,6 +2412,7 @@ class ApprovalNotification:
         self.spoke_account_id = self.event.get("account")
         self.spoke_region = environ.get("AWS_REGION")
         self.assume_role = AssumeRole()
+        self.account_name = Organizations().get_account_name(self.spoke_account_id)
         self.logger.info(self.__class__.__name__ + CLASS_EVENT)
         self.logger.info(event)
 
@@ -2491,10 +2493,11 @@ class ApprovalNotification:
         topic_arn = environ.get("APPROVAL_NOTIFICATION_ARN")
         subject = "STNO: Transit Network Change Requested"
         message = (
-            "A new request for VPC: '{}' to associate with TGW Route Table: '{}' and propagate to "
+            "A new request for VPC: '{}' from account {} to associate with TGW Route Table: '{}' and propagate to "
             "TGW Route Tables: '{}' is ready for review. Please use this link {} to login to the 'Transit Network "
             "Management Console' to approve or reject the request.".format(
                 self.event.get("VpcId"),
+                self.account_name or "N/A",
                 self.event.get("Associate-with").title(),
                 ", ".join(self.event.get("Propagate-to")).title(),
                 environ.get("STNO_CONSOLE_LINK"),
