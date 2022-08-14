@@ -25,7 +25,7 @@ type TransitNetworkOrchestratorTableConnection {
 
 type TransitNetworkOrchestratorTableMoreFields {
   AWSSpokeAccountId: String
-  AWSAccountName: String
+  AWSSpokeAccountName: String
   Action: String
   AdminAction: String
   AvailabilityZone: String
@@ -47,7 +47,7 @@ type TransitNetworkOrchestratorTableMoreFields {
 
 type UpdateTransitNetworkOrchestratorTable {
   AWSSpokeAccountId: String
-  AWSAccountName: String
+  AWSSpokeAccountName: String
   Action: String
   AdminAction: String
   AvailabilityZone: String

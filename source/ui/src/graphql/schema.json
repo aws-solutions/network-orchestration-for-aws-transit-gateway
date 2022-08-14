@@ -184,7 +184,7 @@
           "isDeprecated" : false,
           "deprecationReason" : null
         }, {
-          "name" : "AWSAccountName",
+          "name" : "AWSSpokeAccountName",
           "description" : null,
           "args" : [ ],
           "type" : {
@@ -618,7 +618,7 @@
           "isDeprecated" : false,
           "deprecationReason" : null
         }, {
-          "name" : "AWSAccountName",
+          "name" : "AWSSpokeAccountName",
           "description" : null,
           "args" : [ ],
           "type" : {

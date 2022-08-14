@@ -2363,7 +2363,7 @@ class DynamoDb:
                 "Action": self.is_none(self.event.get("Action")),
                 "Status": self.is_none(self.event.get("Status")),
                 "AWSSpokeAccountId": self.is_none(self.event.get("account")),
-                "AWSAccountName": self.is_none(Organizations().get_account_name(self.event.get("account"))),
+                "AWSSpokeAccountName": self.is_none(Organizations().get_account_name(self.event.get("account"))),
                 "UserId": "StateMachine"
                 if self.event.get("UserId") is None
                 else self.event.get("UserId"),
