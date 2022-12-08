@@ -1,6 +1,6 @@
 boto3==1.21.8
 botocore==1.24.8
-certifi==2021.10.8
+certifi==2022.12.7
 charset-normalizer==2.0.12
 idna==3.3
 jmespath==0.10.0
