@@ -3,33 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  ***********************************************************************/
 
-import React, {Component} from "react";
-import {AgGridReact} from "ag-grid-react";
+import React, { Component } from "react";
+import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/dist/styles/ag-grid.css";
 import "ag-grid-community/dist/styles/ag-theme-blue.css";
 import "bootstrap/js/dist/dropdown";
 import "bootstrap/dist/css/bootstrap.css";
-import {FaSyncAlt} from "react-icons/fa";
-
-//appsync
-import {GraphQLAPI, graphqlOperation} from "@aws-amplify/api-graphql";
+import { FaSyncAlt } from "react-icons/fa";
+import { GraphQLAPI, graphqlOperation } from "@aws-amplify/api-graphql";
 import {
-    getActionItemsFromTransitNetworkOrchestratorTables,
-    getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables,
+  getActionItemsFromTransitNetworkOrchestratorTables,
+  getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables
 } from "../../graphql/queries";
-import {updateTransitNetworkOrchestratorTable} from "../../graphql/mutations";
+import { updateTransitNetworkOrchestratorTable } from "../../graphql/mutations";
 
 import VersionHistoryModal from "./VersionHistoryModal";
-import ConfirmRejectModal from "./ConfirmRejectModal";
-import ConfirmAcceptModal from "./ConfirmAcceptModal";
+import ConfirmActionModal from "./ConfirmActionModal";
 
 class Action extends Component {
   constructor(props) {
     super(props);
 
-    let firstCommaIndex = this.props.location.state.indexOf(",");
-    const user = this.props.location.state.substring(0, firstCommaIndex);
-    const group = this.props.location.state.substring(firstCommaIndex + 1);
+    const { location } = this.props;
+
+    let firstCommaIndex = location.state.indexOf(",");
+    const user = location.state.substring(0, firstCommaIndex);
+    const group = location.state.substring(firstCommaIndex + 1);
 
     this.state = {
       currentUser: user.trim(), //this is the user who logged in the console
@@ -43,6 +42,7 @@ class Action extends Component {
       btnHistoryDisabled: true, //determine button view history. By default it is set to disabled
       versionHistoryItems: [],
       refresh: false,
+      apiCallInProgress: false,
       confirmChoice: "",
 
       //List of attribute/column names from the ddb table
@@ -66,8 +66,8 @@ class Action extends Component {
           VpcCidr: "",
           AdminAction: "",
           Comment: "",
-          items: [],
-        },
+          items: []
+        }
       ],
 
       //define columns in the grid: field names in the grid should match attribute/column names from the ddb table
@@ -76,151 +76,150 @@ class Action extends Component {
           headerName: "VPC Id",
           field: "VpcId",
           width: 220,
-          checkboxSelection: true,
+          checkboxSelection: true
         },
         {
           headerName: "VPC CIDR",
-          field: "VpcCidr",
+          field: "VpcCidr"
         },
         {
           headerName: "Action",
-          field: "Action",
+          field: "Action"
         },
         {
           headerName: "Status",
           field: "Status",
-          cellClass: function (params) {
+          cellClass: function(params) {
             return params.value === "failed" ? "rag-red" : "rag-transparent";
-          },
+          }
         },
         {
           headerName: "Comment",
           field: "Comment",
           autoHeight: true,
-          cellStyle: { "white-space": "normal" },
+          cellStyle: { "whiteSpace": "normal" }
         },
         {
           headerName: "Association RT",
-          field: "AssociationRouteTable",
+          field: "AssociationRouteTable"
         },
         {
           headerName: "Propagation RTs",
-          field: "PropagationRouteTablesString",
+          field: "PropagationRouteTablesString"
         },
         {
           headerName: "Spoke Account",
-          field: "AWSSpokeAccountId",
+          field: "AWSSpokeAccountId"
         },
         {
           headerName: "Subnet Id",
           field: "SubnetId",
-          width: 210,
+          width: 210
         },
         {
           headerName: "AZ",
-          field: "AvailabilityZone",
+          field: "AvailabilityZone"
         },
         {
           headerName: "Tag Event Source",
-          field: "TagEventSource",
+          field: "TagEventSource"
         },
         {
           headerName: "Request Time",
-          field: "RequestTimeStamp",
+          field: "RequestTimeStamp"
         },
         {
           headerName: "Response Time",
-          field: "ResponseTimeStamp",
+          field: "ResponseTimeStamp"
         },
         {
           headerName: "User Id",
-          field: "UserId",
+          field: "UserId"
         },
         {
           headerName: "Transit Gateway Id",
-          field: "TgwId",
-        },
-      ],
-    }; //end this.state
-  } //end constructor()
+          field: "TgwId"
+        }
+      ]
+    };
+  }
 
   //Refresh action items every 5 minutes by default
   async componentDidMount() {
     //load action items for this first time
-    this.getActionItems();
+    await this.getActionItems();
 
     //auto reload action items every 5 minutes
-    this.interval = setInterval(this.getActionItems, 300000);
+    setInterval(this.getActionItems, 300000);
   }
 
   //Run GraphQL to fetch action items (status - requested, processing, failed) from the ddb table
   getActionItems = async () => {
+    this.setState(previousState => {
+      return {
+        ...previousState,
+        apiCallInProgress: true
+      };
+    });
     const result = await GraphQLAPI.graphql(
       graphqlOperation(getActionItemsFromTransitNetworkOrchestratorTables)
     );
     this.setState({
       items:
-        result.data.getActionItemsFromTransitNetworkOrchestratorTables.items,
+      result.data.getActionItemsFromTransitNetworkOrchestratorTables.items,
+      apiCallInProgress: false
     });
   };
 
   //Run GraphQL to accept or reject request
   processRequest = async (adminAction) => {
-    try {
-      //get current timestamp
-      const currentTimeStamp = new Date();
-      const UTCTimeStamp = currentTimeStamp.toISOString();
-      this.setState({ selectedSubnetId: this.state.selectedRow.SubnetId });
+    //get current timestamp
+    const currentTimeStamp = new Date();
+    const UTCTimeStamp = currentTimeStamp.toISOString();
+    this.setState({ selectedSubnetId: this.state.selectedRow.SubnetId });
 
-      const input = {
-        SubnetId: this.state.selectedSubnetId,
-        Version: "latest",
-        Status: "processing",
-        UserId: this.state.currentUser,
-        GraphQLTimeStamp: UTCTimeStamp,
-        AdminAction: adminAction,
-      };
+    const input = {
+      SubnetId: this.state.selectedSubnetId,
+      Version: "latest",
+      Status: "processing",
+      UserId: this.state.currentUser,
+      GraphQLTimeStamp: UTCTimeStamp,
+      AdminAction: adminAction
+    };
 
-      await GraphQLAPI.graphql(
-        graphqlOperation(updateTransitNetworkOrchestratorTable, { input })
-      );
+    await GraphQLAPI.graphql(
+      graphqlOperation(updateTransitNetworkOrchestratorTable, { input })
+    );
 
-      this.getActionItems();
-    } catch (error) {
-      console.error(error);
-    }
-  }; //end processRequest
+    await this.getActionItems();
+  };
 
   //Run GraphQL to accept or reject request
   showVersionHistory = async () => {
-    try {
-      this.setState({
-        showHistoryModal: true,
-        selectedSubnetId: this.state.selectedRow.SubnetId,
-      });
+    this.setState({
+      showHistoryModal: true,
+      selectedSubnetId: this.state.selectedRow.SubnetId
+    });
 
-      const selectedSubnetId = this.state.selectedRow.SubnetId;
+    const selectedSubnetId = this.state.selectedRow.SubnetId;
 
-      const filter = {
-        SubnetId: { eq: selectedSubnetId },
-        Version: { ne: "latest" },
-      };
-      const result = await GraphQLAPI.graphql(
-        graphqlOperation(
-          getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables,
-          { filter }
-        )
-      );
-      this.setState({
-        versionHistoryItems:
-          result.data
-            .getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables
-            .items,
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  }; //end getVersionHistory
+    const filter = {
+      SubnetId: { eq: selectedSubnetId },
+      Version: { ne: "latest" }
+    };
+    const result = await GraphQLAPI.graphql(
+      graphqlOperation(
+        getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables,
+        { filter }
+      )
+    );
+    this.setState({
+      versionHistoryItems:
+      result.data
+        .getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables
+        .items
+    });
+  };
 
   //handle user's choice of accepting request
   handleAccept = async (choice) => {
@@ -248,8 +247,8 @@ class Action extends Component {
 
   //auto adjust column width to fix content
   autoSizeAll() {
-    var allColumnIds = [];
-    this.gridColumnApi.getAllColumns().forEach(function (column) {
+    const allColumnIds = [];
+    this.gridColumnApi.getAllColumns().forEach(function(column) {
       if (
         column.colId !== "SubnetId" &&
         column.colId !== "VpcId" &&
@@ -267,7 +266,7 @@ class Action extends Component {
       this.setState({
         selectedRow: selectedRows[0],
         selectedSubnetId: selectedRows[0].SubnetId,
-        btnHistoryDisabled: false,
+        btnHistoryDisabled: false
       });
       //Only allow accepting or rejecting request if user is in admin group and the request is not already in processing status
       if (
@@ -275,20 +274,19 @@ class Action extends Component {
         selectedRows[0].Status !== "processing"
       ) {
         this.setState({
-          btnAdminActionDisabled: false,
+          btnAdminActionDisabled: false
         });
       } else {
         this.setState({
-          btnAdminActionDisabled: true,
+          btnAdminActionDisabled: true
         });
       }
-    } //end if (selectedRows.length>0)
-    else {
+    } else {
       this.setState({
         selectedRow: "",
         selectedSubnetId: "",
         btnAdminActionDisabled: true,
-        btnHistoryDisabled: true,
+        btnHistoryDisabled: true
       });
     }
   };
@@ -301,7 +299,7 @@ class Action extends Component {
       <div
         className="ag-theme-blue"
         style={{
-          height: "calc(85vh - 50px)",
+          height: "calc(85vh - 50px)"
         }}
       >
         <div className="dropdown">
@@ -311,7 +309,7 @@ class Action extends Component {
               background: "#5d9cd2",
               color: "white",
               fontSize: "10pt",
-              margin: "5px",
+              margin: "5px"
             }}
             type="button"
             id="dropdownMenuButton"
@@ -336,10 +334,10 @@ class Action extends Component {
             >
               Approve
             </button>
-            <ConfirmAcceptModal
+            <ConfirmActionModal
               show={this.state.showAcceptConfirmationModal}
               onHide={this.handleAccept.bind(this)}
-              params={{ action: "accept", selectedRow: this.state.selectedRow }}
+              params={{ action: "accept", buttonLabel: "Approve", selectedRow: this.state.selectedRow }}
             />
             <button
               id="btn-reject"
@@ -351,10 +349,10 @@ class Action extends Component {
             >
               Reject
             </button>
-            <ConfirmRejectModal
+            <ConfirmActionModal
               show={this.state.showRejectConfirmationModal}
               onHide={this.handleReject.bind(this)}
-              params={{ action: "reject", selectedRow: this.state.selectedRow }}
+              params={{ action: "reject", buttonLabel: "Reject", selectedRow: this.state.selectedRow }}
             />
             <button
               id="btn-history"
@@ -369,30 +367,31 @@ class Action extends Component {
               onHide={closeHistoryModal}
               params={{
                 selectedSubnetId: this.state.selectedSubnetId,
-                versionHistoryItems: this.state.versionHistoryItems,
+                versionHistoryItems: this.state.versionHistoryItems
               }}
             />
           </div>
           <div className="divright">
-            <button
+            {!this.state.apiCallInProgress && <button
               id="btn-refresh-action"
               style={{ background: "#5d9cd2", color: "white" }}
               onClick={() => this.getActionItems()}
+              aria-label={"refresh"}
             >
               <FaSyncAlt />
-            </button>
+            </button>}
           </div>
         </div>
         <AgGridReact
-            onGridReady={this.onGridReady}
-            rowSelection="single"
-            defaultColDef={{resizable: true, sortable: true, filter: true}}
-            columnDefs={this.state.columnDefs}
-            rowData={this.state.items}
-            onRowSelected={this.onRowSelected}
+          onGridReady={this.onGridReady}
+          rowSelection="single"
+          defaultColDef={{ resizable: true, sortable: true, filter: true }}
+          columnDefs={this.state.columnDefs}
+          rowData={this.state.items}
+          onRowSelected={this.onRowSelected}
         />
       </div>
     );
-  } //end render
-} //end class
+  }
+}
 export default Action;

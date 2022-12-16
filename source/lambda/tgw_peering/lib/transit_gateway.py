@@ -1,26 +1,22 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Transit Gateway module"""
 
-import logging
+import os
 from os import environ
+
 import boto3
+from aws_lambda_powertools import Logger
 from botocore.exceptions import ClientError, WaiterError, ParamValidationError
 from botocore.waiter import WaiterModel
 from botocore.waiter import create_waiter_with_client
+
 from tgw_peering.lib.utils import TGWPeer, AttachmentState, boto3_config
 
 
 class TGWPeering:
-    """Class to handle TGW peering methods"""
 
     def __init__(self):
-        """Initialize the TGW peering object's attributes
-
-        Args:
-             None
-        """
-        self.logger = logging.getLogger(__name__)
+        self.logger = Logger(os.getenv('LOG_LEVEL'))
         self.ec2_client = boto3.client("ec2", config=boto3_config)
 
     def get_tgw_peers(

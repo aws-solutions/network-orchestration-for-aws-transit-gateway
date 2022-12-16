@@ -4,9 +4,10 @@
 """State Machine Handler module"""
 
 import os
-from state_machine.lib.ec2 import EC2
+
 from botocore.stub import Stubber
 
+from state_machine.lib.clients.ec2 import EC2
 
 os.environ["USER_AGENT_STRING"] = ""
 

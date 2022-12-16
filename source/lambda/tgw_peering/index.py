@@ -1,21 +1,22 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Transit Gateway peering lambda"""
 
-import logging
 import asyncio
+import os
 from os import environ
-from tgw_peering.lib.utils import setup_logger
+
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.utilities.typing import LambdaContext
+
 from tgw_peering.lib.tgw_peering_helper import (
     validate_tag,
     tag_event_router,
 )
 
-setup_logger(environ.get("LOG_LEVEL"))
-logger = logging.getLogger(__name__)
+logger = Logger(os.getenv('LOG_LEVEL'))
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, context: LambdaContext):
     """handler for tgw peering microservice
 
     Args:

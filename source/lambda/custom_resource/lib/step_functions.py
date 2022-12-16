@@ -1,26 +1,21 @@
 # !/bin/python
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Step Functions Events module"""
 
 import json
-import logging
+import os
+
 import boto3
+from aws_lambda_powertools import Logger
 from botocore.exceptions import ClientError
+
 from custom_resource.lib.utils import boto3_config
 
 
-# pylint: disable=too-few-public-methods
 class StepFunctions:
-    """Class to handle Step Function methods"""
 
     def __init__(self):
-        """Initialize the StateMachine object's attributes
-
-        Args:
-            None
-        """
-        self.logger = logging.getLogger(__name__)
+        self.logger = Logger(os.getenv('LOG_LEVEL'))
         self.state_machine_client = boto3.client(
             "stepfunctions", config=boto3_config
         )

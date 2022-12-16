@@ -72,14 +72,10 @@ for microservices in */ ; do
   microservice_name=$(basename $microservices)
   cd $lambda_dir/$microservice_name
   mkdir -p dist/$microservice_name
-  rsync -av $lambda_dir/.venv/lib/python3.9/site-packages/ ./dist/
+  rsync -aq $lambda_dir/.venv/lib/python3.9/site-packages/ ./dist/
   cp -R lib __init__.py index.py ./dist/$microservice_name/
-  if [ $microservices == 'state_machine/' ]
-  then
-      cp -R utils state_machine_handler.py ./dist/$microservice_name/
-  fi
   cd dist
-  zip -r "$microservice_name.zip" .
+  zip -rq "$microservice_name.zip" .
   cp -R "$microservice_name.zip" $build_dist_dir
   rm -rf $lambda_dir/$microservice_name/dist
 done
@@ -102,51 +98,51 @@ cd $template_dir/manifest-generator
 [ -e node_modules ] && rm -rf node_modules
 npm ci
 node app.js --target "$build_dist_dir/console" --output "$build_dist_dir/console-manifest.json"
-cd $build_dist_dir && zip -rv ./custom_resource.zip ./console-manifest.json
+cd $build_dist_dir && zip -rq ./custom_resource.zip ./console-manifest.json
 cd ../..
 
 headline "[Stage] Copy templates to global-s3-assets directory"
-cp -f $template_dir/aws-transit-network-orchestrator-hub.template $template_dist_dir
-cp -f $template_dir/aws-transit-network-orchestrator-spoke.template $template_dist_dir
-cp -f $template_dir/aws-transit-network-orchestrator-organization-role.template $template_dist_dir
+cp -f $template_dir/network-orchestration-hub.template $template_dist_dir
+cp -f $template_dir/network-orchestration-spoke.template $template_dist_dir
+cp -f $template_dir/network-orchestration-organization-role.template $template_dist_dir
 
 # Find and replace bucket_name, solution_name, and version
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # Mac OS
     # Replace source code s3 bucket name with real value
     replace="s/%DIST_BUCKET_NAME%/$1/g"
-    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
-    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
-    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
+    sed -i '' -e $replace $template_dist_dir/network-orchestration-hub.template
+    sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke.template
+    sed -i '' -e $replace $template_dist_dir/network-orchestration-organization-role.template
 
     # Replace solution name with real value
     replace="s/%SOLUTION_NAME%/$2/g"
-    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
-    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
-    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
+    sed -i '' -e $replace $template_dist_dir/network-orchestration-hub.template
+    sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke.template
+    sed -i '' -e $replace $template_dist_dir/network-orchestration-organization-role.template
 
     # Replace version variable with real value
     replace="s/%VERSION%/$3/g"
-    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
-    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
-    sed -i '' -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
+    sed -i '' -e $replace $template_dist_dir/network-orchestration-hub.template
+    sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke.template
+    sed -i '' -e $replace $template_dist_dir/network-orchestration-organization-role.template
 else
     # Other linux
     # Replace source code s3 bucket name with real value
     replace="s/%DIST_BUCKET_NAME%/$1/g"
-    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
-    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
-    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
+    sed -i -e $replace $template_dist_dir/network-orchestration-hub.template
+    sed -i -e $replace $template_dist_dir/network-orchestration-spoke.template
+    sed -i -e $replace $template_dist_dir/network-orchestration-organization-role.template
 
     # Replace solution name with real value
     replace="s/%SOLUTION_NAME%/$2/g"
-    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
-    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
-    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
+    sed -i -e $replace $template_dist_dir/network-orchestration-hub.template
+    sed -i -e $replace $template_dist_dir/network-orchestration-spoke.template
+    sed -i -e $replace $template_dist_dir/network-orchestration-organization-role.template
 
     # Replace version variable with real value
     replace="s/%VERSION%/$3/g"
-    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-hub.template
-    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-spoke.template
-    sed -i -e $replace $template_dist_dir/aws-transit-network-orchestrator-organization-role.template
+    sed -i -e $replace $template_dist_dir/network-orchestration-hub.template
+    sed -i -e $replace $template_dist_dir/network-orchestration-spoke.template
+    sed -i -e $replace $template_dist_dir/network-orchestration-organization-role.template
 fi

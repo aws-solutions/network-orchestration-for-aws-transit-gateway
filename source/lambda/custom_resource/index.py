@@ -1,38 +1,26 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 """Custom resource lambda"""
+import os
 
-from os import environ
-import logging
-from custom_resource.lib.custom_resource_helper import cfn_handler, trigger_sm
-from custom_resource.lib.utils import setup_logger
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.utilities.typing import LambdaContext
+from aws_lambda_typing import events
 
-setup_logger(environ.get("LOG_LEVEL"))
-logger = logging.getLogger(__name__)
+from custom_resource.lib.custom_resource_helper import cfn_handler, start_state_machine
+
+logger = Logger(os.getenv('LOG_LEVEL'))
 
 
-def lambda_handler(event, context):
-    """entry point for custom resource microservice
-
-    Args:
-        event (dict): lambda triggering event
-        context (object): lambda context object to the handler
-
-    Raises:
-        Exception: general exception to handle failures
-
-    Returns:
-        None
-    """
-
+def lambda_handler(event: events.CloudFormationCustomResourceEvent, context: LambdaContext):
     logger.info("Entering custom resource lambda_handler")
     logger.debug(event)
 
     if event.get("source") == "aws.tag" or event.get("source") == "aws.ec2":
-        trigger_sm(event, context)
+        start_state_machine(event, context)
 
     elif event.get("data") is not None:
-        trigger_sm(event.get("data"), context)
+        start_state_machine(event.get("data"), context)
 
     elif event.get(
         "StackId"

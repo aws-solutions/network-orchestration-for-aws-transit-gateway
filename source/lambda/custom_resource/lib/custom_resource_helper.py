@@ -4,7 +4,7 @@
 """Custom resource helper module"""
 
 import json
-import logging
+import os
 import threading
 import time
 from os import environ, path
@@ -12,6 +12,9 @@ from uuid import uuid4
 
 import boto3
 import requests
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.utilities.typing import LambdaContext
+from aws_lambda_typing import events
 
 from custom_resource.lib.cloudwatch_events import CloudWatchEvents
 from custom_resource.lib.console_deployment import ConsoleDeployment
@@ -20,22 +23,12 @@ from custom_resource.lib.utils import boto3_config
 from custom_resource.lib.utils import (
     sanitize,
     send_metrics,
-    convert_string_to_list,
 )
 
-logger = logging.getLogger(__name__)
+logger = Logger(os.getenv('LOG_LEVEL'))
 
 
-def trigger_sm(event, context):
-    """Handler for triggering step function execution
-
-    Args:
-        event (dict): lambda triggering event
-        context: context from the lambda handler
-
-    Returns:
-        None
-    """
+def start_state_machine(event: events.CloudFormationCustomResourceEvent, context: LambdaContext):
     log_message = {
         "METHOD": "trigger_sm",
     }
@@ -72,7 +65,7 @@ def trigger_sm(event, context):
         raise
 
 
-def timeout(event, context):
+def timeout(event: events.CloudFormationCustomResourceEvent, context: LambdaContext):
     """_summary_
 
     Args:
@@ -83,7 +76,7 @@ def timeout(event, context):
     send(event, context, "FAILED", {}, "Execution timed out")
 
 
-def cfn_handler(event, context):
+def cfn_handler(event: events.CloudFormationCustomResourceEvent, context: LambdaContext):
     """Handler for cfn triggered events
 
     Args:
@@ -150,7 +143,7 @@ def cfn_handler(event, context):
         timer.cancel()
 
 
-def handle_uuid(event):
+def handle_uuid(event: events.CloudFormationCustomResourceEvent):
     """Generates UUID for solution deployment
 
     Args:
@@ -169,7 +162,7 @@ def handle_uuid(event):
     return resp
 
 
-def handle_cwe_permissions(event):
+def handle_cwe_permissions(event: events.CloudFormationCustomResourceEvent):
     """Handler for CloudWatch EventBridge permissions crud operations
 
     Args:
@@ -200,9 +193,7 @@ def handle_cwe_permissions(event):
             cwe.put_permission(principal, event_bus_name)
 
 
-
-
-def handle_prefix(event):
+def handle_prefix(event: events.CloudFormationCustomResourceEvent):
     """Handles generating prefix list arns from prefix list
 
     Args:
@@ -220,9 +211,9 @@ def handle_prefix(event):
         properties = event["ResourceProperties"]
         prefix_list = properties.get("PrefixListIds")
         account_id = properties.get("AccountId")
-        list_of_prefix_list_ids = convert_string_to_list(prefix_list)
+        list_of_prefix_list_ids = prefix_list.split(',')
         list_of_prefix_list_arns = []
-        if len(list_of_prefix_list_ids) == 0:
+        if not prefix_list:
             raise ValueError(
                 "STNO CFN Parameter Missing: You must "
                 "provide at least one valid prefix list id."
@@ -234,7 +225,7 @@ def handle_prefix(event):
     return response
 
 
-def handle_metrics(event):
+def handle_metrics(event: events.CloudFormationCustomResourceEvent):
     """Handles sending launch parameters to aws-solutions
 
     Args:
@@ -274,8 +265,8 @@ def handle_metrics(event):
 
 
 def send(
-        event,
-        context,
+        event: events.CloudFormationCustomResourceEvent,
+        context: LambdaContext,
         response_status,
         response_data,
         reason=None,
@@ -293,8 +284,7 @@ def send(
     response_url = event["ResponseURL"]
     logger.debug("CFN response URL: %s", response_url)
 
-    response_body = {}
-    response_body["Status"] = response_status
+    response_body = {"Status": response_status}
     msg = "See details in CloudWatch logstream: " + context.log_stream_name
     response_body["Reason"] = str(reason)[0:255] + "... " + msg
     response_body["PhysicalResourceId"] = event.get(
