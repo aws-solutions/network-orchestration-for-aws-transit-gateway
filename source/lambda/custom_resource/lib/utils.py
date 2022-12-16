@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 """Solution helper module"""
 
-from datetime import datetime
 import json
-import logging
 import os
 import re
-import requests
+from datetime import datetime
+
 import botocore
+import requests
 
 
 def sanitize(name, space_allowed=False, replace_with_character="_"):
@@ -33,25 +33,6 @@ def sanitize(name, space_allowed=False, replace_with_character="_"):
             r"([^a-zA-Z0-9._-])", replace_with_character, name
         )
     return sanitized_name
-
-
-def convert_string_to_list(comma_delimited_list: str):
-    """
-    Converts the comma delimited list of string to a list type and skips adding
-    empty strings to the list.
-
-    Args:
-        comma_delimited_list (string): comma delimited list of strings
-
-    Returns:
-        list[string]
-
-    """
-    return [
-        value.strip()
-        for value in comma_delimited_list.split(",")
-        if (value not in [" ", ""])
-    ]
 
 
 def send_metrics(
@@ -84,35 +65,6 @@ def send_metrics(
     req = requests.post(url, data=json_data, headers=headers)
     code = req.status_code
     return code
-
-
-def setup_logger(log_level):
-    """function to setup root logger
-
-    Args:
-        log_level (string): log level info, debug, warn, error etc.
-    """
-    loglevel = logging.getLevelName(log_level.upper())
-    root_logger = logging.getLogger()
-    root_logger.setLevel(loglevel)
-
-    # pylint: disable=line-too-long
-    logformat = json.dumps(
-        {
-            "timestamp": "%(asctime)s",
-            "module": "%(name)s",
-            "log_level": "%(levelname)s",
-            "log_message": "%(message)s",
-        }
-    )
-
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(logging.Formatter(logformat))
-
-    if len(root_logger.handlers) == 0:
-        root_logger.addHandler(stream_handler)
-    else:
-        root_logger.handlers[0] = stream_handler
 
 
 boto3_config = botocore.config.Config(

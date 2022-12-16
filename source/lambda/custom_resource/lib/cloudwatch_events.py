@@ -1,25 +1,20 @@
 # !/bin/python
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""CloudWatch Events module"""
-
-import logging
+import os
 import re
+
 import boto3
+from aws_lambda_powertools import Logger
 from botocore.exceptions import ClientError
+
 from custom_resource.lib.utils import boto3_config
 
 
 class CloudWatchEvents:
-    """Class to handle CloudWatch Events methods"""
 
     def __init__(self):
-        """Initialize the CloudWatchEvents object's attributes
-
-        Args:
-            None
-        """
-        self.logger = logging.getLogger(__name__)
+        self.logger = Logger(os.getenv('LOG_LEVEL'))
         self.cwe_client = boto3.client("events", config=boto3_config)
 
     def put_permission(self, principal, event_bus_name):

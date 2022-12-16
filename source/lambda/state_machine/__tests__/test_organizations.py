@@ -5,7 +5,7 @@
 import os
 
 os.environ["USER_AGENT_STRING"] = ""
-from state_machine.lib.organizations import Organizations
+from state_machine.lib.clients.organizations import Organizations
 from botocore.stub import Stubber
 
 

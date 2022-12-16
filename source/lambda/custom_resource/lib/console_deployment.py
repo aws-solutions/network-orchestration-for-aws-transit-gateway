@@ -1,20 +1,22 @@
 import json
-import logging
+import os
 from os import environ, path
 
+from aws_lambda_powertools import Logger
+from aws_lambda_typing import events
 from botocore.exceptions import ClientError
 
 
 class ConsoleDeployment:
     """Deploys the STNO Console web application to an S3 bucket"""
-    
+
     def __init__(self, s3_client, open_fn, exists_fn):
-        self.logger = logging.getLogger(__name__)
+        self.logger = Logger(os.getenv('LOG_LEVEL'))
         self.s3_client = s3_client
         self.open_fn = open_fn
         self.exists_fn = exists_fn
 
-    def deploy(self, event):
+    def deploy(self, event: events.CloudFormationCustomResourceEvent):
         """Handler for STNO web ui deployment
 
         Args:

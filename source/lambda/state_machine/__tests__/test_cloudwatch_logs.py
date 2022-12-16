@@ -1,12 +1,11 @@
 # !/bin/python
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""State Machine Handler module"""
 
 import os
 
 os.environ["USER_AGENT_STRING"] = ""
-from state_machine.lib.cloud_watch_logs import CloudWatchLogs
+from state_machine.lib.clients.cloud_watch_logs import CloudWatchLogs
 from botocore.stub import Stubber
 from freezegun import freeze_time
 

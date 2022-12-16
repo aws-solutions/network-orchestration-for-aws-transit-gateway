@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2022-11-25
+
+### Added
+
+- Support for App Registry
+- Unit tests for ui and lambda
+
+### Changed
+
+- Solution name from Serverless Transit Network Orchestrator (STNO) to **Network Orchestration for AWS Transit Gateway**
+- package-lock.json to address dependabot identified vulnerabilities
+- testing-requirements.txt to address dependabot identified vulnerabilities
+
 ## [3.1.1] - 2022-10-18
 
 ### Changed

@@ -1,5 +1,5 @@
 {
-  "name": "aws-serverless-transit-network-orchestrator",
+  "name": "network-orchestrator-for-aws-transit-gateway",
   "version": "3.1.0",
   "dependencies": {
     "@aws-amplify/api-graphql": "^2.3.8",
@@ -19,6 +19,10 @@
     "react-router-dom": "^5.0.0"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.4.3",
+    "msw": "^0.49.1",
     "prettier": "~2.7.1",
     "react-scripts": "^5.0.1"
   },
@@ -36,7 +40,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "react-scripts test --coverage --watchAll=false",
     "eject": "react-scripts eject",
     "install:clean": "rm -rf node_modules/ && rm -rf package-lock.json && npm install && npm start",
     "fix-memory-limit": "cross-env LIMIT=2048 increase-memory-limit",
@@ -55,6 +59,11 @@
       "last 1 chrome version",
       "last 1 firefox version",
       "last 1 safari version"
+    ]
+  },
+  "jest": {
+    "testMatch": [
+      "**.test.js"
     ]
   }
 }

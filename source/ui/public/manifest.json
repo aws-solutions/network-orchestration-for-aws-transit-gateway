@@ -1,6 +1,6 @@
 {
   "short_name": "STNO",
-  "name": "AWS Serverless Transit Network Orchestrator",
+  "name": "Network Orchestration for AWS Transit Gateway",
   "icons": [
     {
       "src": "favicon.ico",

@@ -1,8 +1,18 @@
-# Serverless Transit Network Orchestrator
+# Network Orchestration for AWS Transit Gateway
+## Formerly known as Serverless Transit Network Orchestrator (STNO)
 
-**[🚀Solution Landing Page](https://docs.aws.amazon.com/solutions/latest/serverless-transit-network-orchestrator/welcome.html)** | **[🚧Feature request](https://github.com/aws-solutions/serverless-transit-network-orchestrator/issues/new?assignees=&labels=feature-request%2C+enhancement&template=feature_request.md&title=)** | **[🐛Bug Report](https://github.com/aws-solutions/serverless-transit-network-orchestrator/issues/new?assignees=&labels=bug%2C+triage&template=bug_report.md&title=)** | **[📜Documentation Improvement](https://github.com/aws-solutions/serverless-transit-network-orchestrator/issues/new?assignees=&labels=document-update&template=documentation_improvements.md&title=)**
+*
+*[🚀Solution Landing Page](https://aws.amazon.com/solutions/implementations/network-orchestration-aws-transit-gateway/welcome.html)
+** | *
+*[🚧Feature request](https://github.com/aws-solutions/serverless-transit-network-orchestrator/issues/new?assignees=&labels=feature-request%2C+enhancement&template=feature_request.md&title=)
+** | *
+*[🐛Bug Report](https://github.com/aws-solutions/serverless-transit-network-orchestrator/issues/new?assignees=&labels=bug%2C+triage&template=bug_report.md&title=)
+** | *
+*[📜Documentation Improvement](https://github.com/aws-solutions/serverless-transit-network-orchestrator/issues/new?assignees=&labels=document-update&template=documentation_improvements.md&title=)
+**
 
-_Note: For any relevant information outside the scope of this readme, please refer to the solution landing page and implementation guide._
+_Note: For any relevant information outside the scope of this readme, please refer to the solution landing page and
+implementation guide._
 
 ## Table of content
 
@@ -23,9 +33,9 @@ _Note: For any relevant information outside the scope of this readme, please ref
 
 ## Solution overview
 
-The Serverless Transit Network Orchestrator (STNO) solution adds automation to AWS Transit Gateway. This solution provides the tools necessary to automate the process of setting up and managing transit networks in distributed AWS environments. A web interface is created to help control, audit, and approve (transit) network changes. STNO supports both AWS Organizations and standalone AWS account types.
+Network Orchestration for AWS Transit Gateway solution adds automation to AWS Transit Gateway. This solution provides the tools necessary to automate the process of setting up and managing transit networks in distributed AWS environments. A web interface is created to help control, audit, and approve (transit) network changes. STNO supports both AWS Organizations and standalone AWS account types.
 
-Serverless Transit Network Orchestrator version 2.0 supports AWS Transit Gateway inter-Region peering and Amazon VPC prefix lists. Customers can establish peering connections between transit gateways to extend connectivity and build global networks spanning multiple AWS Regions. Version 2.0 also gives customers the ability to automatically register AWS Transit Gateway with Network Manager. This lets customers visualize and monitor their global network from a single dashboard rather than toggling between Regions from the AWS Console.
+Network Orchestration for AWS Transit Gateway version 2.0 supports AWS Transit Gateway inter-Region peering and Amazon VPC prefix lists. Customers can establish peering connections between transit gateways to extend connectivity and build global networks spanning multiple AWS Regions. Version 2.0 also gives customers the ability to automatically register AWS Transit Gateway with Network Manager. This lets customers visualize and monitor their global network from a single dashboard rather than toggling between Regions from the AWS Console.
 
 ## Architecture
 
@@ -35,17 +45,17 @@ The solution follows hub-spoke deployment model and uses given workflow:
 
 - This tag change is sent to the hub account through an Amazon EventBridge bus.
 
-- When the event is received in the hub account, an AWS Lambda function is initiated to start the Serverless Transit Network Orchestrator workflow.
+- When the event is received in the hub account, an AWS Lambda function is initiated to start the Network Orchestration for AWS Transit Gateway workflow.
 
-- AWS Step Functions (Serverless Transit Network Orchestrator state machine) and Lambda process network requests from the spoke accounts and event details are stored in Amazon DynamoDB. You can approve requests automatically or manually.
+- AWS Step Functions (Network Orchestration for AWS Transit Gateway state machine) and Lambda process network requests from the spoke accounts and event details are stored in Amazon DynamoDB. You can approve requests automatically or manually.
 
 <img src="./architecture.png" width="750" height="450">
 
 ## Installing pre-packaged solution template
 
-- Deploy in the account you want to act as the hub: [aws-transit-network-orchestrator-hub.template](https://solutions-reference.s3.amazonaws.com/serverless-transit-network-orchestrator/latest/aws-transit-network-orchestrator-hub.template)
-- Deploy in spoke accounts: [aws-transit-network-orchestrator-spoke.template](https://solutions-reference.s3.amazonaws.com/serverless-transit-network-orchestrator/latest/aws-transit-network-orchestrator-spoke.template)
-- Deploy in AWS Organizations management account: [aws-transit-network-orchestrator-organization-role.template](https://solutions-reference.s3.amazonaws.com/serverless-transit-network-orchestrator/latest/aws-transit-network-orchestrator-organization-role.template)
+- Deploy in the account you want to act as the hub: [network-orchestration-hub.template](https://solutions-reference.s3.amazonaws.com/serverless-transit-network-orchestrator/latest/network-orchestration-hub.template)
+- Deploy in spoke accounts: [network-orchestration-spoke.template](https://solutions-reference.s3.amazonaws.com/serverless-transit-network-orchestrator/latest/network-orchestration-spoke.template)
+- Deploy in AWS Organizations management account: [network-orchestration-organization-role.template](https://solutions-reference.s3.amazonaws.com/serverless-transit-network-orchestrator/latest/network-orchestration-organization-role.template)
 
 _Note: All templates need to be deployed in the same preferred region_
 
@@ -126,7 +136,7 @@ aws s3api put-public-access-block \
 - Configure the solution name, version number and bucket name
 
 ```
-SOLUTION_NAME=serverless-transit-network-orchestrator
+SOLUTION_NAME=network-orchestration-for-aws-transit-gateway
 DIST_OUTPUT_BUCKET=stno-$ACCOUNT_ID
 VERSION=custom001
 ```
@@ -156,9 +166,9 @@ _✅ All assets are now staged on your S3 bucket. You or any user may use S3 lin
 
 - If using STNO with AWS Organizations, make sure that AWS RAM (Resources Access Manager) sharing is enabled in the management account (Refer [here](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_integrate_services.html#orgs_how-to-enable-disable-trusted-access)).
 
-- (Optional) If using AWS Organizations, if you want STNO to add tags with the account name/OU, and if the STNO account is not a [Delegated Administrator for any AWS service](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_integrate_services_list.html), log into the management account and create a CloudFormation stack using the `aws-transit-network-orchestrator-organization-role.template` link from your bucket.
+- (Optional) If using AWS Organizations, if you want STNO to add tags with the account name/OU, and if the STNO account is not a [Delegated Administrator for any AWS service](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_integrate_services_list.html), log into the management account and create a CloudFormation stack using the `network-orchestration-organization-role.template` link from your bucket.
 
-- Deploy the Serverless Transit Network Orchestrator to your account by launching a new AWS CloudFormation stack using the `aws-transit-network-orchestrator-hub.template` and `aws-transit-network-orchestrator-spoke.template` links from your S3 bucket.
+- Deploy the Network Orchestration for AWS Transit Gateway to your account by launching a new AWS CloudFormation stack using the `network-orchestration-hub.template` and `aws-transit-network-orchestrator-spoke.template` links from your S3 bucket.
 
 ## Tags used by STNO
 
@@ -285,7 +295,7 @@ _✅ At this point we have successfully migrated to STNO v3.0.0_
 
 ## File structure
 
-AWS Serverless Transit Network Orchestrator solution consists of:
+Network Orchestration for AWS Transit Gateway solution consists of:
 
 - solution templates to provision needed AWS resources
 - lambda microservices to implement solution functional logics

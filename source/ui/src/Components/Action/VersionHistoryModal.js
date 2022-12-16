@@ -7,7 +7,7 @@ import React, { Component } from "react";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/dist/styles/ag-grid.css";
 import "ag-grid-community/dist/styles/ag-theme-blue.css";
-import { Modal, Button } from "react-bootstrap";
+import { Button, Modal } from "react-bootstrap";
 
 class VersionHistoryModal extends Component {
   constructor(props) {
@@ -24,7 +24,7 @@ class VersionHistoryModal extends Component {
           VpcId: "",
           UserId: "",
           RequestTimeStamp: "",
-          ResponseimeStamp: "",
+          ResponseTimeStamp: "",
           AssociationRouteTable: "",
           PropagationRouteTablesString: "",
           TagEventSource: "",
@@ -35,8 +35,8 @@ class VersionHistoryModal extends Component {
           VpcCidr: "",
           AdminAction: "",
           Comment: "",
-          items: [],
-        },
+          items: []
+        }
       ],
 
       //define columns in the grid: field names in the grid should match attribute/column names from the ddb table
@@ -44,79 +44,75 @@ class VersionHistoryModal extends Component {
         {
           headerName: "VPC Id",
           field: "VpcId",
-          width: 220,
+          width: 220
         },
         {
           headerName: "VPC CIDR",
-          field: "VpcCidr",
+          field: "VpcCidr"
         },
         {
           headerName: "Action",
-          field: "Action",
+          field: "Action"
         },
         {
           headerName: "Status",
           field: "Status",
           cellClassRules: {
-            "rag-red": function (params) {
-              return (
-                params.value === "rejected" ||
-                params.value === "auto-rejected" ||
-                params.value === "failed"
-              );
-            },
-          },
+            "rag-red": function(params) {
+              return (params.value === "rejected" || params.value === "auto-rejected" || params.value === "failed");
+            }
+          }
         },
         {
           headerName: "Comment",
           field: "Comment",
           autoHeight: true,
-          cellStyle: { "white-space": "normal" },
+          cellStyle: { "whiteSpace": "normal" }
         },
         {
           headerName: "Association RT",
-          field: "AssociationRouteTable",
+          field: "AssociationRouteTable"
         },
         {
           headerName: "Propagation RTs",
-          field: "PropagationRouteTablesString",
+          field: "PropagationRouteTablesString"
         },
         {
           headerName: "Spoke Account",
-          field: "AWSSpokeAccountId",
+          field: "AWSSpokeAccountId"
         },
         {
           headerName: "Subnet Id",
           field: "SubnetId",
-          width: 210,
+          width: 210
         },
         {
           headerName: "AZ",
-          field: "AvailabilityZone",
+          field: "AvailabilityZone"
         },
         {
           headerName: "Tag Event Source",
-          field: "TagEventSource",
+          field: "TagEventSource"
         },
         {
           headerName: "Request Time",
-          field: "RequestTimeStamp",
+          field: "RequestTimeStamp"
         },
         {
           headerName: "Response Time",
-          field: "ResponseTimeStamp",
+          field: "ResponseTimeStamp"
         },
         {
           headerName: "User Id",
-          field: "UserId",
+          field: "UserId"
         },
         {
           headerName: "Transit Gateway Id",
-          field: "TgwId",
-        },
-      ],
-    }; //end this.state
-  } //end constructor()
+          field: "TgwId"
+        }
+      ]
+    };
+  }
 
   //initialize grid
   onGridReady = async (params) => {
@@ -128,8 +124,8 @@ class VersionHistoryModal extends Component {
 
   //auto adjust column width to fix content
   autoSizeAll() {
-    var allColumnIds = [];
-    this.gridColumnApi.getAllColumns().forEach(function (column) {
+    const allColumnIds = [];
+    this.gridColumnApi.getAllColumns().forEach(function(column) {
       if (
         column.colId !== "SubnetId" &&
         column.colId !== "VpcId" &&
@@ -159,7 +155,7 @@ class VersionHistoryModal extends Component {
           <div
             className="ag-theme-blue"
             style={{
-              height: "calc(80vh - 50px)",
+              height: "calc(80vh - 50px)"
             }}
           >
             <AgGridReact
@@ -179,7 +175,7 @@ class VersionHistoryModal extends Component {
         </Modal.Footer>
       </Modal>
     );
-  } //end render
-} //end class
+  }
+}
 
 export default VersionHistoryModal;

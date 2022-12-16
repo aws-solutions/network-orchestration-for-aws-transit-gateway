@@ -1,24 +1,25 @@
 # !/bin/python
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Custom resource helper test module"""
-
-import logging
+import os
 from copy import deepcopy
 from os import environ
 from unittest.mock import Mock
 
 import pytest
+from aws_lambda_powertools import Logger
+from aws_lambda_powertools.utilities.typing import LambdaContext
+
 from custom_resource.lib.custom_resource_helper import (
     cfn_handler,
     handle_cwe_permissions,
     handle_prefix,
     handle_metrics,
-    trigger_sm,
+    start_state_machine,
     send,
 )
 
-logger = logging.getLogger(__name__)
+logger = Logger(os.getenv('LOG_LEVEL'))
 logger.setLevel("DEBUG")
 
 # pylint:disable=no-self-use, invalid-name
@@ -281,7 +282,9 @@ class TestClassTriggerSM:
         mocker.patch(
             "custom_resource.lib.step_functions.StepFunctions.trigger_state_machine"
         )
-        trigger_sm({}, AWSLambdaContext())
+        context = LambdaContext()
+        context._invoked_function_arn = "abc:abc:abc:abc:abc:abc:abc"
+        start_state_machine({}, context)
 
         # failed
         mocker.patch(
@@ -289,7 +292,7 @@ class TestClassTriggerSM:
             side_effect=Exception("error triggering state machine"),
         )
         with pytest.raises(Exception):
-            trigger_sm({}, AWSLambdaContext())
+            start_state_machine({}, context)
 
 
 @pytest.mark.TDD

@@ -14,7 +14,7 @@ import VersionHistoryModal from "../Action/VersionHistoryModal";
 import { GraphQLAPI, graphqlOperation } from "@aws-amplify/api-graphql";
 import {
   getDashboardItemsFromTransitNetworkOrchestratorTables,
-  getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables,
+  getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables
 } from "../../graphql/queries";
 
 class Dashboard extends Component {
@@ -26,6 +26,7 @@ class Dashboard extends Component {
       selectedSubnetId: "",
       showHistoryModal: false,
       btnDisabled: true,
+      apiCallInProgress: false,
 
       //List attribute/column names from the ddb table
       dataFields: [
@@ -48,8 +49,8 @@ class Dashboard extends Component {
           VpcCidr: "",
           AdminAction: "",
           Comment: "",
-          items: [],
-        },
+          items: []
+        }
       ],
 
       //define columns in the grid: field names in the grid should match attribute/column names from the ddb table
@@ -58,145 +59,141 @@ class Dashboard extends Component {
           headerName: "VPC Id",
           field: "VpcId",
           width: 220,
-          checkboxSelection: true,
+          checkboxSelection: true
         },
         {
           headerName: "VPC CIDR",
-          field: "VpcCidr",
+          field: "VpcCidr"
         },
         {
           headerName: "Action",
-          field: "Action",
+          field: "Action"
         },
         {
           headerName: "Status",
           field: "Status",
           cellClassRules: {
-            "rag-red": function (params) {
+            "rag-red": function(params) {
               return (
                 params.value === "rejected" || params.value === "auto-rejected"
               );
-            },
-          },
+            }
+          }
         },
         {
           headerName: "Comment",
           field: "Comment",
           autoHeight: true,
-          cellStyle: { "white-space": "normal" },
+          cellStyle: { "whiteSpace": "normal" }
         },
         {
           headerName: "Association RT",
-          field: "AssociationRouteTable",
+          field: "AssociationRouteTable"
         },
         {
           headerName: "Propagation RTs",
-          field: "PropagationRouteTablesString",
+          field: "PropagationRouteTablesString"
         },
         {
           headerName: "Spoke Account",
-          field: "AWSSpokeAccountId",
+          field: "AWSSpokeAccountId"
         },
         {
           headerName: "Subnet Id",
           field: "SubnetId",
-          width: 210,
+          width: 210
         },
         {
           headerName: "AZ",
-          field: "AvailabilityZone",
+          field: "AvailabilityZone"
         },
         {
           headerName: "Tag Event Source",
-          field: "TagEventSource",
+          field: "TagEventSource"
         },
         {
           headerName: "Request Time",
-          field: "RequestTimeStamp",
+          field: "RequestTimeStamp"
         },
         {
           headerName: "Response Time",
-          field: "ResponseTimeStamp",
+          field: "ResponseTimeStamp"
         },
         {
           headerName: "User Id",
-          field: "UserId",
+          field: "UserId"
         },
         {
           headerName: "Transit Gateway Id",
-          field: "TgwId",
-        },
-      ],
-    }; //end this.state
-  } //end constructor()
+          field: "TgwId"
+        }
+      ]
+    };
+  }
 
   //Refresh dashboard every 5 minutes by default
   async componentDidMount() {
-    this.getDashboardItems();
-    this.interval = setInterval(this.getDashboardItems, 300000);
+    await this.getDashboardItems();
+    setInterval(this.getDashboardItems, 300000);
   }
 
   //Run GraphQL to fetch dashboard items from the ddb table
   getDashboardItems = async () => {
-    try {
-      const result = await GraphQLAPI.graphql(
-        graphqlOperation(getDashboardItemsFromTransitNetworkOrchestratorTables)
-      );
-      this.setState({
-        items:
-          result.data.getDashboardItemsFromTransitNetworkOrchestratorTables
-            .items,
-      });
-    } catch (error) {
-      console.error(error);
-    }
+    this.setState(previousState => {
+      return {
+        ...previousState,
+        apiCallInProgress: true
+      };
+    });
+    const result = await GraphQLAPI.graphql(
+      graphqlOperation(getDashboardItemsFromTransitNetworkOrchestratorTables)
+    );
+    this.setState({
+      items: result.data.getDashboardItemsFromTransitNetworkOrchestratorTables.items,
+      apiCallInProgress: false
+    });
   };
 
   //Run GraphQL to accept or reject request
   showVersionHistory = async () => {
-    try {
-      this.setState({
-        showHistoryModal: true,
-        selectedSubnetId: this.state.selectedRow.SubnetId,
-      });
+    this.setState({
+      showHistoryModal: true,
+      selectedSubnetId: this.state.selectedRow.SubnetId
+    });
 
-      const selectedSubnetId = this.state.selectedRow.SubnetId;
+    const selectedSubnetId = this.state.selectedRow.SubnetId;
 
-      const filter = {
-        SubnetId: { eq: selectedSubnetId },
-        Version: { ne: "latest" },
-      };
-      const result = await GraphQLAPI.graphql(
-        graphqlOperation(
-          getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables,
-          { filter }
-        )
-      );
-      this.setState({
-        versionHistoryItems:
-          result.data
-            .getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables
-            .items,
-      });
-    } catch (error) {
-      console.error(error);
-    }
-  }; //end getVersionHistory
+    const filter = {
+      SubnetId: { eq: selectedSubnetId },
+      Version: { ne: "latest" }
+    };
+    const result = await GraphQLAPI.graphql(
+      graphqlOperation(
+        getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables,
+        { filter }
+      )
+    );
+    this.setState({
+      versionHistoryItems:
+      result.data
+        .getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables
+        .items
+    });
+  };
 
-  //get the selected row
   onRowSelected = (params) => {
     const selectedRows = this.gridApi.getSelectedRows();
     if (selectedRows.length > 0) {
       this.setState({
         selectedRow: selectedRows[0],
         selectedSubnetId: selectedRows[0].SubnetId,
-        btnDisabled: false,
+        btnDisabled: false
       });
     } else {
       this.setState({
         selectedRow: "",
         selectedSubnetId: "",
-        btnDisabled: true,
+        btnDisabled: true
       });
     }
   };
@@ -211,8 +208,8 @@ class Dashboard extends Component {
 
   //auto adjust column width to fix content
   autoSizeAll() {
-    var allColumnIds = [];
-    this.gridColumnApi.getAllColumns().forEach(function (column) {
+    const allColumnIds = [];
+    this.gridColumnApi.getAllColumns().forEach(function(column) {
       if (
         column.colId !== "SubnetId" &&
         column.colId !== "VpcId" &&
@@ -222,6 +219,7 @@ class Dashboard extends Component {
     });
     this.gridColumnApi.autoSizeColumns(allColumnIds);
   }
+
   render() {
     let closeHistoryModal = () => this.setState({ showHistoryModal: false });
 
@@ -229,7 +227,7 @@ class Dashboard extends Component {
       <div
         className="ag-theme-blue"
         style={{
-          height: "calc(85vh - 50px)",
+          height: "calc(85vh - 50px)"
         }}
       >
         <div>
@@ -241,7 +239,7 @@ class Dashboard extends Component {
               background: "#5d9cd2",
               color: "white",
               margin: "5px",
-              fontSize: "10pt",
+              fontSize: "10pt"
             }}
             onClick={() => this.showVersionHistory()}
           >
@@ -252,19 +250,21 @@ class Dashboard extends Component {
             onHide={closeHistoryModal}
             params={{
               selectedSubnetId: this.state.selectedSubnetId,
-              versionHistoryItems: this.state.versionHistoryItems,
+              versionHistoryItems: this.state.versionHistoryItems
             }}
           />
-          <button
+          {!this.state.apiCallInProgress && <button
             id="btn-refresh-action"
             className="divright"
             style={{ background: "#5d9cd2", color: "white" }}
             onClick={() => this.getDashboardItems()}
+            aria-label={"refresh"}
           >
             <FaSyncAlt />
-          </button>
+          </button>}
         </div>
         <AgGridReact
+          role={"table"}
           onGridReady={this.onGridReady}
           rowSelection="single"
           defaultColDef={{ resizable: true, sortable: true, filter: true }}
@@ -276,4 +276,5 @@ class Dashboard extends Component {
     );
   }
 }
+
 export default Dashboard;

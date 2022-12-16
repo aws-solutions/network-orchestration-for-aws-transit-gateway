@@ -1,19 +1,21 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
-"""Transit Gateway peering helper module"""
 
 import asyncio
-import logging
-from os import environ
+import os
 import re
+from os import environ
+
+from aws_lambda_powertools import Logger
 from botocore.exceptions import ClientError
+
 from tgw_peering.lib.transit_gateway import TGWPeering
 from tgw_peering.lib.utils import TGWPeer, AttachmentState
 
-logger = logging.getLogger(__name__)
+logger = Logger(os.getenv('LOG_LEVEL'))
 
 
-def validate_tag(event: dict) -> bool:
+def validate_tag(event: dict):
     """Validates if the transit gateway tag is consistent with the format
 
     Args:
@@ -70,6 +72,14 @@ async def tag_event_router(tag_value: str) -> None:
                 logger.warning(str(err))
         return
 
+    await create_new_and_delete_old_peering_attachments(current_peer_tgw, hub_tgw_id, tag_value, tgw)
+
+    await delete_old_peering_attachments(current_peer_tgw, current_peers, tgw)
+
+    await accept_all_peering_requests(hub_tgw_id, tgw)
+
+
+async def create_new_and_delete_old_peering_attachments(current_peer_tgw, hub_tgw_id, tag_value, tgw):
     # for all other cases, create new and delete old peering attachments
     peer_list = tag_value.split("/")
     for peer in peer_list:
@@ -86,6 +96,8 @@ async def tag_event_router(tag_value: str) -> None:
         else:
             current_peer_tgw.remove(peer.transit_gateway)
 
+
+async def delete_old_peering_attachments(current_peer_tgw, current_peers, tgw):
     # deleting old peering attachments
     for peer in current_peers:
         if peer.transit_gateway in current_peer_tgw:
@@ -94,6 +106,8 @@ async def tag_event_router(tag_value: str) -> None:
             except (KeyError, ClientError) as err:
                 logger.warning(str(err))
 
+
+async def accept_all_peering_requests(hub_tgw_id, tgw):
     # accept all peering requests
     peering_requests: list[TGWPeer] = tgw.get_tgw_peers(
         tgw_id=hub_tgw_id,

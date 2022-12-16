@@ -5,7 +5,8 @@
   "main": "index.js",
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.102.0",
-    "winston": "^3.3.3"
+    "winston": "^3.3.3",
+    "decode-uri-component": "^0.2.1"
   },
   "devDependencies": {
     "@types/jest": "^26.0.24",
@@ -21,8 +22,9 @@
     "build:install": "npm ci",
     "build:ts": "./node_modules/typescript/bin/tsc --project ./tsconfig.json",
     "build:copy": "cp -RL ./node_modules ./dist/node_modules && rm -rf ./dist/__tests__",
-    "build:zip": "cd ./dist && zip -r cognito-trigger.zip .",
-    "build:all": "npm run build:clean && npm run build:install && npm run build:ts && npm prune --production && npm run build:copy && npm run build:zip"
+    "build:zip": "cd ./dist && zip -qr cognito-trigger.zip .",
+    "build:all": "npm run build:clean && npm run build:install && npm run build:ts && npm prune --production && npm run build:copy && npm run build:zip",
+    "test": "jest --coverage  --watchAll=false"
   },
   "license": "Apache-2.0"
 }
