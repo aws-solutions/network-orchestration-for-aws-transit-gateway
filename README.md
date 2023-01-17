@@ -1,8 +1,8 @@
 # Network Orchestration for AWS Transit Gateway
 ## Formerly known as Serverless Transit Network Orchestrator (STNO)
 
-*
-*[🚀Solution Landing Page](https://aws.amazon.com/solutions/implementations/network-orchestration-aws-transit-gateway/welcome.html)
+**
+*[🚀Solution Landing Page](https://aws.amazon.com/solutions/implementations/network-orchestration-aws-transit-gateway)
 ** | *
 *[🚧Feature request](https://github.com/aws-solutions/serverless-transit-network-orchestrator/issues/new?assignees=&labels=feature-request%2C+enhancement&template=feature_request.md&title=)
 ** | *
@@ -89,7 +89,7 @@ The steps given below can be followed if you are looking to customize the soluti
 Clone the repository and make desired code changes.
 
 ```
-git clone aws-solutions/serverless-transit-network-orchestrator
+git clone aws-solutions/network-orchestration-for-aws-transit-gateway
 ```
 
 _Note: Following steps have been tested under above pre-requisites_
