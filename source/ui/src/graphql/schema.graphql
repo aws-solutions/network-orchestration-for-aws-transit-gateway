@@ -10,9 +10,10 @@ type Mutation {
 
 type Query {
   getActionItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
-  getDashboardItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
+  getDashboarItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
   getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableVersionHistoryFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
-  }
+  getDashboarItemsForStatusFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups: ["AdminGroup","ReadOnlyUserGroup"])
+}
 
 type Subscription {
   onUpdateTransitNetworkOrchestratorTable(SubnetId: String, Version: String): UpdateTransitNetworkOrchestratorTable @aws_subscribe(mutations : ["updateTransitNetworkOrchestratorTable"])

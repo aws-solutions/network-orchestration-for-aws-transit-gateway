@@ -53,7 +53,7 @@
           "isDeprecated" : false,
           "deprecationReason" : null
         }, {
-          "name" : "getDashboardItemsFromTransitNetworkOrchestratorTables",
+          "name" : "getDashboarItemsFromTransitNetworkOrchestratorTables",
           "description" : null,
           "args" : [ {
             "name" : "filter",

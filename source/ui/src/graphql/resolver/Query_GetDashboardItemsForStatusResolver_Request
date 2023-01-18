@@ -1,20 +1,16 @@
 ##define values
 #set( $version = "latest" )
-#set( $s1 = "requested" )
-#set( $s2 = "processing" )
-#set( $s3 = "failed" )
+#set( $s1 = $context.arguments.filter.Status.eq )
 
 ##get latest items for dashboard with certain status
 {
     "version" : "2017-02-28",
     "operation" : "Scan",
     "filter" : {
-        "expression" : "Version=:version and #s IN (:s1,:s2,:s3)",
+        "expression" : "Version=:version and #s=:s1",
         "expressionValues" : {
             ":version" : { "S" : "$version" },
-            ":s1":{"S" : "$s1"},
-            ":s2":{"S" : "$s2"},
-            ":s3":{"S" : "$s3"}  
+            ":s1":{"S" : "$s1"}
         },
         "expressionNames": {
             "#s":"Status"

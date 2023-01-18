@@ -2143,6 +2143,20 @@ Resources:
       ResponseMappingTemplateS3Location:
         !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/resolver/Query_GetDashboardItemsResolver_Response"]]
 
+  GetDashboardItemsForStatusResolver:
+    Type: "AWS::AppSync::Resolver"
+    DependsOn:
+    - GraphQLSchema
+    Properties:
+      ApiId: !GetAtt AppSyncPipelineApi.ApiId
+      TypeName: "Query"
+      FieldName: "getDashboarItemsForStatusFromTransitNetworkOrchestratorTables"
+      DataSourceName: !GetAtt DynamoDBSTNOTableDatasource.Name
+      RequestMappingTemplateS3Location:
+        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/resolver/Query_GetDashboardItemsForStatusResolver_Request"]]
+      ResponseMappingTemplateS3Location:
+        !Join ["", ["s3://", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region", "/", !FindInMap ["SourceCode", "General", "KeyPrefix"],"/graphql/resolver/Query_GetDashboardItemsForStatusResolver_Response"]]        
+
   GetVersionHistoryResolver:
     Type: "AWS::AppSync::Resolver"
     DependsOn:
