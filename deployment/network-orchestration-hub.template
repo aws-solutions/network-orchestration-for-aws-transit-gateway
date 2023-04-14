@@ -332,7 +332,7 @@ Mappings:
     Variables:
       WaitTime: "10"
       AllTraffic: "0.0.0.0/0"
-      RFC1918Routes: "10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16"
+      RFC1918Routes: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
       ApprovalTagKey: "ApprovalRequired"
       ApprovalTagValue: "No"
   Solution:
