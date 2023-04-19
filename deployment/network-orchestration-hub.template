@@ -2620,6 +2620,9 @@ Resources:
             reason: "This is an access log bucket for the resource 'ConsoleBucket' and does not require access logging to be configured."
     Properties:
       AccessControl: LogDeliveryWrite
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
