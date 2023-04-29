@@ -29,7 +29,7 @@ def override_environment_variables():
     os.environ['TABLE_NAME'] = TABLE_NAME
     os.environ['TTL'] = '90'
     os.environ['CIDR_BLOCKS'] = '10.0.0.0/26'
-    os.environ['PREFIX_LISTS'] = '10,11'
+    os.environ['PREFIX_LISTS'] = 'pl-11111'
     os.environ['ASSOCIATION_TAG'] = 'Associate-with'
     os.environ['ATTACHMENT_TAG'] = 'Attach-to'
     os.environ['PROPAGATION_TAG'] = 'Propagate-to'

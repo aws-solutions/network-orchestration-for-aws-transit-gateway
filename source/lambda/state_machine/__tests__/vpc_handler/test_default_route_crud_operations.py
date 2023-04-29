@@ -143,7 +143,9 @@ def test_vpc_default_route_crud_operations_custom_destinations(vpc_setup):
     event = {
         'SubnetId': vpc_setup['subnet_id'],
         'account': '123456789012',
-        'region': 'us-east-1'
+        'region': 'us-east-1',
+        'Action': 'AddSubnet',
+        'RouteTableId': vpc_setup['route_table_id']
     }
 
     # ACT
@@ -157,6 +159,57 @@ def test_vpc_default_route_crud_operations_custom_destinations(vpc_setup):
     # ASSERT
     assert response['SubnetId'] == vpc_setup['subnet_id']
 
+@mock_sts
+def test_vpc_default_route_crud_operations_multiple_cidr_custom_destinations(vpc_setup):
+    # ARRANGE
+    override_environment_variables()
+    os.environ['DEFAULT_ROUTE'] = 'Custom-Destinations'
+    os.environ['CIDR_BLOCKS'] = '10.0.0.0/26, 10.0.1.0/26'
+
+    event = {
+        'SubnetId': vpc_setup['subnet_id'],
+        'account': '123456789012',
+        'region': 'us-east-1',
+        'Action': 'AddSubnet',
+        'RouteTableId': vpc_setup['route_table_id']
+    }
+
+    # ACT
+    response = lambda_handler({
+        'params': {
+            'ClassName': 'VPC',
+            'FunctionName': 'default_route_crud_operations'
+        },
+        'event': event}, LambdaContext())
+
+    # ASSERT
+    assert response['SubnetId'] == vpc_setup['subnet_id']
+
+@mock_sts
+def test_vpc_default_route_crud_operations_multiple_pls_custom_destinations(vpc_setup):
+    # ARRANGE
+    override_environment_variables()
+    os.environ['DEFAULT_ROUTE'] = 'Custom-Destinations'
+    os.environ['PREFIX_LISTS'] = 'pl-11111, pl-22222'
+
+    event = {
+        'SubnetId': vpc_setup['subnet_id'],
+        'account': '123456789012',
+        'region': 'us-east-1',
+        'Action': 'AddSubnet',
+        'RouteTableId': vpc_setup['route_table_id']
+    }
+
+    # ACT
+    response = lambda_handler({
+        'params': {
+            'ClassName': 'VPC',
+            'FunctionName': 'default_route_crud_operations'
+        },
+        'event': event}, LambdaContext())
+
+    # ASSERT
+    assert response['SubnetId'] == vpc_setup['subnet_id']
 
 @mock_sts
 def test_vpc_default_route_crud_operations_configure_manually(vpc_setup):

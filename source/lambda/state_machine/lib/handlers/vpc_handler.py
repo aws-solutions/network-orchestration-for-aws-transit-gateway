@@ -650,7 +650,6 @@ class VPC:
 
                 elif "Configure-Manually" in environ.get("DEFAULT_ROUTE"):
                     self.logger.info("Admin opted to configure route table manually")
-
             return self.event
 
         except Exception as e:
@@ -660,16 +659,18 @@ class VPC:
 
     def _update_route_table_with_cidr_blocks(self, ec2, existing_routes):
         cidr_blocks = environ.get("CIDR_BLOCKS").split(',')
-        if len(cidr_blocks) > 0:
+        if len(cidr_blocks) > 0 and '' not in cidr_blocks:
             for route in cidr_blocks:
+                route = route.lstrip()
                 self.logger.info(f"Adding route: {route}")
                 self._find_existing_default_route(existing_routes, route)
                 self._update_route_table(ec2, route)
 
     def _update_route_table_with_prefix_lists(self, ec2, existing_routes):
         prefix_lists = environ.get("PREFIX_LISTS").split(',')
-        if len(prefix_lists) > 0:
+        if len(prefix_lists) > 0 and '' not in prefix_lists:
             for prefix_list_id in prefix_lists:
+                prefix_list_id = prefix_list_id.lstrip()
                 self.logger.info(f"Adding prefix list id: {prefix_list_id}")
                 self._find_existing_default_route(
                     existing_routes, prefix_list_id

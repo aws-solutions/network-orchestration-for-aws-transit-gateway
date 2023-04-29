@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Test Functionality
+- Added test function - [`test_default_route_crud_operations.py - test_vpc_default_route_crud_operations_multiple_cidr_custom_destinations()`](./source/lambda/state_machine/__tests__/vpc_handler/test_default_route_crud_operations.py)
+    - Tests the case where there are multiple custom CIDR blocks with a leading space between commas
+- Added test function - [`test_default_route_crud_operations.py - test_vpc_default_route_crud_operations_multiple_pls_custom_destinations()`](./source/lambda/state_machine/__tests__/vpc_handler/test_default_route_crud_operations.py)
+    - Tests the case where there are multiple prefix list IDs with a leading space between commas
+
+### Changed
+
+#### Core Functionality 
+- Changed function - [`vpc_handler.py - _update_route_table_with_cidr_blocks()`](./source/lambda/state_machine/lib/handlers/vpc_handler.py)
+    - Added `lstrip()` to routes to move leading white spaces enforced by the [`network-orchestration-hub.template's`](./deployment/network-orchestration-hub.template) `AllowedPattern` on the `ListOfCustomCidrBlocks` parameter
+    - Added `and '' not in prefix_lists` and `and '' not in cidr_blocks` checks to account for empty environment variables (moto doesn't seem to catch this)
+
+#### Test Functionality
+- Changed test function - [`conftest.py - override_environment_variables()`](./source/lambda/state_machine/__tests__/conftest.py) 
+    - Default Environment Variables changes for `os.environ['PREFIX_LISTS']`:
+        - Syntax changed to match prefix syntax
+        - Changed to only one entry - multiple entries are now environment overrides in the tests
+- Changed test function - [`test_default_route_crud_operations.py - test_vpc_default_route_crud_operations_custom_destinations()`](./source/lambda/state_machine/__tests__/vpc_handler/test_default_route_crud_operations.py)
+    - Added `Action` and `RouteTableId` to the test event.
+
+# [3.2.2] - 2023-04-14
+
+### Added
+
 - ObjectWriter ownership control to logs bucket, in response to S3 service change
 
 ## [3.2.1] - 2023-01-13
