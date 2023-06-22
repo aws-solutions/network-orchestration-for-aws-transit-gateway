@@ -15,7 +15,7 @@ from custom_resource.lib.utils import boto3_config
 class StepFunctions:
 
     def __init__(self):
-        self.logger = Logger(os.getenv('LOG_LEVEL'))
+        self.logger = Logger(level=os.getenv('LOG_LEVEL'), service=self.__class__.__name__)
         self.state_machine_client = boto3.client(
             "stepfunctions", config=boto3_config
         )

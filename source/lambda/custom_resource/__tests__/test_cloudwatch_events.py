@@ -17,21 +17,30 @@ class TestClassPutPermission:
     """TDD test class for CloudWatch Events put permission calls"""
 
     wrong_principal = "testprincipal"
-    correct_principal = "123456789012"
+    correct_account_principal = "123456789012"
+    correct_org_principal = "arn:aws:organizations::111111111111:organization/o-example-id"
     event_bus_name = "my-event-bus"
 
-    def test__success(self):
+    def test__success_account_id(self):
         """success"""
         cwe = CloudWatchEvents()
         cwe.cwe_client.create_event_bus(Name=self.event_bus_name)
-        cwe.put_permission(self.correct_principal, self.event_bus_name)
+        cwe.put_permission(self.correct_account_principal, self.event_bus_name)
+        cwe.cwe_client.delete_event_bus(Name=self.event_bus_name)  # clean-up
+
+    def test__success_org_id(self):
+        """success"""
+        os.environ['PARTITION'] = 'aws'
+        cwe = CloudWatchEvents()
+        cwe.cwe_client.create_event_bus(Name=self.event_bus_name)
+        cwe.put_permission(self.correct_org_principal, self.event_bus_name)
         cwe.cwe_client.delete_event_bus(Name=self.event_bus_name)  # clean-up
 
     def test__fail__resource_not_found(self):
         """fail with ResourceNotFoundException"""
         cwe = CloudWatchEvents()
         with pytest.raises(cwe.cwe_client.exceptions.ResourceNotFoundException):
-            cwe.put_permission(self.correct_principal, self.event_bus_name)
+            cwe.put_permission(self.correct_account_principal, self.event_bus_name)
 
     def test__fail__client_error(self):
         """fail with InvalidParameterValue"""

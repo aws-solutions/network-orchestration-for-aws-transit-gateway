@@ -11,7 +11,7 @@ class ConsoleDeployment:
     """Deploys the STNO Console web application to an S3 bucket"""
 
     def __init__(self, s3_client, open_fn, exists_fn):
-        self.logger = Logger(os.getenv('LOG_LEVEL'))
+        self.logger = Logger(level=os.getenv('LOG_LEVEL'), service=self.__class__.__name__)
         self.s3_client = s3_client
         self.open_fn = open_fn
         self.exists_fn = exists_fn
@@ -30,7 +30,7 @@ class ConsoleDeployment:
             file_path = path.join(
                 path.dirname(__file__), "../../console-manifest.json"
             )
-            self.logger.debug("file path for console manifest: %s", file_path)
+            self.logger.info(f"file path for console manifest: {file_path}")
 
             if self.exists_fn(file_path):
                 properties = event["ResourceProperties"]
@@ -105,7 +105,7 @@ class ConsoleDeployment:
 
     def __upload_stno_config_to_console_bucket(self, console_bucket, stno_config_javascript):
         key = "console/assets/stno_config.js"
-        self.logger.debug("Creating " + key + " in " + console_bucket)
+        self.logger.info(f"Creating {key} in {console_bucket}")
         try:
             self.s3_client.put_object(
                 Bucket=console_bucket,
@@ -136,4 +136,6 @@ class ConsoleDeployment:
                 Bucket=console_bucket,
                 Key=key,
             )
-        self.logger.debug("copying of Console assets successful")
+            self.logger.info(f"copying of Console assets successful "
+                             f"from {source_bucket}/{key_prefix}{key} "
+                             f"to {console_bucket}{key}")
