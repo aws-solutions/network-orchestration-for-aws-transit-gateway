@@ -2113,6 +2113,7 @@ Resources:
 
   GlobalNetworkRegistrationSTNO:
     Type: AWS::NetworkManager::TransitGatewayRegistration
+    Condition: DeployIfNotChinaPartition
     Properties:
       GlobalNetworkId: !If [CreateNewGlobalNetwork, !Ref GlobalNetworkSTNO, !Ref ExistingGlobalNetworkId]
       TransitGatewayArn: !Sub
