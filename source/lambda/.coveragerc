@@ -1,9 +1,8 @@
 [run]
-source= .
 omit=*/__init__.py
-    tests/*
-    ui/*
-    setup*
+    */__tests__/*
+    .venv/*
+    .venv-test/*
 
 [report]
 show_missing=True

@@ -1,18 +1,18 @@
-schema {
+﻿schema {
   query: Query
   mutation: Mutation
   subscription: Subscription
 }
 
 type Mutation {
- updateTransitNetworkOrchestratorTable(input: UpdateTransitNetworkOrchestratorTableInput!): UpdateTransitNetworkOrchestratorTable @aws_auth(cognito_groups : ["AdminGroup"])
+  updateTransitNetworkOrchestratorTable(input: UpdateTransitNetworkOrchestratorTableInput!): UpdateTransitNetworkOrchestratorTable @aws_auth(cognito_groups : ["AdminGroup"])
 }
 
 type Query {
-  getActionItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
-  getDashboardItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
-  getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableVersionHistoryFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup","ReadOnlyUserGroup"])
-  }
+  getActionItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup", "ReadOnlyUserGroup"])
+  getDashboardItemsFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup", "ReadOnlyUserGroup"])
+  getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables(filter: TableTransitNetworkOrchestratorTableVersionHistoryFilterInput, limit: Int, nextToken: String): TransitNetworkOrchestratorTableConnection @aws_auth(cognito_groups : ["AdminGroup", "ReadOnlyUserGroup"])
+}
 
 type Subscription {
   onUpdateTransitNetworkOrchestratorTable(SubnetId: String, Version: String): UpdateTransitNetworkOrchestratorTable @aws_subscribe(mutations : ["updateTransitNetworkOrchestratorTable"])
@@ -27,14 +27,14 @@ type TransitNetworkOrchestratorTableMoreFields {
   AWSSpokeAccountId: String
   Action: String
   AdminAction: String
+  AssociationRouteTable: String
   AvailabilityZone: String
   Comment: String
+  PropagationRouteTablesString: String
   RequestTimeStamp: String
   ResponseTimeStamp: String
   Status: String
   SubnetId: String!
-  AssociationRouteTable: String
-  PropagationRouteTablesString: String
   TagEventSource: String
   TgwId: String
   TimeToLive: Int
@@ -48,15 +48,15 @@ type UpdateTransitNetworkOrchestratorTable {
   AWSSpokeAccountId: String
   Action: String
   AdminAction: String
+  AssociationRouteTable: String
   AvailabilityZone: String
   Comment: String
   GraphQLTimeStamp: String
+  PropagationRouteTablesString: String
   RequestTimeStamp: String
   ResponseTimeStamp: String
   Status: String
   SubnetId: String!
-  AssociationRouteTable: String
-  PropagationRouteTablesString: String
   TagEventSource: String
   TgwId: String
   TimeToLive: Int
@@ -125,7 +125,6 @@ input TableTransitNetworkOrchestratorTableDashboardActionItemsFilterInput {
   Status: TableStringFilterInput
   Version: TableStringFilterInput
 }
-
 
 input TableTransitNetworkOrchestratorTableVersionHistoryFilterInput {
   SubnetId: TableStringFilterInput

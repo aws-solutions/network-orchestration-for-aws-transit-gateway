@@ -5,7 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [3.2.2] - 2023-04-14
+## [3.3] - 2023-06-28
+
+### Added
+- Support for new routing tag (route-to-tgw) that allows users to update route table for secondary subnets in the 
+  same availability zone.
+- Support to update main route table associated with the subnets in the VPC.
+- Support for new regions - Beijing, Ningxia and Stockholm.
+- Option to deploy the solution without Web UI.
+- Option to disable Transit Gateway resource sharing with external principals.
+- Allow disabling Transit Gateway resource sharing with external principals.
+- Ability to enable MFA for Cognito User Pool
+
+### Changed
+- Updated Web UI console using CloudScape design system.
+- Step Function execution name to reflect create or delete tagging action.
+- Enabled X-Ray for Step Functions and AppSync GraphQL API
+- Improve error handling in Step Functions to create Transit Gateway route table associations.
+- Refactor VPC-TGW Attachment modules for maintainability.
+- Refactor exception handling - use decorator in the BOTO3 client modules.
+- AppRegistry Attribute Group name with a unique string.
+
+### Fixed
+- Allow spaces in CloudFormation parameters - CIDR blocks and Prefix Lists.
+- Ability to register new and existing transit gateways with existing global network.
+- GitHub Issues: #38, #39, #49, #50, #56, #60, #73, #77, #78, #81
+
+## [3.2.2] - 2023-04-14
 
 ### Added
 

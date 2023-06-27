@@ -34,7 +34,7 @@ Metadata:
 Mappings:
   EventBridge:
     Bus:
-      Name: "STNO-EventBridge"
+      Name: "Network-Orchestrator-Event-Bus"
 
 Conditions:
   # Adding an EventBus as a target within an account is not allowed.
@@ -81,7 +81,7 @@ Resources:
       State: ENABLED
       Targets:
         - Arn: !Sub
-            - arn:aws:events:${AWS::Region}:${HubAccount}:event-bus/${EventBusName}
+            - arn:${AWS::Partition}:events:${AWS::Region}:${HubAccount}:event-bus/${EventBusName}
             - {EventBusName: !FindInMap [EventBridge, Bus, Name]}
           Id: SpokeSubnetTagEvent
           RoleArn: !GetAtt TransitNetworkEventDeliveryRole.Arn
@@ -121,7 +121,7 @@ Resources:
       State: ENABLED
       Targets:
         - Arn: !Sub
-            - arn:aws:events:${AWS::Region}:${HubAccount}:event-bus/${EventBusName}
+            - arn:${AWS::Partition}:events:${AWS::Region}:${HubAccount}:event-bus/${EventBusName}
             - {EventBusName: !FindInMap [EventBridge, Bus, Name]}
           Id: SpokeSubnetTagEvent
           RoleArn: !GetAtt TransitNetworkEventDeliveryRole.Arn
@@ -145,7 +145,7 @@ Resources:
           - Effect: Allow
             Principal:
               AWS:
-                - !Join ['', ['arn:aws:iam::', !Ref HubAccount, ':role/STNO-StateMachineLambdaRole', '-', !Ref 'AWS::Region']]
+                - !Join ['', ['arn:', !Ref 'AWS::Partition', ':iam::', !Ref HubAccount, ':role/STNO-StateMachineLambdaFunctionRole', '-', !Ref 'AWS::Region']]
             Action:
               - sts:AssumeRole
       Policies:
@@ -164,21 +164,21 @@ Resources:
                   - ec2:DeleteRoute
                   - ec2:CreateTags
                 Resource:
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway-route-table/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway-attachment/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:${HubAccount}:transit-gateway/*
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway-route-table/*
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway-attachment/*
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${HubAccount}:transit-gateway/*
               - Effect: Allow
                 Action:
                   - ec2:CreateRoute
                   - ec2:DeleteRoute
                   - ec2:CreateTags
                 Resource:
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:subnet/*
+                  - !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*
               - Effect: Allow
                 Action:
                   - ec2:DescribeTransitGatewayVpcAttachments
@@ -196,7 +196,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - ram:AcceptResourceShareInvitation
-                Resource: !Sub arn:aws:ram:${AWS::Region}:${HubAccount}:resource-share-invitation/*
+                Resource: !Sub arn:${AWS::Partition}:ram:${AWS::Region}:${HubAccount}:resource-share-invitation/*
 
 
   # IAM Role for Event Rule in the Spoke account to invoke event bus in hub account
@@ -222,6 +222,6 @@ Resources:
                 Action:
                   - events:PutEvents
                 Resource: !Sub
-                  - arn:aws:events:${AWS::Region}:${HubAccount}:event-bus/${EventBusName}
+                  - arn:${AWS::Partition}:events:${AWS::Region}:${HubAccount}:event-bus/${EventBusName}
                   - {EventBusName: !FindInMap [EventBridge, Bus, Name]}
 

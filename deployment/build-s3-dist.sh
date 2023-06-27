@@ -73,7 +73,7 @@ for microservices in */ ; do
   cd $lambda_dir/$microservice_name
   mkdir -p dist/$microservice_name
   rsync -aq $lambda_dir/.venv/lib/python3.10/site-packages/ ./dist/
-  cp -R lib __init__.py index.py ./dist/$microservice_name/
+  cp -R lib __init__.py main.py ./dist/$microservice_name/
   cd dist
   zip -rq "$microservice_name.zip" .
   cp -R "$microservice_name.zip" $build_dist_dir

@@ -42,12 +42,7 @@ def start_state_machine(event: events.CloudFormationCustomResourceEvent, context
         if event.get("detail", {}).get("eventName") == "DeleteSubnet":
             resource_type = account_id + "subnet-deletion"
         elif event.get("detail", {}).get("resource-type"):
-            resource_type = (
-                    account_id
-                    + "-"
-                    + event.get("detail", {}).get("resource-type")
-                    + "-tagged"
-            )
+            resource_type = get_resource_type_details(event)
         else:
             resource_type = "stno-console"
 
@@ -63,6 +58,31 @@ def start_state_machine(event: events.CloudFormationCustomResourceEvent, context
         log_message["EXCEPTION"] = str(err)
         logger.error(str(log_message))
         raise
+
+
+def get_resource_type_details(event):
+    event_name = (
+            event.get("account")
+            + get_tag_state(event)
+            + event.get("detail", {}).get("resource-type")
+            + "-tag"
+
+    )
+    # avoid reaching state machine execution name quota
+    return event_name[:35] if len(event_name) > 35 else event_name
+
+
+def get_tag_state(event):
+    resource_details = event.get('detail')
+    tags_in_event = set(resource_details.get('changed-tag-keys'))
+    tags_on_resource = set(resource_details.get('tags').keys())
+    common_tags = tags_in_event & tags_on_resource
+    if common_tags:
+        return "-added-"
+    elif not common_tags:
+        return "-deleted-"
+
+
 
 
 def timeout(event: events.CloudFormationCustomResourceEvent, context: LambdaContext):
@@ -181,8 +201,9 @@ def handle_cwe_permissions(event: events.CloudFormationCustomResourceEvent):
         for principal in principal_list:
             cwe.put_permission(principal, event_bus_name)
     if request_type == "Delete":
-        for principal in principal_list:
-            cwe.remove_permission(principal, event_bus_name)
+        # No need to delete the policy as Event Bus deletion will automatically delete the policy
+        # This also protects us from deletion of policy in the CFN cleanup process
+        return None
     if request_type == "Update":
         old_properties = event.get("OldResourceProperties")
         old_principal_list = old_properties.get("Principals")
@@ -211,7 +232,7 @@ def handle_prefix(event: events.CloudFormationCustomResourceEvent):
         properties = event["ResourceProperties"]
         prefix_list = properties.get("PrefixListIds")
         account_id = properties.get("AccountId")
-        list_of_prefix_list_ids = prefix_list.split(',')
+        list_of_prefix_list_ids = prefix_list.replace(' ', '').split(',')
         list_of_prefix_list_arns = []
         if not prefix_list:
             raise ValueError(
@@ -219,7 +240,7 @@ def handle_prefix(event: events.CloudFormationCustomResourceEvent):
                 "provide at least one valid prefix list id."
             )
         for prefix_list_id in list_of_prefix_list_ids:
-            arn = f"arn:aws:ec2:{environ.get('AWS_REGION')}:{account_id}:prefix-list/{prefix_list_id}"
+            arn = f"arn:{environ.get('PARTITION')}:ec2:{environ.get('AWS_REGION')}:{account_id}:prefix-list/{prefix_list_id}"
             list_of_prefix_list_arns.append(arn)
         response = {"PrefixListArns": list_of_prefix_list_arns}
     return response
@@ -234,9 +255,7 @@ def handle_metrics(event: events.CloudFormationCustomResourceEvent):
     Returns:
         None
     """
-    if environ.get("SEND_METRIC") == "Yes" and (
-            event["RequestType"] == "Create" or event["RequestType"] == "Delete"
-    ):
+    if environ.get("SEND_METRIC") == "Yes":
         properties = event["ResourceProperties"]
         data = {
             "PrincipalType": properties.get("PrincipalType"),
@@ -245,6 +264,7 @@ def handle_metrics(event: events.CloudFormationCustomResourceEvent):
                 "AuditTrailRetentionPeriod"
             ),
             "DefaultRoute": properties.get("DefaultRoute"),
+            "DeployWebUI": properties.get("DeployWebUI"),
             "Region": environ.get("AWS_REGION"),
             "SolutionVersion": environ.get("SOLUTION_VERSION"),
             "Event": f"Solution_{event['RequestType']}",

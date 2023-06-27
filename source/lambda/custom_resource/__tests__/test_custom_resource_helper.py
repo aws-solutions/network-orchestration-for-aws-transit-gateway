@@ -17,6 +17,7 @@ from custom_resource.lib.custom_resource_helper import (
     handle_metrics,
     start_state_machine,
     send,
+    get_resource_type_details
 )
 
 logger = Logger(os.getenv('LOG_LEVEL'))
@@ -136,17 +137,6 @@ class TestClassCWEPermissions:
         for principal in self.principals:
             m1.assert_any_call(principal, self.event_bus_name)
 
-    def test__success__delete(self, mocker):
-        """success, delete cwe events permissions"""
-        CREATE_CWE_PERMISSIONS["RequestType"] = "Delete"
-        m1 = mocker.patch(
-            "custom_resource.lib.cloudwatch_events.CloudWatchEvents.remove_permission"
-        )
-        handle_cwe_permissions(CREATE_CWE_PERMISSIONS)
-        assert m1.call_count == 2
-        for principal in self.principals:
-            m1.assert_any_call(principal, self.event_bus_name)
-
     def test__success__update(self, mocker):
         """success, delete cwe events permissions"""
         CREATE_CWE_PERMISSIONS["RequestType"] = "Update"
@@ -191,6 +181,7 @@ class TestClassPrefix:
         """success"""
         prefix_list = "list-1,list-2"
         account_id = "myAccountID"
+        environ["PARTITION"] = "aws"
         environ["AWS_REGION"] = "my-region"
         CREATE_PREFIX["ResourceProperties"] = {
             "PrefixListIds": prefix_list,
@@ -214,6 +205,7 @@ class TestClassMetrics:
         "ApprovalNotification": "my-notification",
         "AuditTrailRetentionPeriod": "my-retention",
         "DefaultRoute": "my-default-route",
+        "DeployWebUI": "Yes",
         "CreatedNewTransitGateway": "Yes",
     }
     properties = CREATE_METRICS["ResourceProperties"]
@@ -242,6 +234,7 @@ class TestClassMetrics:
                 "AuditTrailRetentionPeriod"
             ),
             "DefaultRoute": self.properties.get("DefaultRoute"),
+            "DeployWebUI": self.properties.get("DeployWebUI"),
             "Region": environ.get("AWS_REGION"),
             "SolutionVersion": environ.get("SOLUTION_VERSION"),
             "Event": f"Solution_{CREATE_METRICS['RequestType']}",
@@ -289,10 +282,65 @@ class TestClassTriggerSM:
         # failed
         mocker.patch(
             "custom_resource.lib.step_functions.StepFunctions.trigger_state_machine",
-            side_effect=Exception("error triggering state machine"),
+            side_effect=ValueError("error triggering state machine"),
         )
         with pytest.raises(Exception):
             start_state_machine({}, context)
+
+    def test_get_resource_type_details_add_vpc_tag(self):
+        event = {
+            "detail": {
+                "changed-tag-keys": [
+                    "Propagate-to",
+                    "Associate-with"
+                ],
+                "resource-type": "vpc",
+                "tags": {
+                    "Propagate-to": "Flat",
+                    "Associate-with": "Flat",
+                    "Name": "test3"
+                }
+            },
+            "account": "111111111111",
+        }
+        response = get_resource_type_details(event)
+        assert response == "111111111111-added-vpc-tag"
+
+    def test_get_resource_type_details_remove_subnet_tag(self):
+        event = {
+            "detail": {
+                "changed-tag-keys": [
+                    "Route-to-tgw"
+                ],
+                "service": "ec2",
+                "resource-type": "subnet",
+                "tags": {
+                    "STNOStatus-Subnet": "2023-04-27T19:19:43Z",
+                    "Name": "test2-subnet-private2-us-east-2a"
+                }
+            },
+            "account": "111111111111",
+        }
+        response = get_resource_type_details(event)
+        assert response == "111111111111-deleted-subnet-tag"
+
+    def test_get_resource_type_details_add_subnet_tag(self):
+        event = {
+            "detail": {
+                "changed-tag-keys": [
+                    "Attach-to-tgw"
+                ],
+                "service": "ec2",
+                "resource-type": "subnet",
+                "tags": {
+                    "Attach-to-tgw": "main-route-table-only",
+                    "Name": "test2-subnet-private2-us-east-2a"
+                }
+            },
+            "account": "111111111111",
+        }
+        response = get_resource_type_details(event)
+        assert response == "111111111111-added-subnet-tag"
 
 
 @pytest.mark.TDD

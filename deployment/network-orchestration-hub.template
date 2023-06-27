@@ -7,12 +7,12 @@ Description: (SO0058) - The AWS CloudFormation template (Hub) for deployment of 
 Parameters:
   Principals:
     Type: CommaDelimitedList
-    Description: AWS account numbers eg. 123456789012 (comma separated) OR the ARN of an Organization to share TGW with the principals eg. arn:aws:organizations::<ORG_MANAGEMENT_ACCOUNT_ID>:organization/o-exampleorgid.
+    Description: AWS account numbers eg. 123456789012 (comma separated) OR the ARN of an Organization to share TGW with the principals eg. arn:<AWS_PARTITION>:organizations::<ORG_MANAGEMENT_ACCOUNT_ID>:organization/<ORG-ID>
 
   PrincipalType:
     Type: String
     Description: Either provide list of accounts (comma separated) or AWS Organizations ARN
-    Default: 'List of Accounts'
+    Default: 'AWS Organization ARN'
     AllowedValues:
       - 'AWS Organization ARN'
       - 'List of Accounts'
@@ -23,6 +23,22 @@ Parameters:
       - 'Yes'
       - 'No'
     Default: 'No'
+    Type: String
+
+  DeployWebUi:
+    Description: Do you want to deploy a web user interface to manage and audit your network? If you select 'No', you can skip the Web UI settings.
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Type: String
+
+  AllowExternalPrincipals:
+    Description: Do you want to share Transit Gateway with individual AWS accounts that are not in your organization?
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
     Type: String
 
   ApprovalNotificationEmail:
@@ -47,21 +63,37 @@ Parameters:
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
 
   ConsoleLoginInformationEmail:
-    Description: Cognito user email where the temporary password will be sent. Please enter a valid and working email.
+    Description: Active email address to send temporary password for both admin and read-only usernames.
     Type: String
-    MinLength: 1
-    AllowedPattern: '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    AllowedPattern: '(^$|^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)'
+
+  MultiFactorAuthentication:
+    Type: String
+    Default: OPTIONAL
+    AllowedValues:
+      - 'ON'
+      - OPTIONAL
+    Description: Set to 'ON' or 'OPTIONAL' to enable multi factor authentication for
+      Cognito User Pool.
 
   AttachmentTag:
-    Description: Custom tag key name to trigger the TGW VPC attachment workflow.
+    Description: Custom tag key name to create the VPC transit gateway attachment.
     Default: Attach-to-tgw
     Type: String
     MinLength: 0
     MaxLength: 20
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
 
+  RoutingTag:
+    Description: Custom tag key name to update route table associated with other subnets in same availability zone workflow.
+    Default: Route-to-tgw
+    Type: String
+    MinLength: 0
+    MaxLength: 20
+    AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
+
   AssociationTag:
-    Description: Custom tag key name to trigger the TGW route table association with TGW attachment workflow.
+    Description: Custom tag key name to create the transit gateway route table association.
     Default: Associate-with
     Type: String
     MinLength: 0
@@ -69,7 +101,7 @@ Parameters:
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
 
   PropagationTag:
-    Description: Custom tag key name to trigger the route propagation to TGW route table(s) workflow.
+    Description: Custom tag key name to enable the transit gateway route table propagation.
     Default: Propagate-to
     Type: String
     MinLength: 0
@@ -77,7 +109,7 @@ Parameters:
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-_]*$'
 
   TgwPeeringTag:
-    Description: Transit Gateway tag key to monitor. The tag value must follow the format <tgw-id_aws-region> for eg. tgw-12345678_us-east-1/tgw-567890123_us-east-2
+    Description: Custom tag key name to create the transit gateway peering attachment. The tag value must follow the format <tgw-id_aws-region> for eg. tgw-12345678_us-east-1/tgw-567890123_us-east-2
     Default: TgwPeer
     Type: String
     MinLength: 0
@@ -126,15 +158,15 @@ Parameters:
       (Optional) To tag attachments with the account name, and use OU membership for auto-approvals, 
       either configure this account to be an AWS Organization delegated admin for any service, or configure
       this parameter to include a role in the AWS Organizations Management account, that trusts this account, and has: 
-      organizations:DescribeAccount, organizations:ListParents and organizations:DescribeOrganizationalUnit 
+      organizations:DescribeAccount, organizations:ListParents and organizations:DescribeOrganizationalUnit
     Type: String
-    AllowedPattern: '^((arn:aws:iam::\d{12}:role/.+)|)$'
+    AllowedPattern: ^((arn:(aws|aws-cn):iam::\d{12}:role\/.+)|)$
     Default: ""
 
   CognitoDomainPrefixParameter:
     Type: String
     AllowedPattern: ^$|^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$
-    Description: The prefix to the Cognito hosted domain name that will be associated with the user pool.
+    Description: The prefix to the Cognito hosted domain name that will be associated with the user pool. Must be unique per region and must not contain the reserved word 'cognito'.
 
   CognitoSAMLProviderNameParameter:
     Type: String
@@ -152,42 +184,33 @@ Parameters:
       Comma separated list of CIDR ranges that allow to console to access the API.
       To allow all the entire internet, use 0.0.0.0/1,128.0.0.0/1
 
-
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Account Structure
+          default: Account Structure Settings
         Parameters:
           - PrincipalType
           - Principals
+          - AllowExternalPrincipals
           - OrganizationManagementAccountRoleArn
       - Label:
-          default: Web UI Security Settings
+          default: Web UI Settings
         Parameters:
+          - DeployWebUi
           - AllowListedRanges
-      - Label:
-          default: Notification Settings
-        Parameters:
-          - ApprovalNotification
-          - ApprovalNotificationEmail
-      - Label:
-          default: User Settings
-        Parameters:
+          - CognitoDomainPrefixParameter
           - ConsoleLoginInformationEmail
           - UserPoolUsernameForAdminUser
           - UserPoolUsernameForReadOnlyUser
+          - MultiFactorAuthentication
+          - CognitoSAMLProviderNameParameter
+          - CognitoSAMLProviderMetadataUrlParameter
       - Label:
           default: Transit Gateway Settings
         Parameters:
           - ExistingTransitGatewayId
           - ExistingGlobalNetworkId
-      - Label:
-          default: Amazon Cognito Configuration
-        Parameters:
-          - CognitoDomainPrefixParameter
-          - CognitoSAMLProviderNameParameter
-          - CognitoSAMLProviderMetadataUrlParameter
       - Label:
           default: VPC Route Table Settings
         Parameters:
@@ -198,30 +221,46 @@ Metadata:
           default: Tag Settings
         Parameters:
           - AttachmentTag
+          - RoutingTag
           - AssociationTag
           - PropagationTag
           - ListOfVpcTagsForAttachment
           - TgwPeeringTag
+      - Label:
+          default: Notification Settings
+        Parameters:
+          - ApprovalNotification
+          - ApprovalNotificationEmail
 
     ParameterLabels:
       Principals:
         default: Account List or AWS Organizations ARN
       PrincipalType:
         default: Principal Type
+      AllowExternalPrincipals:
+        default: Allow External Principals
       ApprovalNotificationEmail:
         default: Approval Notification Email
+      AllowListedRanges:
+        default: Allow Listed Ranges
       ApprovalNotification:
         default: Receive Approval Notifications
+      DeployWebUi:
+        default: Web User Interface
       ConsoleLoginInformationEmail:
         default: Console Login Information Email
       UserPoolUsernameForAdminUser:
         default: Admin Username
       UserPoolUsernameForReadOnlyUser:
         default: Read-Only Username
+      MultiFactorAuthentication:
+        default: Set MFA for Cognito to 'ON' or 'OPTIONAL'
       DefaultRoute:
         default: Choose the type of destination for target Transit Gateway
       AttachmentTag:
-        default: Tag key for TGW Attachment
+        default: Tag key for subnets - Adds subnet to VPC attachment and add routes to route table associated with the tagged subnet.
+      RoutingTag:
+        default: Tag key for subnets - Only adds routes to route table associated with the tagged subnet.
       AssociationTag:
         default: Tag key for TGW Route Table Association with TGW Attachment
       PropagationTag:
@@ -247,29 +286,29 @@ Metadata:
       CognitoSAMLProviderMetadataUrlParameter:
         default: SAML Provider Metadata URL
 
-
-
 Conditions:
   NotificationCondition: !Equals [!Ref ApprovalNotification, 'Yes']
+  DeployWebUiCondition: !Equals [!Ref DeployWebUi, "Yes" ]
   IsMemberOfOrganization: !Equals [!Ref PrincipalType, 'AWS Organization ARN']
   IsNotMemberOfOrganization: !Equals [!Ref PrincipalType, 'List of Accounts']
   CreateNewTransitGateway: !Equals [!Ref ExistingTransitGatewayId, '']
-  CreateNewGlobalNetwork: !Equals [!Ref ExistingGlobalNetworkId, '']
+  DeployIfNotChinaPartition: !Not [!Equals [ !Ref AWS::Partition, "aws-cn" ]]
+  CreateNewGlobalNetwork: !And
+    - !Equals [ !Ref ExistingGlobalNetworkId, '' ]
+    - !Condition DeployIfNotChinaPartition
   CreateNewGlobalNetwork&CreateNewTransitGateway: !And
     - !Condition CreateNewGlobalNetwork
     - !Condition CreateNewTransitGateway
   ProvidedPrefixListIds: !Not [!Equals [!Ref CustomerManagedPrefixListIds, '']]
   OrganizationManagementAccountRoleArn: !Not [ !Equals [!Ref OrganizationManagementAccountRoleArn, '']]
-  FrontEndCognitoSAMLCondition:
-    Fn::And:
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: CognitoSAMLProviderNameParameter
-              - ""
-      - Fn::Not:
-          - Fn::Equals:
-              - Ref: CognitoSAMLProviderMetadataUrlParameter
-              - ""
+  FrontEndCognitoSAMLCondition: !And
+    - !Not [ !Equals [ !Ref CognitoSAMLProviderNameParameter, '' ] ]
+    - !Not [ !Equals [ !Ref CognitoSAMLProviderMetadataUrlParameter, '' ] ]
+    - !Condition CreateNewGlobalNetwork
+  AllowExternalPrincipals:
+    Fn::Equals:
+      - Ref: AllowExternalPrincipals
+      - 'Yes'
 
 Mappings:
   NetworkConfiguration:
@@ -309,6 +348,12 @@ Mappings:
       AmazonSideAsn: 64539 # this must be changed by a network admin only
     sa-east-1:
       AmazonSideAsn: 64540 # this must be changed by a network admin only
+    cn-north-1:
+      AmazonSideAsn: 64541 # this must be changed by a network admin only
+    cn-northwest-1:
+      AmazonSideAsn: 64542 # this must be changed by a network admin only
+    eu-north-1:
+      AmazonSideAsn: 64543 # this must be changed by a network admin only
   NotificationConfiguration:
     SNS:
       DisplayName: "AWS Transit Network Change Approval Notification"
@@ -318,7 +363,7 @@ Mappings:
       Level: "info"
   EventBridge:
     Bus:
-      Name: "STNO-EventBridge"
+      Name: "Network-Orchestrator-Event-Bus"
   LogRetention:
     CloudWatchLogs:
       RetentionPeriod: 90
@@ -327,7 +372,7 @@ Mappings:
   SourceCode:
     General:
       S3Bucket: "%DIST_BUCKET_NAME%"
-      KeyPrefix: "%SOLUTION_NAME%/%VERSION%"
+      KeyPrefix: "network-orchestration-for-aws-transit-gateway/%VERSION%"
       Version: "%VERSION%"
     Variables:
       WaitTime: "10"
@@ -337,17 +382,18 @@ Mappings:
       ApprovalTagValue: "No"
   Solution:
     Metrics:
-      SendAnonymousData: "Yes"
       SolutionId: "SO0058"
       MetricsEndpoint: "https://metrics.awssolutionsbuilder.com/generic"
     Data:
       AppRegistryApplicationName: 'network-orchestration-for-aws-transit-gateway'
       SolutionName: 'Network Orchestration for AWS Transit Gateway'
       TagKey: 'CloudFoundations:NetworkOrchestrationForAWSTransitGateway'
-
+  AnonymizedData:
+    SendAnonymizedData:
+      Data: "Yes"
 
 Resources:
-  # The following description enables the idempotency and CFN template will not rollback if the role
+  # The following description enables the idempotency and CFN template will not roll back if the role
   # already exist. Do not change the description below.
   CustomServiceLinkedRole:
     Type: "AWS::IAM::ServiceLinkedRole"
@@ -362,7 +408,7 @@ Resources:
     Condition: CreateNewTransitGateway
     Properties:
       AmazonSideAsn: !FindInMap [NetworkConfiguration, !Ref "AWS::Region", AmazonSideAsn]
-      Description: "This transit gateway was created by AWS Serverless Transit Network Orchestrator"
+      Description: "This transit gateway was created by Network Orchestration for AWS Transit Gateway solution"
       AutoAcceptSharedAttachments: !FindInMap [NetworkConfiguration, TransitGateway, AutoAcceptSharedAttachments]
       DefaultRouteTableAssociation: !FindInMap [NetworkConfiguration, TransitGateway, DefaultRouteTableAssociation]
       DefaultRouteTablePropagation: !FindInMap [NetworkConfiguration, TransitGateway, DefaultRouteTablePropagation]
@@ -454,17 +500,22 @@ Resources:
           - arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/${TransitGatewayId}
           - {TransitGatewayId: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]}
       Principals: !Ref Principals
+      AllowExternalPrincipals:
+        Fn::If:
+          - AllowExternalPrincipals
+          - true
+          - false
       Tags:
-        - Key: AWS Serverless Transit Network Orchestrator
+        - Key: Network Orchestration for AWS Transit Gateway
           Value: !Ref 'AWS::StackId'
 
-  ConvertPrefixListIdsToArns:
+  ConvertPrefixListIdsToPLArnList:
     Condition: ProvidedPrefixListIds
     Type: Custom::GetPrefixListArns
     Properties:
       PrefixListIds: !Ref CustomerManagedPrefixListIds
       AccountId: !Sub ${AWS::AccountId}
-      ServiceToken: !Sub ${CustomResourceLambda.Arn}
+      ServiceToken: !GetAtt CustomResourceLambda.Arn
 
   CustomerManagedPrefixListResourceShare:
     DependsOn:
@@ -473,10 +524,10 @@ Resources:
     Condition: ProvidedPrefixListIds
     Properties:
       Name: "Customer-managed Prefix Lists Resource Share"
-      ResourceArns: !GetAtt ConvertPrefixListIdsToArns.PrefixListArns
+      ResourceArns: !GetAtt ConvertPrefixListIdsToPLArnList.PrefixListArns
       Principals: !Ref Principals
       Tags:
-        - Key: AWS Serverless Transit Network Orchestrator
+        - Key: Network Orchestration for AWS Transit Gateway
           Value: !Ref 'AWS::StackId'
 
   ApprovalTopic:
@@ -557,6 +608,7 @@ Resources:
             ],
             "changed-tag-keys": [
               !Ref "AttachmentTag",
+              !Ref "RoutingTag",
               !Ref "AssociationTag",
               !Ref "PropagationTag"
             ]
@@ -564,7 +616,7 @@ Resources:
         }
       State: ENABLED
       Targets:
-        - Arn: !Sub ${CustomResourceLambda.Arn}
+        - Arn: !GetAtt CustomResourceLambda.Arn
           Id: 'CustomResourceLambda'
           InputTransformer: 
             InputPathsMap: 
@@ -617,6 +669,7 @@ Resources:
             ],
             "changed-tag-keys": [
               !Ref "AttachmentTag",
+              !Ref "RoutingTag",
               !Ref "AssociationTag",
               !Ref "PropagationTag"
             ]
@@ -624,7 +677,7 @@ Resources:
         }
       State: ENABLED
       Targets:
-        - Arn: !Sub ${CustomResourceLambda.Arn}
+        - Arn: !GetAtt CustomResourceLambda.Arn
           Id: 'CustomResourceLambda'
           InputTransformer: 
             InputPathsMap: 
@@ -710,7 +763,7 @@ Resources:
     Properties:
       Name: !FindInMap [EventBridge, Bus, Name]
 
-  EventBusPermission:
+  EventBridgeBusPermission:
     Type: Custom::CWEventPermissions
     Properties:
       Principals: !Ref Principals
@@ -727,24 +780,24 @@ Resources:
           - id: W89
             reason: "not a valid use-case for vpc"
           - id: W58
-            reason: "log write permission added to CustomResourceLambdaRole"
+            reason: "log write permission added to CustomResourceLambdaFunctionRole"
     Properties:
       Environment:
         Variables:
           LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
-          SEND_METRIC: !FindInMap [Solution, Metrics, SendAnonymousData]
+          SEND_METRIC: !FindInMap [AnonymizedData, SendAnonymizedData, Data]
           SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionId]
           SOLUTION_VERSION: !FindInMap [SourceCode, General, Version]
           METRICS_ENDPOINT: !FindInMap [Solution, Metrics, MetricsEndpoint]
-          USER_AGENT_STRING: !Sub AwsSolution/SO0058/${!FindInMap ["SourceCode", "General", "Version"]}
+          USER_AGENT_STRING: AwsSolution/SO0058/%VERSION%
+          PARTITION: !Sub ${AWS::Partition}
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], !Ref "AWS::Region"]]
         S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"custom_resource.zip"]]
-      FunctionName: STNO-Custom-Resource
-      Description: AWS Serverless Transit Network Orchestrator - custom resource handler
-      Handler: custom_resource.index.lambda_handler
+      Description: Network Orchestration for AWS Transit Gateway - custom resource handler
+      Handler: custom_resource.main.lambda_handler
       MemorySize: 1536
-      Role: !Sub ${CustomResourceLambdaRole.Arn}
+      Role: !Sub ${CustomResourceLambdaFunctionRole.Arn}
       Runtime: python3.9
       Timeout: 900
 
@@ -773,7 +826,7 @@ Resources:
       SourceArn: !GetAtt LambdaEventRuleOnSubnetDeletion.Arn
       FunctionName: !Ref CustomResourceLambda
 
-  CustomResourceLambdaRole:
+  CustomResourceLambdaFunctionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -806,23 +859,7 @@ Resources:
                   - events:RemovePermission
                   - events:PutPermission
                 Resource: !Sub ${STNOCustomEventBus.Arn}
-        - PolicyName: STNO-S3-Policy
-          PolicyDocument: 
-            Version: '2012-10-17'
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "s3:PutObject"
-                Resource:
-                  - !Sub ${ConsoleBucket.Arn}
-                  - !Sub ${ConsoleBucket.Arn}/*
-              - Effect: "Allow"
-                Action:
-                  - "s3:GetObject"
-                Resource:
-                  - !Join ["", [!Sub "arn:${AWS::Partition}:s3:::", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", !Ref "AWS::Region"]]
-                  - !Join ["", [!Sub "arn:${AWS::Partition}:s3:::", !FindInMap ["SourceCode", "General", "S3Bucket"], "-", !Ref "AWS::Region", "/*"]]
-  
+
   PolicyIAMEC2:
     Type: AWS::IAM::Policy
     Metadata:
@@ -833,7 +870,7 @@ Resources:
     Properties:
       PolicyName: STNO-MultipleResourcesPolicy
       Roles: 
-        - !Ref StateMachineLambdaRole
+        - !Ref StateMachineLambdaFunctionRole
       PolicyDocument: 
         Version: '2012-10-17'
         Statement:
@@ -875,7 +912,7 @@ Resources:
     Properties:
       PolicyName: STNO-SNSPolicy
       Roles: 
-        - !Ref StateMachineLambdaRole
+        - !Ref StateMachineLambdaFunctionRole
       PolicyDocument: 
         Version: '2012-10-17'
         Statement:
@@ -884,7 +921,30 @@ Resources:
             Resource: 
               - !Ref ApprovalTopic
 
-  CreateUUID:
+  PolicyConsole:
+    Type: AWS::IAM::Policy
+    Condition: DeployWebUiCondition
+    Properties:
+      PolicyName: STNO-S3-Policy
+      Roles:
+        - !Ref CustomResourceLambdaFunctionRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "s3:PutObject"
+            Resource:
+              - !Sub ${ConsoleBucket.Arn}
+              - !Sub ${ConsoleBucket.Arn}/*
+          - Effect: "Allow"
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - !Join [ "", [ !Sub "arn:${AWS::Partition}:s3:::", !FindInMap [ "SourceCode", "General", "S3Bucket" ], "-", !Ref "AWS::Region" ] ]
+              - !Join [ "", [ !Sub "arn:${AWS::Partition}:s3:::", !FindInMap [ "SourceCode", "General", "S3Bucket" ], "-", !Ref "AWS::Region", "/*" ] ]
+
+  CreateUniqueID:
     Type: "Custom::CreateUUID"
     Properties:
       ServiceToken: !GetAtt CustomResourceLambda.Arn
@@ -912,7 +972,7 @@ Resources:
         PointInTimeRecoverySpecification:
           PointInTimeRecoveryEnabled: true
 
-  StateMachineLambda:
+  StateMachineLambdaFunction:
     Type: AWS::Lambda::Function
     Metadata:
       cfn_nag:
@@ -932,6 +992,7 @@ Resources:
           ASSOCIATION_TAG: !Ref AssociationTag
           PROPAGATION_TAG: !Ref PropagationTag
           ATTACHMENT_TAG: !Ref AttachmentTag
+          ROUTING_TAG: !Ref RoutingTag
           DEFAULT_ROUTE: !Ref DefaultRoute
           CIDR_BLOCKS : !Ref ListOfCustomCidrBlocks
           PREFIX_LISTS: !Ref CustomerManagedPrefixListIds
@@ -941,24 +1002,24 @@ Resources:
           TTL: !FindInMap ["LogRetention", "AuditTrail", "RetentionPeriod"]
           APPROVAL_KEY: !FindInMap ["SourceCode", "Variables", "ApprovalTagKey"]
           FIRST_PRINCIPAL: !Select [ 0, !Ref Principals ]
+          PARTITION: !Sub ${AWS::Partition}
           RESOURCE_SHARE_ARN: !GetAtt TGWResourceShare.Arn
-          METRICS_FLAG: !FindInMap ["Solution", "Metrics", "SendAnonymousData"]
+          METRICS_FLAG: !FindInMap [AnonymizedData, SendAnonymizedData, Data]
           SOLUTION_VERSION: !FindInMap ["SourceCode", "General", "Version"]
-          STNO_CONSOLE_LINK: !Sub https://${ConsoleCloudFront.DomainName}
+          STNO_CONSOLE_LINK: !If [DeployWebUiCondition, !Sub "https://${ConsoleCloudFront.DomainName}", !Ref AWS::NoValue]
           VPC_TAGS_FOR_ATTACHMENT: !Ref ListOfVpcTagsForAttachment
           ORGANIZATION_ACCOUNT_ROLE_ARN: !Ref OrganizationManagementAccountRoleArn
           LOG_GROUP_FAILURES: !Ref CloudWatchLogFailures
           LOG_GROUP_ACTIONS: !Ref CloudWatchLogActions
-          USER_AGENT_STRING: !Sub AwsSolution/SO0058/${!FindInMap ["SourceCode", "General", "Version"]}
-          SOLUTION_UUID: !GetAtt CreateUUID.UUID
+          USER_AGENT_STRING: AwsSolution/SO0058/%VERSION%
+          SOLUTION_UUID: !GetAtt CreateUniqueID.UUID
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"state_machine.zip"]]
-      FunctionName: STNO-State-Machine
-      Description: AWS Serverless Transit Network Orchestrator - State Machine Handler
-      Handler: state_machine.index.lambda_handler
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"tgw_vpc_attachment.zip"]]
+      Description: Network Orchestration for AWS Transit Gateway - State Machine Handler
+      Handler: tgw_vpc_attachment.main.lambda_handler
       MemorySize: 1536
-      Role: !GetAtt 'StateMachineLambdaRole.Arn'
+      Role: !GetAtt 'StateMachineLambdaFunctionRole.Arn'
       Runtime: python3.9
       Timeout: 900
 
@@ -989,7 +1050,7 @@ Resources:
               - Effect: "Allow"
                 Action:
                   - "lambda:InvokeFunction"
-                Resource: !GetAtt StateMachineLambda.Arn
+                Resource: !GetAtt StateMachineLambdaFunction.Arn
               - Effect: Allow
                 Action:
                   - "logs:CreateLogDelivery"
@@ -1003,15 +1064,15 @@ Resources:
                 Resource:
                   - "*"
 
-  StateMachineLambdaRole:
+  StateMachineLambdaFunctionRole:
     Type: AWS::IAM::Role
     Metadata:
       cfn_nag:
         rules_to_suppress:
           - id: W28
-            reason: "The role name 'StateMachineLambda' has to be defined to allow cross account access from the hub account to make network changes."
+            reason: "The role name 'StateMachineLambdaFunction' has to be defined to allow cross account access from the hub account to make network changes."
     Properties:
-      RoleName: !Join ["-", ["STNO-StateMachineLambdaRole", Ref: "AWS::Region"]]
+      RoleName: !Join ["-", ["STNO-StateMachineLambdaFunctionRole", Ref: "AWS::Region"]]
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -1032,9 +1093,9 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource:
-                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
-                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogActions}*
-                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogFailures}*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/{AWS::Partition}/lambda/*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogActions}*
+                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:${CloudWatchLogFailures}*
               - Effect: Allow
                 Action:
                   - sts:AssumeRole
@@ -1062,8 +1123,10 @@ Resources:
               LogGroupArn: !GetAtt CloudWatchLogStateMachine.Arn
         IncludeExecutionData: true
         Level: ALL
+      TracingConfiguration:
+        Enabled: true
       DefinitionSubstitutions:
-        StateMachineLambdaArn: !GetAtt StateMachineLambda.Arn
+        StateMachineLambdaArn: !GetAtt StateMachineLambdaFunction.Arn
         AWSPartition: !Ref AWS::Partition
       DefinitionString: |-
         {
@@ -1350,13 +1413,24 @@ Resources:
                   "Next": "Wait for TGW Attachment Change To Finish"
                 }
               ],
-              "Default": "TGW Attachment CRUD Operations"
+              "Default": "Check Route To Tgw Exists"
             },
             "Wait for TGW Attachment Change To Finish": {
               "Type": "Wait",
               "Seconds": 15,
               "Next": "Get Transit Gateway VPC Attachment State"
             },
+            "Check Route To Tgw Exists": {
+                           "Type": "Choice",
+                           "Choices": [
+                             {
+                               "Variable": "$.RouteToTgw",
+                               "IsPresent": true,
+                               "Next": "Route CRUD Operations"
+                             }
+                           ],
+                           "Default": "TGW Attachment CRUD Operations"
+                         },
             "TGW Attachment CRUD Operations": {
               "Type": "Task",
               "Resource": "arn:${AWSPartition}:states:::lambda:invoke",
@@ -1806,7 +1880,7 @@ Resources:
                           "event.$": "$",
                           "params": {
                             "ClassName": "TransitGateway",
-                            "FunctionName": "update_tags_if_failed"
+                            "FunctionName": "update_spoke_resource_tags_if_failed"
                           }
                         }
                       },
@@ -1872,9 +1946,9 @@ Resources:
     Type: AWS::IAM::Policy
     Properties:
       PolicyName: STNO-OrchestratorExecution-Policy
-      Roles: 
-        - !Ref CustomResourceLambdaRole
-      PolicyDocument: 
+      Roles:
+        - !Ref CustomResourceLambdaFunctionRole
+      PolicyDocument:
         Version: '2012-10-17'
         Statement:
           - Effect: Allow
@@ -1919,8 +1993,8 @@ Resources:
         }
       State: ENABLED
       Targets:
-        - Arn: !Sub ${TgwPeeringLambda.Arn}
-          Id: 'TgwPeeringLambda'
+        - Arn: !Sub ${TgwPeeringLambdaFunction.Arn}
+          Id: 'TgwPeeringLambdaFunction'
           InputTransformer: 
             InputPathsMap: 
               "detail" : "$.detail"
@@ -1934,12 +2008,12 @@ Resources:
   PermissionForTGWTagRule: 
     Type: AWS::Lambda::Permission
     Properties: 
-      FunctionName: !Ref "TgwPeeringLambda"
+      FunctionName: !Ref "TgwPeeringLambdaFunction"
       Action: "lambda:InvokeFunction"
       Principal: "events.amazonaws.com"
       SourceArn: !Sub ${TgwTagEventRule.Arn}
 
-  TgwPeeringLambdaRole:
+  TgwPeeringLambdaFunctionRole:
     Type: AWS::IAM::Role
     Metadata:
       cfn_nag:
@@ -1986,7 +2060,7 @@ Resources:
                   - ec2:DescribeTransitGatewayPeeringAttachments
                 Resource: "*"
 
-  TgwPeeringLambda:
+  TgwPeeringLambdaFunction:
     Type: AWS::Lambda::Function
     Metadata:
       cfn_nag:
@@ -2004,17 +2078,18 @@ Resources:
           TGW_PEERING_TAG: !Ref TgwPeeringTag
           TGW_ID: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
           ATTACHMENT_TAG: !Ref AttachmentTag
+          ROUTING_TAG: !Ref RoutingTag
           SOLUTION_VERSION: !FindInMap [SourceCode, General, Version]
           SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionId]
-          USER_AGENT_STRING: !Sub AwsSolution/SO0058/${!FindInMap ["SourceCode", "General", "Version"]}
+          USER_AGENT_STRING: AwsSolution/SO0058/%VERSION%
+          PARTITION: !Sub ${AWS::Partition}
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"tgw_peering.zip"]]
-      FunctionName: STNO-TGW-Peering
-      Description: AWS Serverless Transit Network Orchestrator - TGW peering attachment handler
-      Handler: tgw_peering.index.lambda_handler
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"tgw_peering_attachment.zip"]]
+      Description: Network Orchestration for AWS Transit Gateway - TGW peering attachment handler
+      Handler: tgw_peering_attachment.main.lambda_handler
       MemorySize: 1536
-      Role: !Sub ${TgwPeeringLambdaRole.Arn}
+      Role: !Sub ${TgwPeeringLambdaFunctionRole.Arn}
       Runtime: python3.9
       Timeout: 900
 
@@ -2038,16 +2113,19 @@ Resources:
 
   GlobalNetworkRegistrationSTNO:
     Type: AWS::NetworkManager::TransitGatewayRegistration
-    Condition: CreateNewGlobalNetwork&CreateNewTransitGateway
+    Condition: DeployIfNotChinaPartition
     Properties:
-      GlobalNetworkId: !Ref GlobalNetworkSTNO
-      TransitGatewayArn: !Sub arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/${AWSTransitGateway}
+      GlobalNetworkId: !If [CreateNewGlobalNetwork, !Ref GlobalNetworkSTNO, !Ref ExistingGlobalNetworkId]
+      TransitGatewayArn: !Sub
+        - arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/${TransitGatewayId}
+        - { TransitGatewayId: !If [ CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId ] }
 
   ############################
   # AWS AppSync API       #
   ############################
   AppSyncPipelineApi:
     Type: AWS::AppSync::GraphQLApi
+    Condition: DeployWebUiCondition
     Properties:
       Name: STNOGraphQLAPI
       AuthenticationType: AMAZON_COGNITO_USER_POOLS
@@ -2061,15 +2139,18 @@ Resources:
         CloudWatchLogsRoleArn: !GetAtt AppSyncRole.Arn
         ExcludeVerboseContent: False
         FieldLogLevel: NONE
+      XrayEnabled: true
 
   STNOGraphQLApiWebACLAssociation:
     Type: AWS::WAFv2::WebACLAssociation
+    Condition: DeployWebUiCondition
     Properties:
       WebACLArn: !GetAtt STNOGraphQLApiWebACL.Arn
       ResourceArn: !GetAtt AppSyncPipelineApi.Arn
 
   GraphQLSchema:
     Type: "AWS::AppSync::GraphQLSchema"
+    Condition: DeployWebUiCondition
     Properties:
       ApiId:
         Fn::GetAtt:
@@ -2083,6 +2164,7 @@ Resources:
   ############################
   DynamoDBSTNOTableDatasource:
     Type: AWS::AppSync::DataSource
+    Condition: DeployWebUiCondition
     Properties:
       Type: AMAZON_DYNAMODB
       Name: STNO_DynamoDB_Datasource
@@ -2100,6 +2182,7 @@ Resources:
 
   STNOLambdaDatasource:
     Type: AWS::AppSync::DataSource
+    Condition: DeployWebUiCondition
     Properties:
       Type: AWS_LAMBDA
       Name: STNO_Lambda_Datasource
@@ -2116,6 +2199,7 @@ Resources:
   ############################
   GetActionItemsResolver:
     Type: "AWS::AppSync::Resolver"
+    Condition: DeployWebUiCondition
     DependsOn:
     - GraphQLSchema
     Properties:
@@ -2131,6 +2215,7 @@ Resources:
 
   GetDashboardItemsResolver:
     Type: "AWS::AppSync::Resolver"
+    Condition: DeployWebUiCondition
     DependsOn:
     - GraphQLSchema
     Properties:
@@ -2145,6 +2230,7 @@ Resources:
 
   GetVersionHistoryResolver:
     Type: "AWS::AppSync::Resolver"
+    Condition: DeployWebUiCondition
     DependsOn:
     - GraphQLSchema
     Properties:
@@ -2160,6 +2246,7 @@ Resources:
 
   UpdateDDBTableResolver:
     Type: AWS::AppSync::Resolver
+    Condition: DeployWebUiCondition
     Properties:
       ApiId: !GetAtt AppSyncPipelineApi.ApiId
       TypeName: "Mutation"
@@ -2176,6 +2263,7 @@ Resources:
 
   UpdateDDBTableAppSyncFunction:
     Type: AWS::AppSync::FunctionConfiguration
+    Condition: DeployWebUiCondition
     Properties:
       ApiId: !GetAtt AppSyncPipelineApi.ApiId
       Name: "Mutation_updateTransitNetworkOrchestratorTable_Function"
@@ -2189,6 +2277,7 @@ Resources:
 
   LambdaAppSyncFunction:
     Type: AWS::AppSync::FunctionConfiguration
+    Condition: DeployWebUiCondition
     Properties:
       ApiId: !GetAtt AppSyncPipelineApi.ApiId
       Name: "STNO_Lambda_Function"
@@ -2205,6 +2294,7 @@ Resources:
   ############################
   STNOUserPool:
     Type: AWS::Cognito::UserPool
+    Condition: DeployWebUiCondition
     Properties:
       Schema:
         - AttributeDataType: String
@@ -2226,7 +2316,8 @@ Resources:
       AdminCreateUserConfig:
                 AllowAdminCreateUserOnly: true
                 InviteMessageTemplate:
-                  EmailSubject: !Sub "Serverless Transit Network Orchestrator Console Credentials (${AWS::Region})"
+                  EmailSubject: !Sub "Network Orchestration for AWS Transit Gateway Console Credentials 
+                  (${AWS::Region})"
                   EmailMessage:
                     !Sub |
                         <p>Here are your temporary login credentials for Serverless Transit Network Orchestrator Console: https://${ConsoleCloudFront.DomainName}</p>
@@ -2235,6 +2326,26 @@ Resources:
                         Username: <strong>{username}</strong><br />
                         Temporary Password: <strong>{####}</strong>
                         </p>
+      AutoVerifiedAttributes:
+      - email
+      EmailVerificationMessage: The verification code to your new account is {####}
+      EmailVerificationSubject: Verify your new account
+      EnabledMfas:
+      - SOFTWARE_TOKEN_MFA
+      MfaConfiguration:
+        Ref: MultiFactorAuthentication
+      SmsVerificationMessage: The verification code to your new account is {####}
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+        - Name: verified_phone_number
+          Priority: 1
+        - Name: verified_email
+          Priority: 2
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailMessage: The verification code to your new account is {####}
+        EmailSubject: Verify your new account
+        SmsMessage: The verification code to your new account is {####}
       Policies:
         PasswordPolicy:
           MinimumLength: 10
@@ -2257,6 +2368,7 @@ Resources:
 
   UserPoolClient:
     Type: AWS::Cognito::UserPoolClient
+    Condition: DeployWebUiCondition
     Properties:
       UserPoolId:
         Ref: STNOUserPool
@@ -2286,6 +2398,7 @@ Resources:
 
   UserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
+    Condition: DeployWebUiCondition
     Properties:
       Domain:
         Ref: CognitoDomainPrefixParameter
@@ -2340,7 +2453,7 @@ Resources:
                 Effect: Allow
                 Resource:
                   # referencing ReadOnlyUserPool instead of userpool/* creates a circular dependency
-                  - !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:userpool/*
+                  - !Sub arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*
             Version: "2012-10-17"
           PolicyName: AddUserToReadOnlyUserGroupPolicy
     Condition: FrontEndCognitoSAMLCondition
@@ -2362,7 +2475,7 @@ Resources:
           SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionId]
           SOLUTION_VERSION: !FindInMap [SourceCode, General, Version]
       Handler: index.handler
-      Runtime: nodejs14.x
+      Runtime: nodejs16.x
       Timeout: 60
     DependsOn:
       - FrontEndCognitoTriggerFunctionRole
@@ -2393,6 +2506,7 @@ Resources:
   ############################
   UserPoolGroupAdmin:
     Type: AWS::Cognito::UserPoolGroup
+    Condition: DeployWebUiCondition
     Properties:
       Description: "Admin can perform all read and write operations"
       GroupName: "AdminGroup"
@@ -2402,6 +2516,7 @@ Resources:
 
   UserPoolGroupReadOnlyUsers:
     Type: AWS::Cognito::UserPoolGroup
+    Condition: DeployWebUiCondition
     Properties:
       Description: "Users can only view requests"
       GroupName: "ReadOnlyUserGroup"
@@ -2414,6 +2529,7 @@ Resources:
   ############################
   UserPoolUserAdmin:
     Type: AWS::Cognito::UserPoolUser
+    Condition: DeployWebUiCondition
     Properties:
       Username: !Ref UserPoolUsernameForAdminUser
       DesiredDeliveryMediums:
@@ -2429,6 +2545,7 @@ Resources:
 
   UserPoolAdminUserToAdminGroup:
     Type: AWS::Cognito::UserPoolUserToGroupAttachment
+    Condition: DeployWebUiCondition
     Properties:
       GroupName: "AdminGroup"
       Username: !Ref UserPoolUsernameForAdminUser
@@ -2443,6 +2560,7 @@ Resources:
   ############################
   UserPoolUserReadOnly:
     Type: AWS::Cognito::UserPoolUser
+    Condition: DeployWebUiCondition
     Properties:
       Username: !Ref UserPoolUsernameForReadOnlyUser
       DesiredDeliveryMediums:
@@ -2458,6 +2576,7 @@ Resources:
 
   UserPoolReadOnlyUserToReadOnlyGroup:
     Type: AWS::Cognito::UserPoolUserToGroupAttachment
+    Condition: DeployWebUiCondition
     Properties:
       GroupName: "ReadOnlyUserGroup"
       Username: !Ref UserPoolUsernameForReadOnlyUser
@@ -2472,6 +2591,7 @@ Resources:
    ############################
   CognitoAuthRole:
       Type: "AWS::IAM::Role"
+      Condition: DeployWebUiCondition
       Properties:
           AssumeRolePolicyDocument:
               Version: "2012-10-17"
@@ -2503,6 +2623,7 @@ Resources:
 
   IdentityPoolRoleAttachment:
     Type: "AWS::Cognito::IdentityPoolRoleAttachment"
+    Condition: DeployWebUiCondition
     Properties:
         IdentityPoolId: !Ref IdentityPool
         Roles:
@@ -2510,6 +2631,7 @@ Resources:
 
   IdentityPool:
       Type: "AWS::Cognito::IdentityPool"
+      Condition: DeployWebUiCondition
       Properties:
           AllowUnauthenticatedIdentities: false
           CognitoIdentityProviders:
@@ -2523,6 +2645,7 @@ Resources:
   ##########################
   AppSyncRole:
     Type: AWS::IAM::Role
+    Condition: DeployWebUiCondition
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -2572,6 +2695,7 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Type: 'AWS::S3::Bucket'
+    Condition: DeployWebUiCondition
     Properties:
       LoggingConfiguration:
         DestinationBucketName: !Ref LogsBucket
@@ -2590,6 +2714,7 @@ Resources:
 
   ConsoleBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
+    Condition: DeployWebUiCondition
     Properties:
       Bucket: !Ref ConsoleBucket
       PolicyDocument:
@@ -2613,6 +2738,7 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Type: AWS::S3::Bucket
+    Condition: DeployWebUiCondition
     Metadata:
       cfn_nag:
         rules_to_suppress:
@@ -2639,6 +2765,7 @@ Resources:
 
   LogsBucketS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
+    Condition: DeployWebUiCondition
     Properties:
       Bucket: !Ref LogsBucket
       PolicyDocument:
@@ -2654,11 +2781,13 @@ Resources:
   ##########################
   ConsoleOriginAccessIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Condition: DeployWebUiCondition
     Properties:
       CloudFrontOriginAccessIdentityConfig:
         Comment: !Sub "access-identity-${ConsoleBucket}"
 
   AllowListedCidr:
+    Condition: DeployWebUiCondition
     Type: AWS::WAFv2::IPSet
     Properties:
       Name: STNO-Api-Allowlist
@@ -2669,6 +2798,7 @@ Resources:
 
   STNOGraphQLApiWebACL:
     Type: AWS::WAFv2::WebACL
+    Condition: DeployWebUiCondition
     Properties:
       Name: "STNO-Api-WebACL"
       Scope: REGIONAL
@@ -2706,6 +2836,7 @@ Resources:
 
   SecurityHeaderFunction:
     Type: AWS::CloudFront::Function
+    Condition: DeployWebUiCondition
     Properties:
       Name: !Sub "STNO-SecurityHeaderFunction-${AWS::Region}"
       AutoPublish: true
@@ -2732,6 +2863,7 @@ Resources:
 
   ConsoleCloudFront:
       Type: AWS::CloudFront::Distribution
+      Condition: DeployWebUiCondition
       Metadata:
         cfn_nag:
           rules_to_suppress:
@@ -2786,10 +2918,11 @@ Resources:
 
   ConsoleIAMPolicy:
     Type: "AWS::IAM::Policy"
+    Condition: DeployWebUiCondition
     Properties:
       PolicyName: "STNOConsolePolicy"
       Roles:
-        - Ref: "StateMachineLambdaRole"
+        - Ref: "StateMachineLambdaFunctionRole"
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -2810,8 +2943,9 @@ Resources:
               - !Join ["", [!Sub "arn:${AWS::Partition}:s3:::",!FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region"]]
               - !Join ["", [!Sub "arn:${AWS::Partition}:s3:::",!FindInMap ["SourceCode", "General", "S3Bucket"], "-", Ref: "AWS::Region","/*"]]
 
-  Console:
+  CopyWebConsoleArtifacts:
     Type: "Custom::ConsoleDeploy"
+    Condition: DeployWebUiCondition
     Properties:
       ServiceToken: !Sub ${CustomResourceLambda.Arn}
       SrcBucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
@@ -2825,15 +2959,16 @@ Resources:
       AwsContentDeliveryUrl: !Sub "https://${ConsoleCloudFront.DomainName}"
       AwsCognitoDomainPrefix: !Ref CognitoDomainPrefixParameter
 
-  SendCFNParameters:
+  SendCloudFormationParameters:
     Type: Custom::SendCFNParameters
     Properties:
-      Uuid: !GetAtt CreateUUID.UUID
+      Uuid: !GetAtt CreateUniqueID.UUID
       PrincipalType: !Ref PrincipalType
       ApprovalNotification: !Ref ApprovalNotification
       AuditTrailRetentionPeriod: !FindInMap ["LogRetention", "AuditTrail", "RetentionPeriod"]
       DefaultRoute: !Ref DefaultRoute
       CreatedNewTransitGateway: !If [CreateNewTransitGateway, 'Yes', 'No']
+      DeployWebUI: !Ref DeployWebUi
       ServiceToken: !Sub ${CustomResourceLambda.Arn}
 
   CloudWatchLogFailures:
@@ -2872,6 +3007,7 @@ Resources:
   # AppRegistry Application
   Application:
     Type: AWS::ServiceCatalogAppRegistry::Application
+    Condition: DeployIfNotChinaPartition
     Properties:
       Description: Service Catalog application to track and manage all your resources. The SolutionID SO0058 is and SolutionVersion is %VERSION%.
         The ApplicationType is AWS-Solutions and SolutionDomain is CloudFoundations.
@@ -2892,16 +3028,18 @@ Resources:
 
   AppRegistryApplicationStackAssociation:
     Type: AWS::ServiceCatalogAppRegistry::ResourceAssociation
+    Condition: DeployIfNotChinaPartition
     Properties:
       Application: !GetAtt Application.Id
       Resource:
         !Ref AWS::StackId
       ResourceType: CFN_STACK
 
-  DefaultApplicationAttributes:
+  DefaultApplicationAttributeGroup:
     Type: AWS::ServiceCatalogAppRegistry::AttributeGroup
+    Condition: DeployIfNotChinaPartition
     Properties:
-      Name: !Sub '${AWS::Region}-${AWS::StackName}'
+      Name: !Sub 'AttrGrp-${AWS::Region}-${AWS::StackName}'
       Description: Network Orchestration for AWS Transit Gateway.
       Attributes:
         { "ApplicationType": "AWS Solution",
@@ -2915,14 +3053,17 @@ Resources:
 
   AppRegistryApplicationAttributeAssociation:
     Type: AWS::ServiceCatalogAppRegistry::AttributeGroupAssociation
+    Condition: DeployIfNotChinaPartition
     Properties:
       Application: !GetAtt Application.Id
-      AttributeGroup: !GetAtt DefaultApplicationAttributes.Id
+      AttributeGroup: !GetAtt DefaultApplicationAttributeGroup.Id
 
-  ##########################
+##########################
   # Outputs #
 ##########################
 Outputs:
+  UUID:
+    Value: !GetAtt CreateUniqueID.UUID
   SLRId:
     Value: !Ref CustomServiceLinkedRole
   TGWId:
@@ -2949,15 +3090,19 @@ Outputs:
   Console:
     Description: The link to the console
     Value: !Sub https://${ConsoleCloudFront.DomainName}
+    Condition: DeployWebUiCondition
   ConsoleS3Bucket:
     Description: The s3 bucket that stores the contents of the website
     Value: !Ref ConsoleBucket
+    Condition: DeployWebUiCondition
   UserPoolClientID:
     Description: The User Pool AppClient ID used when logging into the UserPool
     Value: !Ref UserPoolClient
+    Condition: DeployWebUiCondition
   UserPoolID:
     Description: The User Pool ID
     Value: !Ref STNOUserPool
+    Condition: DeployWebUiCondition
   CognitoDomain:
     Description: Cognito hosted domain
     Value:
@@ -2968,12 +3113,15 @@ Outputs:
           - .auth.
           - Ref: AWS::Region
           - .amazoncognito.com
+    Condition: DeployWebUiCondition
   IdentityPoolID:
     Description: The Identity Pool ID.
     Value: !Ref IdentityPool
+    Condition: DeployWebUiCondition
   DynamoDBTable:
     Description: The name of the Amazon DynamoDB table containing data of network requests
     Value: !Ref DynamoDbTable
   AppSyncAPI:
     Description: The AppSync API
     Value: !Ref AppSyncPipelineApi
+    Condition: DeployWebUiCondition

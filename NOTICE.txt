@@ -7,115 +7,146 @@ THIRD PARTY COMPONENTS
 **********************
 This software includes third party software subject to the following copyrights:
 
-@aws-amplify/api-graphql            Apache-2.0
-@aws-amplify/auth                   Apache-2.0
-@aws-amplify/core                   Apache-2.0
-@fortawesome/fontawesome-svg-core   MIT
-@fortawesome/free-brands-svg-icons  (CC-BY-4.0 AND MIT)
-@fortawesome/free-solid-svg-icons   (CC-BY-4.0 AND MIT)
-@fortawesome/react-fontawesome      MIT
-ag-grid-community                   MIT
-ag-grid-react                       MIT
-bootstrap                           MIT
-react                               MIT
-react-bootstrap                     MIT
-react-dom                           MIT
-react-icons                         MIT
-react-router-dom                    MIT
-@testing-library/jest-dom           MIT
-@testing-library/react              MIT
-@testing-library/user-event         MIT
-msw                                 MIT
-prettier                            MIT
-react-scripts                       MIT
-
+npm packages:
+@aws-amplify/api under  Apache-2.0
+@aws-amplify/auth under Apache-2.0
+@aws-amplify/core under Apache-2.0
 @aws-sdk/client-cognito-identity-provider  Apache-2.0
+@cloudscape-design/collection-hooks under Apache-2.0
+@cloudscape-design/components under Apache-2.0
+@cloudscape-design/design-tokens under Apache-2.0
+@cloudscape-design/global-styles under Apache-2.0
+@cloudscape-design/theming-runtime under Apache-2.0
+@types/node under MIT
+@types/react under MIT
+@types/react-dom under MIT
+bootstrap under MIT
+date-fns under MIT
+react under MIT
+react-dom under MIT
+react-router-dom under MIT
+react-scripts under MIT
+typescript under Apache-2.0
+web-vitals under Apache-2.0
+@babel/core under MIT
+@babel/parser under MIT
+@babel/preset-env under MIT
+@babel/preset-react under MIT
+@babel/preset-typescript under MIT
+@babel/plugin-proposal-private-property-in-object under MIT
+@testing-library/jest-dom under MIT
+@testing-library/react under MIT
+@testing-library/user-event under MIT
+@types/jest under MIT
+mnth under MIT
+nanoid under MIT
+babel-jest under MIT
+msw under MIT
+renamer under MIT
+@aws-solutions-constructs/aws-cloudfront-s3 under Apache-2.0
+@types/jest under MIT
+@types/node under MIT
+@types/sinon under MIT
+aws-cdk under Apache-2.0
+jest under MIT
+sinon under BSD-3-Clause
+ts-jest under MIT
+ts-node under MIT
+typescript under Apache-2.0
+
+pip packages:
 winston                                    MIT
-@types/jest                                MIT
-@types/node                                MIT
+decode-uri-component                       MIT
 jest                                       MIT
 ts-jest                                    MIT
 ts-node                                    MIT
 typescript                                 Apache-2.0
 aws-sdk-client-mock                        MIT
-
 Jinja2                    3.0.3          BSD License
-MarkupSafe                2.1.0          BSD License
+MarkupSafe                2.1.3          BSD License
 PTable                    0.9.2          BSD License
 PyYAML                    6.0            MIT License
-Werkzeug                  2.0.3          BSD License
-astroid                   2.9.3          GNU Lesser General Public License v2 (LGPLv2)
+Werkzeug                  2.2.3          BSD License
+astroid                   2.15.5          GNU Lesser General Public License v2 (LGPLv2)
 attrs                     21.4.0         MIT License
-aws-lambda-typing         2.16.1         MIT License
-aws-sam-translator        1.42.0         Apache Software License
-aws-xray-sdk              2.9.0          Apache Software License
-black                     21.12b0        MIT License
-boto3                     1.21.8         Apache Software License
-boto3-stubs               1.26.27        MIT License
-botocore                  1.24.8         Apache Software License
-botocore-stubs            1.29.27        MIT License
-certifi                   2021.10.8      Mozilla Public License 2.0 (MPL 2.0)
-cffi                      1.15.0         MIT License
-cfn-lint                  0.58.0         MIT License
+aws-lambda-typing         2.17.0         MIT License
+aws-lambda-powertools     2.14.1         MIT License
+aws-sam-translator        1.68.0         Apache Software License
+aws-xray-sdk              2.12.0         Apache Software License
+black                     23.3.0         MIT License
+boto3                     1.26.147       Apache Software License
+boto3-stubs               1.26.147         MIT License
+botocore                  1.29.147       Apache Software License
+botocore-stubs            1.29.147       MIT License
+certifi                   2022.12.7      Mozilla Public License 2.0 (MPL 2.0)
+cffi                      1.15.1         MIT License
+cfn-lint                  0.77.6         MIT License
 charset-normalizer        2.0.12         MIT License
 click                     8.0.4          BSD License
-coverage                  6.3.1          Apache Software License
-cryptography              36.0.1         Apache Software License; BSD License
-docker                    5.0.3          Apache Software License
-ecdsa                     0.17.0         MIT
-exceptiongroup            1.0.4          MIT License
-freezegun                 1.1.0          Apache Software License
+coverage                  7.2.7          Apache Software License
+cryptography              41.0.1         Apache Software License, BSD License
+docker                    6.0.1          Apache Software License
+dill                      0.3.6          BSD License (BSD-3-Clause)
+ecdsa                     0.17.0         MIT License
+exceptiongroup            1.1.1          MIT License
+filelock                  3.12.0         The Unlicense
+freezegun                 1.2.2          Apache Software License
 future                    0.18.2         MIT License
-idna                      3.3            BSD License
+idna                      3.4            BSD License
 iniconfig                 1.1.1          MIT License
 isort                     5.10.1         MIT License
 jmespath                  0.10.0         MIT License
 jschema-to-python         1.2.3          MIT License
-jsondiff                  1.3.1          MIT License
+jsondiff                  2.0.0          MIT License
 jsonpatch                 1.32           BSD License
 jsonpickle                2.1.0          BSD License
-jsonpointer               2.2            BSD License
+jsonpointer               2.3            BSD License
 jsonschema                3.2.0          MIT License
-junit-xml                 1.9            Freely Distributable; MIT License
+junit-xml                 1.9            Freely Distributable, MIT License
 lazy-object-proxy         1.7.1          BSD License
 mccabe                    0.6.1          MIT License
+mpmath                    1.3.0          BSD License
 mock                      4.0.3          BSD License
-moto                      2.3.1          Apache Software License
-mypy-boto3-organizations  1.24.36.post1  MIT License
+moto                      4.1.11         Apache Software License
+mypy-boto3-organizations  1.24.83        MIT License
 mypy-boto3-ram            1.26.0.post1   MIT License
-mypy-extensions           0.4.3          MIT License
+mypy-extensions           0.4.4          MIT License
 networkx                  2.6.3          BSD License
-packaging                 21.3           Apache Software License; BSD License
+packaging                 22.0           Apache Software License, BSD License
 pathspec                  0.9.0          Mozilla Public License 2.0 (MPL 2.0)
 pbr                       5.8.1          Apache Software License
-pipdeptree                2.3.1          MIT License
-platformdirs              2.5.1          MIT License
+pipdeptree                2.7.1          MIT License
+platformdirs              2.5.4          MIT License
 pluggy                    1.0.0          MIT License
 py                        1.11.0         MIT License
 pyasn1                    0.4.8          BSD License
 pycparser                 2.21           BSD License
-pylint                    2.12.2         GNU General Public License v2 (GPLv2)
-pyparsing                 3.0.7          MIT License
+pydantic                  1.10.8         MIT License
+pylint                    2.17.4         GNU General Public License v2 (GPLv2)
+pyparsing                 3.0.9          MIT License
 pyrsistent                0.18.1         MIT License
-pytest                    7.2.0          MIT License
-pytest-mock               3.1.1          MIT License
-python-dateutil           2.8.2          Apache Software License; BSD License
+pytest                    7.2.2          MIT License
+pytest-mock               3.10.0         MIT License
+python-dateutil           2.8.2          Apache Software License, BSD License
 python-jose               3.3.0          MIT License
-pytz                      2021.3         MIT License
-requests                  2.27.1         Apache Software License
+pytz                      2023.3.0       MIT License
+regex                     2023.6.3       Apache Software License
+requests                  2.31.0         Apache Software License
 responses                 0.18.0         Apache 2.0
-rsa                       4.8            Apache Software License
-s3transfer                0.5.2          Apache Software License
+rsa                       4.9            Apache Software License
+s3transfer                0.6.1          Apache Software License
 sarif-om                  1.0.4          MIT License
 six                       1.16.0         MIT License
 sshpubkeys                3.3.1          BSD License
-sure                      1.4.11         GNU General Public License v3 or later (GPLv3+)
+sympy                     1.12           BSD License
+sure                      2.0.1          GNU General Public License v3 or later (GPLv3+)
+tomlkit                   0.11.8         MIT License
 toml                      0.10.2         MIT License
 tomli                     1.2.3          MIT License
-types-awscrt              0.16.1         MIT License
-types-s3transfer          0.6.0.post5    MIT License
-typing_extensions         4.1.1          Python Software Foundation License
-urllib3                   1.26.8         MIT License
-websocket-client          1.3.1          Apache Software License
+types-awscrt              0.16.19        MIT License
+types-s3transfer          0.6.1          MIT License
+typing_extensions         4.6.3          Python Software Foundation License
+urllib3                   1.26.16        MIT License
+websocket-client          1.3.3          Apache Software License
 wrapt                     1.13.3         BSD License
 xmltodict                 0.12.0         MIT License

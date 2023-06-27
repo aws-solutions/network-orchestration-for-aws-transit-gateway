@@ -1,0 +1,87 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+const data = {
+    dashboardItem1: {
+        "AWSSpokeAccountId": "111122223333",
+        "Action": "None",
+        "AdminAction": null,
+        "AvailabilityZone": "None",
+        "Comment": "None",
+        "RequestTimeStamp": "2022-12-02T19:47:52Z",
+        "ResponseTimeStamp": "2022-12-02T19:47:53Z",
+        "Status": "rejected",
+        "SubnetId": "vpc-xyz",
+        "AssociationRouteTable": null,
+        "PropagationRouteTablesString": "None",
+        "TagEventSource": "vpc",
+        "TgwId": "tgw-abc",
+        "TimeToLive": 1677786472,
+        "UserId": "StateMachine",
+        "Version": "latest",
+        "VpcCidr": "312.0.0.0/24",
+        "VpcId": "vpc-dashboardItem1"
+    },
+    dashboardItem2: {
+        "AWSSpokeAccountId": "111122223333",
+        "Action": "None",
+        "AdminAction": null,
+        "AvailabilityZone": "None",
+        "Comment": "None",
+        "RequestTimeStamp": "2022-12-02T19:41:47Z",
+        "ResponseTimeStamp": "2022-12-02T19:41:48Z",
+        "Status": "auto-approved",
+        "SubnetId": "vpc-xyz",
+        "AssociationRouteTable": null,
+        "PropagationRouteTablesString": "None",
+        "TagEventSource": "vpc",
+        "TgwId": "tgw-abc",
+        "TimeToLive": 1677786107,
+        "UserId": "StateMachine",
+        "Version": "latest",
+        "VpcCidr": "312.0.0.0/16",
+        "VpcId": "vpc-dashboardItem2"
+    },
+    actionItem1: {
+        "AWSSpokeAccountId": "111122223333",
+        "Action": "None",
+        "AdminAction": null,
+        "AvailabilityZone": "us-east-1f",
+        "Comment": "An error occurred (InvalidTransitGatewayID.NotFound) when calling the CreateTransitGatewayVpcAttachment operation: Transit Gateway tgw-01c773291e6197de1 was deleted or does not exist.",
+        "RequestTimeStamp": "2022-12-02T20:47:49Z",
+        "ResponseTimeStamp": "2022-12-02T20:48:30Z",
+        "Status": "failed",
+        "SubnetId": "subnet-03890c9844a719bbb",
+        "AssociationRouteTable": null,
+        "PropagationRouteTablesString": "None",
+        "TagEventSource": "subnet",
+        "TgwId": "tgw-01c773291e6197de1",
+        "TimeToLive": 1677790069,
+        "UserId": "StateMachine",
+        "Version": "latest",
+        "VpcCidr": "312.0.0.0/16",
+        "VpcId": "vpc-actionItem1"
+    },
+    actionItem2: {
+        "AWSSpokeAccountId": "444455556666",
+        "Action": "None",
+        "AdminAction": null,
+        "AvailabilityZone": "None",
+        "Comment": "None",
+        "RequestTimeStamp": "2022-12-02T21:00:32Z",
+        "ResponseTimeStamp": "2022-12-02T21:00:34Z",
+        "Status": "requested",
+        "SubnetId": "vpc-0c7881305e09a5c16",
+        "AssociationRouteTable": "isolated",
+        "PropagationRouteTablesString": "on-premises",
+        "TagEventSource": "vpc",
+        "TgwId": "tgw-01c773291e6197de1",
+        "TimeToLive": 1677790832,
+        "UserId": "StateMachine",
+        "Version": "latest",
+        "VpcCidr": "312.0.0.0/16",
+        "VpcId": "vpc-actionItem2"
+    }
+};
+
+export default data;

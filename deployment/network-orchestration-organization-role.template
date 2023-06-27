@@ -3,14 +3,8 @@
 
 # This is an optional CloudFormation template for the AWS Organizations Management account
 # This template creates an IAM role can be used to enhance the information
-# in STNO, specifically allowing the UI and TGW attachment tags to include the 
-# account name, and OU. 
-
-# (An alternative to creating this CloudFormation stack is to register the STNO hub account 
-# as the delegated administrator for any service, for example service catalog:
-# https://docs.aws.amazon.com/organizations/latest/userguide/orgs_integrate_services_list.html
-# This will allow the STNO hub account to query the AWS Organization information directly 
-# without needing an IAM role
+# in STNO, specifically allowing the UI and TGW attachment tags to include the
+# account name, and OU.
 
 AWSTemplateFormatVersion: '2010-09-09'
 Description: (SO0058o) - The AWS CloudFormation template (Organization role) for deployment of the %SOLUTION_NAME% Solution. Version %VERSION%
@@ -47,7 +41,7 @@ Resources:
             Condition:
               ArnEquals:
                 aws:PrincipalArn:
-                - !Sub arn:aws:iam::${HubAccount}:role/STNO-StateMachineLambdaRole-${AWS::Region}
+                - !Sub arn:${AWS::Partition}:iam::${HubAccount}:role/STNO-StateMachineLambdaFunctionRole-${AWS::Region}
       Policies:
         - PolicyName: OrganizationDetailsReadOnly
           PolicyDocument:

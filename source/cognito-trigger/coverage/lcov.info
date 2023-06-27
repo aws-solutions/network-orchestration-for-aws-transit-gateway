@@ -1,5 +1,5 @@
 TN:
-SF:cognito-trigger/index.ts
+SF:source/cognito-trigger/index.ts
 FN:24,isExternalUserLoggingInForTheFirstTime
 FN:32,addUserToReadOnlyUserGroup
 FN:45,handler
@@ -35,7 +35,7 @@ BRF:7
 BRH:5
 end_of_record
 TN:
-SF:cognito-trigger/lib/logger.ts
+SF:source/cognito-trigger/lib/logger.ts
 FN:32,(anonymous_0)
 FNF:1
 FNH:1
