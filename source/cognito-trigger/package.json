@@ -4,7 +4,7 @@
   "description": "Triggered when a new user is confirmed in the user pool to allow for custom actions to be taken",
   "main": "index.js",
   "dependencies": {
-    "@aws-sdk/client-cognito-identity-provider": "^3.102.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.360.0",
     "winston": "^3.3.3",
     "decode-uri-component": "^0.2.1"
   },
