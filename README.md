@@ -158,11 +158,13 @@ Network Orchestration for AWS Transit Gateway solution consists of:
 |-.github
 |-architecture.png                                     [ architecture diagram ]
 |-deployment/    
-  |-manifest-generator                                 [ generates manifest files for solution ui ]                 
-  |-network-orchestration-hub.template                 [ hub template, provisions transit gateway in hub account ]
-  |-network-orchestration-spoke.template               [ spoke template, onboards child accounts on the solution ]  
-  |-network-orchestration-organization-role.template   [ role template, deploys in management account ]
-  |-build-s3-dist.sh                                   [ script to build solution microservices ]
+  |-manifest-generator                                        [ generates manifest files for solution ui ]
+  |-network-orchestration-hub.template                        [ hub template ]
+  |-network-orchestration-hub-service-linked-roles.template   [ hub template, deploys service linked roles]
+  |-network-orchestration-spoke.template                      [ spoke template]  
+  |-network-orchestration-spoke-service-linked-roles.template [ spoke template, deploys only service linked roles ]  
+  |-network-orchestration-organization-role.template          [ role template, deploys in management account ]
+  |-build-s3-dist.sh                                          [ script to build solution microservices ]
 |-source/
   |-cognito-trigger                   [ manage new user creation in the cognito user pool ]
   |-lambda/                           [ solution microservices ]

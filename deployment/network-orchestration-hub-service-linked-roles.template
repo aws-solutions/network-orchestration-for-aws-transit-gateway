@@ -1,0 +1,16 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: (SO0058-slr) - The AWS CloudFormation template (Hub) for deployment of the %SOLUTION_NAME% Solution. Version %VERSION%
+
+Resources:
+  ResourceAccessManagerServiceLinkedRole:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: 'ram.amazonaws.com'
+      Description: Allows RAM to access Organizations on your behalf.
+
+Outputs:
+  ResourceAccessManagerServiceLinkedRoleName:
+    Value: !Ref ResourceAccessManagerServiceLinkedRole

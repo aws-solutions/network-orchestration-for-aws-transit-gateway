@@ -1,0 +1,16 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: (SO0058s-slr) - The AWS CloudFormation template (Spoke) for deployment of the %SOLUTION_NAME% Solution. Version %VERSION%
+
+Resources:
+  TransitGatewayServiceLinkedRole:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "transitgateway.amazonaws.com"
+      Description: Allows VPC Transit Gateway to access EC2 resources on your behalf.
+
+Outputs:
+  TransitGatewayServiceLinkedRoleName:
+    Value: !Ref TransitGatewayServiceLinkedRole
