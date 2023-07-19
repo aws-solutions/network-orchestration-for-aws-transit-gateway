@@ -10,13 +10,6 @@ Parameters:
     Type: String
     AllowedPattern: ^\d{12}$
 
-  CreateServiceRoleForVPCTransitGateway:
-    Description: Only skip if the role already exists in IAM with different description, to avoid deployment error.
-    AllowedValues:
-      - 'Create'
-      - 'Skip creation'
-    Default: 'Create'
-    Type: String
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -39,16 +32,8 @@ Mappings:
 Conditions:
   # Adding an EventBus as a target within an account is not allowed.
   IsSpokeAccountOtherThanHubAccount: !Not [ !Equals [ !Ref HubAccount, !Ref "AWS::AccountId" ] ]
-  CreateServiceRoleCondition:  !Equals [!Ref CreateServiceRoleForVPCTransitGateway, 'Create']
 
 Resources:
-  CustomServiceLinkedRole:
-    Type: "AWS::IAM::ServiceLinkedRole"
-    Condition: CreateServiceRoleCondition
-    Properties:
-      AWSServiceName: "transitgateway.amazonaws.com"
-      Description: Allows VPC Transit Gateway to access EC2 resources on your behalf.
-
   #
   # Serverless Transit Network Orchestrator Cloudwatch Event Rule
   #

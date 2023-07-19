@@ -393,13 +393,6 @@ Mappings:
       Data: "Yes"
 
 Resources:
-  # The following description enables the idempotency and CFN template will not roll back if the role
-  # already exist. Do not change the description below.
-  CustomServiceLinkedRole:
-    Type: "AWS::IAM::ServiceLinkedRole"
-    Properties:
-      AWSServiceName: 'ram.amazonaws.com'
-      Description: Allows RAM to access Organizations on your behalf.
 
   AWSTransitGateway:
     Type: AWS::EC2::TransitGateway
@@ -490,8 +483,6 @@ Resources:
           Value: !FindInMap ["SourceCode", "Variables", "ApprovalTagValue"]
 
   TGWResourceShare:
-    DependsOn:
-      - CustomServiceLinkedRole
     Type: "AWS::RAM::ResourceShare"
     Properties:
       Name: "Transit Gateway Resource Share"
@@ -518,8 +509,7 @@ Resources:
       ServiceToken: !GetAtt CustomResourceLambda.Arn
 
   CustomerManagedPrefixListResourceShare:
-    DependsOn:
-      - CustomServiceLinkedRole
+
     Type: "AWS::RAM::ResourceShare"
     Condition: ProvidedPrefixListIds
     Properties:
@@ -3064,8 +3054,6 @@ Resources:
 Outputs:
   UUID:
     Value: !GetAtt CreateUniqueID.UUID
-  SLRId:
-    Value: !Ref CustomServiceLinkedRole
   TGWId:
     Value: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
   GlobalNetworkId:
