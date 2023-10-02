@@ -137,13 +137,21 @@ Parameters:
     Default: ""
 
   ExistingTransitGatewayId:
-    Description: New transit gateway will be created if no value is provided. Example, tgw-a1b2c3d4e5
+    Description: For new deployments only, if no value is provided a new transit gateway is created Example, tgw-a1b2c3d4e5
     Type: String
     Default: ""
     AllowedPattern: '(^$|^tgw-[0-9a-z]{17}$)'
 
+  RegisterTransitGateway:
+    Description: If you select 'Yes', a new global network will be created unless you will provide an existing global network id below.  If you select 'No', creation of new global network is skipped and you will need to manage the global network and transit gateway registration.
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+    Type: String
+
   ExistingGlobalNetworkId:
-    Description: New global network will be created if no value is provided. Example, global-network-01231231231231231
+    Description: For new deployments only, if no value is provided a new global network. Example, global-network-01231231231231231
     Type: String
     Default: ""
     AllowedPattern: '(^$|^global-network-[0-9a-z]{17}$)'
@@ -183,6 +191,7 @@ Parameters:
     Description: |
       Comma separated list of CIDR ranges that allow to console to access the API.
       To allow all the entire internet, use 0.0.0.0/1,128.0.0.0/1
+    Default: 0.0.0.0/1,128.0.0.0/1
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -210,6 +219,7 @@ Metadata:
           default: Transit Gateway Settings
         Parameters:
           - ExistingTransitGatewayId
+          - RegisterTransitGateway
           - ExistingGlobalNetworkId
       - Label:
           default: VPC Route Table Settings
@@ -266,11 +276,13 @@ Metadata:
       PropagationTag:
         default: Tag key for Route Propagation to TGW Route Table(s)
       ExistingTransitGatewayId:
-        default: (Optional) Provide the existing transit gateway id.
+        default: (Optional) Do you wish to use an existing transit gateway? If yes, you must provide the transit gateway id below.
       TgwPeeringTag:
         default: Transit Gateway Peering Tag
+      RegisterTransitGateway:
+        default: (Optional) Do you wish to register the transit gateway with a global network?
       ExistingGlobalNetworkId:
-        default: (Optional) Provide the existing global network id.
+        default: (Optional) Do you wish to use an existing global network? If yes, you must provide the global network id below.
       ListOfCustomCidrBlocks:
         default: If selected 'Custom-Destinations', provide a comma separated list of CIDR Blocks.
       CustomerManagedPrefixListIds:
@@ -291,20 +303,19 @@ Conditions:
   DeployWebUiCondition: !Equals [!Ref DeployWebUi, "Yes" ]
   IsMemberOfOrganization: !Equals [!Ref PrincipalType, 'AWS Organization ARN']
   IsNotMemberOfOrganization: !Equals [!Ref PrincipalType, 'List of Accounts']
+  DeployIfNotChinaPartition: !Not [ !Equals [ !Ref AWS::Partition, "aws-cn" ] ]
   CreateNewTransitGateway: !Equals [!Ref ExistingTransitGatewayId, '']
-  DeployIfNotChinaPartition: !Not [!Equals [ !Ref AWS::Partition, "aws-cn" ]]
-  CreateNewGlobalNetwork: !And
-    - !Equals [ !Ref ExistingGlobalNetworkId, '' ]
-    - !Condition DeployIfNotChinaPartition
-  CreateNewGlobalNetwork&CreateNewTransitGateway: !And
-    - !Condition CreateNewGlobalNetwork
-    - !Condition CreateNewTransitGateway
+  EmptyGlobalNetworkIdCondition: !Equals [!Ref ExistingGlobalNetworkId, '']
+  RegisterTransitGatewayCondition: !Equals [ !Ref RegisterTransitGateway, "Yes" ]
+  DeployGlobalNetworkCondition: !And
+    - !Condition RegisterTransitGatewayCondition
+    - !Condition EmptyGlobalNetworkIdCondition
   ProvidedPrefixListIds: !Not [!Equals [!Ref CustomerManagedPrefixListIds, '']]
   OrganizationManagementAccountRoleArn: !Not [ !Equals [!Ref OrganizationManagementAccountRoleArn, '']]
   FrontEndCognitoSAMLCondition: !And
     - !Not [ !Equals [ !Ref CognitoSAMLProviderNameParameter, '' ] ]
     - !Not [ !Equals [ !Ref CognitoSAMLProviderMetadataUrlParameter, '' ] ]
-    - !Condition CreateNewGlobalNetwork
+    - !Condition DeployGlobalNetworkCondition
   AllowExternalPrincipals:
     Fn::Equals:
       - Ref: AllowExternalPrincipals
@@ -2092,7 +2103,7 @@ Resources:
     Type: AWS::NetworkManager::GlobalNetwork
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
-    Condition: CreateNewGlobalNetwork
+    Condition: DeployGlobalNetworkCondition
     Properties:
       Description: !Sub Global Network created by Serverless Transit Network Solution deployed in ${AWS::Region}
       Tags:
@@ -2103,9 +2114,9 @@ Resources:
 
   GlobalNetworkRegistrationSTNO:
     Type: AWS::NetworkManager::TransitGatewayRegistration
-    Condition: DeployIfNotChinaPartition
+    Condition: RegisterTransitGatewayCondition
     Properties:
-      GlobalNetworkId: !If [CreateNewGlobalNetwork, !Ref GlobalNetworkSTNO, !Ref ExistingGlobalNetworkId]
+      GlobalNetworkId: !If [DeployGlobalNetworkCondition, !Ref GlobalNetworkSTNO, !Ref ExistingGlobalNetworkId]
       TransitGatewayArn: !Sub
         - arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/${TransitGatewayId}
         - { TransitGatewayId: !If [ CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId ] }
@@ -3057,7 +3068,7 @@ Outputs:
   TGWId:
     Value: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
   GlobalNetworkId:
-    Value: !If [CreateNewGlobalNetwork, !Ref GlobalNetworkSTNO, !Ref ExistingGlobalNetworkId]
+    Value: !If [DeployGlobalNetworkCondition, !Ref GlobalNetworkSTNO, !Ref ExistingGlobalNetworkId]
   FlatTGWRT:
     Condition: CreateNewTransitGateway
     Value: !Ref FlatTGWRouteTable

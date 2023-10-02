@@ -167,10 +167,10 @@ def vpc_setup_with_explicit_route_table(ec2_client: EC2Client):
     os.environ["TGW_ID"] = transit_gateway['TransitGatewayId']
 
     vpc: VpcTypeDef = ec2_client.create_vpc(
-        CidrBlock='10.0.0.0/24'
+        CidrBlock='10.0.0.0/24'  # NOSONAR
     )['Vpc']
     subnet: SubnetTypeDef = ec2_client.create_subnet(
-        CidrBlock='10.0.0.0/28',
+        CidrBlock='10.0.0.0/28',  # NOSONAR
         VpcId=vpc['VpcId']
     )['Subnet']
     tgw_vpc_attachment: TransitGatewayVpcAttachmentTypeDef = ec2_client.create_transit_gateway_vpc_attachment(
@@ -223,11 +223,11 @@ def vpc_setup_no_explicit_route_table(ec2_client: EC2Client):
     os.environ["TGW_ID"] = transit_gateway['TransitGatewayId']
 
     vpc: VpcTypeDef = ec2_client.create_vpc(
-        CidrBlock='10.0.0.0/24'
+        CidrBlock='10.0.0.0/24'  # NOSONAR
     )['Vpc']
 
     subnet: SubnetTypeDef = ec2_client.create_subnet(
-        CidrBlock='10.0.0.0/28',
+        CidrBlock='10.0.0.0/28',  # NOSONAR
         VpcId=vpc['VpcId']
     )['Subnet']
 
