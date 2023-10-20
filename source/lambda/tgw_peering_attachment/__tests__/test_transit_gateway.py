@@ -85,7 +85,7 @@ class TestCreatePeeringAttachment:
 
         peers = tgw.get_tgw_peers(
             tgw_id=sample_tgw1["TransitGateway"]["TransitGatewayId"],
-            states=[AttachmentState.AVAILABLE],
+            states=[AttachmentState.AVAILABLE, AttachmentState.PENDING_ACCEPTANCE],
         )
 
         assert isinstance(peers[0], TGWPeer)

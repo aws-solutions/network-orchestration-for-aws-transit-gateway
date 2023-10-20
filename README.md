@@ -62,7 +62,7 @@ Use the following steps if you want to customize the solution or extend the solu
 
 ### Setup
 
-- Python Prerequisite: python=3.9 | pip3=21.3.1
+- Python Prerequisite: python=3.11 | pip3=21.3.1
 - Javascript Prerequisite: node=v16.4.50 | npm=8.19.2
 
 Clone the repository and make desired code changes.

@@ -72,7 +72,7 @@ for microservices in */ ; do
   microservice_name=$(basename $microservices)
   cd $lambda_dir/$microservice_name
   mkdir -p dist/$microservice_name
-  rsync -aq $lambda_dir/.venv/lib/python3.10/site-packages/ ./dist/
+  rsync -aq $lambda_dir/.venv/lib/python3.11/site-packages/ ./dist/
   cp -R lib __init__.py main.py ./dist/$microservice_name/
   cd dist
   zip -rq "$microservice_name.zip" .
