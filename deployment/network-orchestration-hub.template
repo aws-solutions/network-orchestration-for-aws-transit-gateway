@@ -315,7 +315,7 @@ Conditions:
   FrontEndCognitoSAMLCondition: !And
     - !Not [ !Equals [ !Ref CognitoSAMLProviderNameParameter, '' ] ]
     - !Not [ !Equals [ !Ref CognitoSAMLProviderMetadataUrlParameter, '' ] ]
-    - !Condition DeployGlobalNetworkCondition
+    - !Condition DeployWebUiCondition
   AllowExternalPrincipals:
     Fn::Equals:
       - Ref: AllowExternalPrincipals
@@ -799,7 +799,7 @@ Resources:
       Handler: custom_resource.main.lambda_handler
       MemorySize: 1536
       Role: !Sub ${CustomResourceLambdaFunctionRole.Arn}
-      Runtime: python3.9
+      Runtime: python3.11
       Timeout: 900
 
 
@@ -1021,7 +1021,7 @@ Resources:
       Handler: tgw_vpc_attachment.main.lambda_handler
       MemorySize: 1536
       Role: !GetAtt 'StateMachineLambdaFunctionRole.Arn'
-      Runtime: python3.9
+      Runtime: python3.11
       Timeout: 900
 
   StateMachineRole:
@@ -2091,7 +2091,7 @@ Resources:
       Handler: tgw_peering_attachment.main.lambda_handler
       MemorySize: 1536
       Role: !Sub ${TgwPeeringLambdaFunctionRole.Arn}
-      Runtime: python3.9
+      Runtime: python3.11
       Timeout: 900
 
   
@@ -2476,7 +2476,7 @@ Resources:
           SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionId]
           SOLUTION_VERSION: !FindInMap [SourceCode, General, Version]
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       Timeout: 60
     DependsOn:
       - FrontEndCognitoTriggerFunctionRole
@@ -3019,12 +3019,10 @@ Resources:
           - !Ref AWS::Region
           - !Ref AWS::AccountId
       Tags: {
-        'SolutionID': !FindInMap [ Solution, Metrics, SolutionId ],
-        'SolutionName': !FindInMap [ Solution, Data, SolutionName ],
-        'SolutionVersion': "%VERSION%",
-        'ApplicationType': 'AWS-Solutions',
-        'SolutionDomain': 'CloudFoundations',
-        'CloudFoundations:CostOptimizerForWorkspaces': !Ref "AWS::StackName"
+        'Solutions:SolutionID': !FindInMap [ Solution, Metrics, SolutionId ],
+        'Solutions:SolutionName': !FindInMap [ Solution, Data, SolutionName ],
+        'Solutions:SolutionVersion': "%VERSION%",
+        'Solutions:ApplicationType': 'AWS-Solutions'
       }
 
   AppRegistryApplicationStackAssociation:

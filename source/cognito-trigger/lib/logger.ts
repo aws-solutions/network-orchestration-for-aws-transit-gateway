@@ -29,10 +29,9 @@ const { combine, timestamp, printf } = format;
 /*
  * Formatting the output as desired
  */
-const myFormat = printf(({ level, label, message }) => {
+const myFormat = printf(({ level, message }) => {
   const _level = level.toUpperCase();
-  if (label) return `[${_level}] [${label}] ${message}`;
-  else return `[${_level}] ${message}`;
+  return `[${_level}] ${message}`;
 });
 
 export const logger = createLogger({

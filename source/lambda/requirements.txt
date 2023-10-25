@@ -6,19 +6,19 @@ aws_lambda_typing==2.18.0
 #sub-dependencies
 # NONE
 
-boto3==1.28.52
+boto3==1.28.67
 #sub-dependencies
-botocore==1.31.52
+botocore==1.31.67
 jmespath==1.0.1
 python-dateutil==2.8.2
-s3transfer==0.6.2
+s3transfer==0.7.0
 six==1.16.0
-urllib3==1.26.16
+urllib3==2.0.7
 
 requests~=2.31.0
 #sub-dependencies
 certifi==2023.7.22
-charset-normalizer==3.2.0
+charset-normalizer==3.3.0
 idna==3.4
 
 boto3-stubs[essential]~=1.26.0
@@ -30,3 +30,5 @@ boto3-stubs[stepfunctions]~=1.26.0
 boto3-stubs[lambda]~=1.26.0
 boto3-stubs[ec2]~=1.26.0
 boto3-stubs[logs]~=1.26.0
+
+

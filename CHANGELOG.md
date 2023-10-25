@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.3] - 2023-10
+
+### Changed
+- Updated Lambda Function runtime to Python 3.11 and Node.js 18
+- Tags for Application in AppRegistry
+
+### Fixed
+- Upgrade @babel/traverse to mitigate CVE-2023-45133
+- Upgrade urllib3 to mitigate CVE-2023-45803
+
 ## [3.3.2] - 2023-10
 
 ### Added
