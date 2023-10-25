@@ -6,7 +6,7 @@ open-source
 # Generated ouputs
 console-manifest.json
 dist
-.coverage
+source/**/coverage
 coverage.xml
 *pycache*
 npm-debug.log

@@ -315,7 +315,7 @@ Conditions:
   FrontEndCognitoSAMLCondition: !And
     - !Not [ !Equals [ !Ref CognitoSAMLProviderNameParameter, '' ] ]
     - !Not [ !Equals [ !Ref CognitoSAMLProviderMetadataUrlParameter, '' ] ]
-    - !Condition DeployGlobalNetworkCondition
+    - !Condition DeployWebUiCondition
   AllowExternalPrincipals:
     Fn::Equals:
       - Ref: AllowExternalPrincipals
@@ -2476,7 +2476,7 @@ Resources:
           SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionId]
           SOLUTION_VERSION: !FindInMap [SourceCode, General, Version]
       Handler: index.handler
-      Runtime: nodejs16.x
+      Runtime: nodejs18.x
       Timeout: 60
     DependsOn:
       - FrontEndCognitoTriggerFunctionRole
