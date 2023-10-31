@@ -116,7 +116,7 @@ Updated package versions to resolve security vulnerabilities.
 
 ### Changed
 
-- Improved reliability. Fixed race conditions (issue [#1](https://github.com/aws-solutions/serverless-transit-network-orchestrator/issues/1)).
+- Improved reliability. Fixed race conditions (issue [#1](https://github.com/aws-solutions/network-orchestration-for-aws-transit-gateway/issues/1)).
 - Conditional auto-approval or auto-reject rules based on AWS Organizations OU membership, with separate rules for associations and propagations.
 - Events now logged in CloudWatch Logs in addition to DynamoDB; to enable searching with CloudWatch Log Insights
 - Allow VPCs deployed using CloudFormation, that has the STNO tags, to be deleted. This is done by triggering a deletion of the transit gateway attachment when CloudFormation attempts to delete the subnet.

@@ -2,8 +2,8 @@
 ## Formerly known as: Serverless Transit Network Orchestrator (STNO)
 
 [🚀Solution Landing Page](https://aws.amazon.com/solutions/implementations/network-orchestration-aws-transit-gateway)
-| [🚧Feature request](https://github.com/aws-solutions/serverless-transit-network-orchestrator/issues/new?assignees=&labels=feature-request%2C+enhancement&template=feature_request.md&title=)| [🐛Bug Report](https://github.com/aws-solutions/serverless-transit-network-orchestrator/issues/new?assignees=&labels=bug%2C+triage&template=bug_report.md&title=)
-| [📜Documentation Improvement](https://github.com/aws-solutions/serverless-transit-network-orchestrator/issues/new?assignees=&labels=document-update&template=documentation_improvements.md&title=)
+| [🚧Feature request](https://github.com/aws-solutions/network-orchestration-for-aws-transit-gateway/issues/new?assignees=&labels=feature-request%2C+enhancement&template=feature_request.md&title=)| [🐛Bug Report](https://github.com/aws-solutions/network-orchestration-for-aws-transit-gateway/issues/new?assignees=&labels=bug%2C+triage&template=bug_report.md&title=)
+| [📜Documentation Improvement](https://github.com/aws-solutions/network-orchestration-for-aws-transit-gateway/issues/new?assignees=&labels=document-update&template=documentation_improvements.md&title=)
 
 
 _Note: For relevant information outside the scope of this readme, refer to the [solution landing page](https://aws.amazon.com/solutions/implementations/network-orchestration-aws-transit-gateway) and
@@ -49,9 +49,9 @@ The solution follows hub-spoke deployment model and uses given workflow:
 
 ## Installing pre-packaged solution template
 
-- Deploy in the account you want to act as the hub: [network-orchestration-hub.template](https://solutions-reference.s3.amazonaws.com/serverless-transit-network-orchestrator/latest/network-orchestration-hub.template)
-- Deploy in spoke accounts: [network-orchestration-spoke.template](https://solutions-reference.s3.amazonaws.com/serverless-transit-network-orchestrator/latest/network-orchestration-spoke.template)
-- Deploy in AWS Organizations management account: [network-orchestration-organization-role.template](https://solutions-reference.s3.amazonaws.com/serverless-transit-network-orchestrator/latest/network-orchestration-organization-role.template)
+- Deploy in the account you want to act as the hub: [network-orchestration-hub.template](https://solutions-reference.s3.amazonaws.com/network-orchestration-for-aws-transit-gateway/latest/network-orchestration-hub.template)
+- Deploy in spoke accounts: [network-orchestration-spoke.template](https://solutions-reference.s3.amazonaws.com/network-orchestration-for-aws-transit-gateway/latest/network-orchestration-spoke.template)
+- Deploy in AWS Organizations management account: [network-orchestration-organization-role.template](https://solutions-reference.s3.amazonaws.com/network-orchestration-for-aws-transit-gateway/latest/network-orchestration-organization-role.template)
 
 _Note: All templates need to be deployed in the same preferred Region._
 
@@ -182,7 +182,7 @@ See license [here](./LICENSE.txt).
 
 ## Anonymized data collection
 
-This solution includes an option to send anonymized operational metrics to AWS. We use this data to better understand how customers use this solution and related services and products. For more information, including how to disable this capability, please see the [implementation guide](https://docs.aws.amazon.com/solutions/latest/serverless-transit-network-orchestrator/anonymized-data-collection.html).
+This solution includes an option to send anonymized operational metrics to AWS. We use this data to better understand how customers use this solution and related services and products. For more information, including how to disable this capability, please see the [implementation guide](https://docs.aws.amazon.com/solutions/latest/network-orchestration-aws-transit-gateway/anonymized-data-collection.html).
 
 ---
 

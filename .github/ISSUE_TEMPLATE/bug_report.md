@@ -28,7 +28,7 @@ To get the version of the solution, you can look at the description of the creat
 - [ ] Was the solution modified from the version published on this repository?
 - [ ] If the answer to the previous question was yes, are the changes available on GitHub?
 - [ ] Have you checked your [service quotas](https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html) for the sevices this solution uses?
-- [ ] Were there any errors in the CloudWatch Logs? [How to enable debug mode?](https://docs.aws.amazon.com/solutions/latest/serverless-transit-network-orchestrator/troubleshooting.html)
+- [ ] Were there any errors in the CloudWatch Logs? [How to enable debug mode?](https://docs.aws.amazon.com/solutions/latest/network-orchestration-aws-transit-gateway/troubleshooting.html)
 
 **Screenshots**
 If applicable, add screenshots to help explain your problem (please **DO NOT include sensitive information**).
