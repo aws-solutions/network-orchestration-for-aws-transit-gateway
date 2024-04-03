@@ -1,12 +1,15 @@
 {
     "name": "manifest-generator",
-    "version": "0.0.0",
+    "version": "3.3.4",
+    "license": "Apache-2.0",
+    "author": {
+        "name": "Amazon Web Services",
+        "url": "https://aws.amazon.com/solutions",
+        "organization": true
+    },
     "private": true,
     "description": "Helper utility to create web site manifest for deployment",
     "main": "app.js",
-    "author": {
-        "name": "aws-solutions-builder"
-    },
     "dependencies": {
         "minimist": "*"
     }

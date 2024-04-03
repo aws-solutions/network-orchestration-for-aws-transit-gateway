@@ -1,6 +1,10 @@
-Network Orchestration for AWS Transit Gateway
-
+network-orchestration-for-aws-transit-gateway
 Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+Licensed under the Apache License Version 2.0 (the "License"). You may not use this file except
+in compliance with the License. A copy of the License is located at http://www.apache.org/licenses/
+or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or implied. See the License for the
+specific language governing permissions and limitations under the License.
 
 **********************
 THIRD PARTY COMPONENTS
@@ -39,7 +43,9 @@ web-vitals under Apache-2.0
 @testing-library/user-event under MIT
 @types/jest under MIT
 mnth under MIT
+webpack-dev-middleware under MIT
 nanoid under MIT
+minimist under MIT
 babel-jest under MIT
 msw under MIT
 renamer under MIT
@@ -98,6 +104,18 @@ isort                                    MIT License
 jmespath                                 MIT License
 jschema-to-python                        MIT License
 jsondiff                                 MIT License
+mypy-boto3-cloudformation                MIT License
+mypy-boto3-dynamodb                      MIT License
+mypy-boto3-ec2                           MIT License
+mypy-boto3-lambda                        MIT License
+mypy-boto3-logs                          MIT License
+mypy-boto3-rds                           MIT License
+mypy-boto3-s3                            MIT License
+mypy-boto3-sns                           MIT License
+mypy-boto3-sqs                           MIT License
+mypy-boto3-stepfunctions                 MIT License
+mypy-boto3-sts                           MIT License
+
 jsonpatch                                BSD License
 jsonpickle                               BSD License
 jsonpointer                              BSD License
