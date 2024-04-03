@@ -1,7 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { createContext, useEffect, useState } from "react";
+import {createContext, useEffect, useMemo, useState} from "react";
 import { Auth } from "@aws-amplify/auth";
 import Amplify, { Hub } from "@aws-amplify/core";
 import {BreadcrumbGroupProps} from "@cloudscape-design/components";
@@ -59,11 +59,14 @@ export const UserContextProvider = ({ children }: { children: React.ReactNode })
         }
     };
 
+    // Wrap the value object in useMemo to memoize it
+    const contextValue = useMemo(() => ({ user, setUser, breadCrumb, setBreadCrumb }), [user, setUser, breadCrumb, setBreadCrumb]);
+
     if (busy) {
         return <div>Loading...</div>
     } else {
         return (
-            <UserContext.Provider value={{ user, setUser, breadCrumb, setBreadCrumb }}>
+            <UserContext.Provider value={contextValue}>
                 {children}
             </UserContext.Provider>
         );

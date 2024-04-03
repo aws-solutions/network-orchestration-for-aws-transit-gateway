@@ -27,7 +27,7 @@ def validate_tag(event: dict):
     """
     logger.debug("validating tgw tag value")
     # pylint:disable=line-too-long
-    tgw_peer_regex = r"^tgw-[0-9a-z]{17}_(us(-gov)?|ap|ca|cn|eu|sa)-(central|[(north|south)?(east|west)?]+)-\d$"
+    tgw_peer_regex = r"^tgw-[0-9a-z]{17}_(us(-gov)?|ap|ca|cn|eu|sa)-(central|north|(north(?:east|west))|south|south(?:east|west)|east|west)-\d+$"
     peers = event["detail"]["tags"][environ.get("TGW_PEERING_TAG")]
     if peers == "":
         raise ValueError("EMPTY_TAG")

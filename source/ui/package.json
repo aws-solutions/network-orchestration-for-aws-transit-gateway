@@ -1,6 +1,13 @@
 {
   "name": "network-orchestrator-for-aws-transit-gateway",
-  "version": "3.3.3",
+  "version": "3.3.4",
+  "description": "Network Orchestration for AWS Transit Gateway(SO0058)",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Amazon Web Services",
+    "url": "https://aws.amazon.com/solutions",
+    "organization": true
+  },
   "private": true,
   "dependencies": {
     "@aws-amplify/auth": "^5.4.0",
@@ -17,7 +24,8 @@
     "react-router-dom": "^6.12.0",
     "react-scripts": "5.0.1",
     "typescript": "^4.9.5",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "webpack-dev-middleware": ">=5.3.4"
   },
   "scripts": {
     "start": "react-scripts start",

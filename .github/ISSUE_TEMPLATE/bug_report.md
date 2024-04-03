@@ -22,7 +22,7 @@ assignees: ""
 
 - [ ] Version: [e.g. v1.0.0]
 
-To get the version of the solution, you can look at the description of the created CloudFormation stack. For example, "_(SO0009) - The AWS CloudFormation template for deployment of the aws-centralized-logging. Version v1.0.0_". You can also find the version from [releases](https://github.com/aws-solutions/aws-centralized-logging/releases)
+To get the version of the solution, you can look at the description of the created CloudFormation stack. For example, "_(SO0058) - The AWS CloudFormation template. Version v1.0.0_".
 
 - [ ] Region: [e.g. us-east-1]
 - [ ] Was the solution modified from the version published on this repository?

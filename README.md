@@ -180,9 +180,9 @@ Network Orchestration for AWS Transit Gateway solution consists of:
 
 See license [here](./LICENSE.txt).
 
-## Anonymized data collection
+## Collection of operational metrics
 
-This solution includes an option to send anonymized operational metrics to AWS. We use this data to better understand how customers use this solution and related services and products. For more information, including how to disable this capability, please see the [implementation guide](https://docs.aws.amazon.com/solutions/latest/network-orchestration-aws-transit-gateway/anonymized-data-collection.html).
+This solution includes an option to send anonymized operational metrics to AWS. We use this data to better understand how customers use this solution and related services and products. For more information, including how to disable this capability, please see the [implementation guide](https://docs.aws.amazon.com/solutions/latest/network-orchestration-aws-transit-gateway/reference.html).
 
 ---
 
