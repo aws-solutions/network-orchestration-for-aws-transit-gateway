@@ -453,8 +453,9 @@ def test_tgw_route_approval_required_tag_conditional_with_rule_not_in_ou__rule_m
     create_propagation_rule_tag(vpc_setup_with_explicit_route_table, 'default', 'Reject')
     create_association_rule_tag(vpc_setup_with_explicit_route_table, '01', 'Accept')
     create_propagation_rule_tag(vpc_setup_with_explicit_route_table, '01', 'Accept')
+    gateway_route_table = vpc_setup_with_explicit_route_table['transit_gateway_route_table']
     EC2().create_tags(
-        vpc_setup_with_explicit_route_table['transit_gateway_route_table'],
+        gateway_route_table,
         "ApprovalRule-01-NotInOUs",
         'Root/core'
     )
@@ -473,6 +474,9 @@ def test_tgw_route_approval_required_tag_conditional_with_rule_not_in_ou__rule_m
     assert response['ExistingAssociationRouteTableId'] == 'none'
     assert response['ApprovalRequired'] == 'no'
     assert response['Status'] == 'auto-approved'
+    assert response['AssociationRouteTableId'] == gateway_route_table
+    assert len(response['PropagationRouteTableIds']) == 1
+    assert response['PropagationRouteTableIds'][0] == gateway_route_table
 
 
 @mock_sts

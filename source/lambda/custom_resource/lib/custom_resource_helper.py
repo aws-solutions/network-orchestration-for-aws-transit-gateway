@@ -8,10 +8,10 @@ import os
 import threading
 import time
 from os import environ, path
+from urllib import request, error
 from uuid import uuid4
 
 import boto3
-import requests
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from aws_lambda_typing import events
@@ -319,15 +319,21 @@ def send(
 
     json_response_body = json.dumps(response_body)
     headers = {
-        "content-type": "",
-        "content-length": str(len(json_response_body)),
+        "Content-Type": "application/json",
+        "Content-Length": str(len(json_response_body)),
     }
 
+    req = request.Request(response_url, data=json_response_body.encode('utf-8'), headers=headers, method='PUT')
+
     try:
-        response = requests.put(
-            response_url, data=json_response_body, headers=headers
-        )
-        logger.info("CloudFormation returned status code: %s", response.reason)
-    except Exception as err:
-        logger.error("send(..) failed executing requests.put(..): %s", str(err))
+        with request.urlopen(req) as response:
+            # Log the status code and reason
+            logger.info("CloudFormation returned status code: %s", response.reason)
+    except error.HTTPError as e:
+        # Handle HTTP errors
+        logger.error("send(..) failed sending PUT request: %s", str(e))
+        raise
+    except error.URLError as e:
+        # Handle URL errors (e.g., connectivity issues, invalid URL)
+        logger.error("send(..) failed sending PUT request: %s", str(e.reason))
         raise

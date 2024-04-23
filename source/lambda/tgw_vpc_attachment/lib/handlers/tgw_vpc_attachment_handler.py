@@ -3,9 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+from collections import Counter
 from os import environ
 from secrets import choice
 from time import sleep
+from typing import Tuple, List
 
 from aws_lambda_powertools import Logger
 from mypy_boto3_ec2.literals import TransitGatewayAttachmentStateType, TransitGatewayAssociationStateType
@@ -24,10 +26,31 @@ from tgw_vpc_attachment.lib.utils.helper import timestamp_message
 TGW_VPC_ERROR = "The TGW-VPC Attachment is not in 'available' state."
 
 
+def throw_exception_if_duplicate_names(tgw_route_tables: List[
+    TransitGatewayRouteTableTypeDef
+]):
+    # Extract the 'Name' tag values from all route tables
+    route_table_names = [
+        next((tag['Value'] for tag in tgw['Tags'] if tag['Key'].strip().lower() == 'name'),
+             # use tgw id instead of name if there's no name tag. tgw id is unique in terms of duplicate detection.
+             tgw['TransitGatewayRouteTableId'])
+        for tgw in tgw_route_tables
+    ]
+
+    # Use collections.Counter to find duplicates
+    name_counts = Counter(route_table_names)
+    duplicates = [name for name, count in name_counts.items() if count > 1]
+
+    # If duplicates are found, raise an exception
+    if duplicates:
+        raise ValueError(
+            f"Invalid TGW route table setup. Multiple route tables are tagged with the name {', '.join(duplicates)}, which prevents deterministic TGW association. Please tag each route table with a unique name.")
+
+
 class TransitGatewayVPCAttachments:
 
     def __init__(self, event: TgwVpcAttachmentModel):
-        self.event = event
+        self.event = event  # careful, is being mutated and used as output parameter by methods
         self.logger = Logger(level=os.getenv('LOG_LEVEL'), service=self.__class__.__name__)
         self.spoke_region = self.event.get("region")
         self.sts = STS()
@@ -245,25 +268,31 @@ class TransitGatewayVPCAttachments:
             "Transit Gateway Routing Table/Domain",
         )
 
+    # the function is called by a step function workflow triggered by a tag change.
+    # the VPC has an associate-with tag with tgw route table name
+    # and a propagate-to tag with multiple tgw route table names.
+    # this function maps the route table names to route table ids and updates the event.
+    # (careful, self.event is used as output parameter for functions that seem to return nothing.)
     def describe_transit_gateway_route_tables(self):
 
         # describe tgw route tables for the provided TGW ID
+        tgw_id = environ.get("TGW_ID")
         tgw_route_tables: list[
-            TransitGatewayRouteTableTypeDef] = self.hub_ec2_client.describe_transit_gateway_route_tables(
-            environ.get("TGW_ID")
-        )
+            TransitGatewayRouteTableTypeDef
+        ] = self.hub_ec2_client.describe_transit_gateway_route_tables(tgw_id)
 
-        # returns a tuple (string, list)
-        association_route_table_name, propagation_route_table_names = self._get_tgw_route_table_names_in_tags()
+        throw_exception_if_duplicate_names(tgw_route_tables)
+
+        association_route_table_name, propagation_route_table_names = self._get_route_table_names_in_tags()
         self.logger.info(
             f"Table Names for the Association: {association_route_table_name} | Propagation:"
             f" {propagation_route_table_names}")
 
-        # extract route table ids
-        rtb_list = self._get_route_table_ids_for_given_route_table_names(
+        # map route table names route table ids; throws exception if a name doesn't match a route table on the TGW
+        route_table_ids: List[str] = self._get_route_table_ids_for_given_route_table_names(
             association_route_table_name, propagation_route_table_names, tgw_route_tables
         )
-        self.event.update({"RouteTableList": rtb_list})
+        self.event.update({"RouteTableList": route_table_ids})
 
         # find existing TGW route table association to support update action
         # needed for 'Association changed?' choice
@@ -282,33 +311,42 @@ class TransitGatewayVPCAttachments:
 
         return self.event
 
-    def _get_tgw_route_table_names_in_tags(self):
+    # looks at the tags in the input event and extracts the values of the association tag and propagation tag
+    def _get_route_table_names_in_tags(self) -> Tuple[str | None, List]:
+        association_tag = environ.get("ASSOCIATION_TAG").lower().strip()
+        propagation_tag = environ.get("PROPAGATION_TAG").lower().strip()
 
         # look for defined tag keys in the event
-        association_route_table_name_in_tags, propagation_route_table_names_in_tags = None, None
-        for key, value in self.event.items():
-            self.logger.debug(f"KEY: {key}, "
+        association_route_table_name_in_tags = None
+        propagation_route_table_names_in_tags = []
+        for k, value in self.event.items():  # value is a str or a List[str], depending on the case
+            self.logger.debug(f"KEY: {k}, "
                               f"VALUE: {value}")
-            if (
-                    key.lower().strip() == environ.get("ASSOCIATION_TAG").lower().strip()
-            ):
+            key = k.lower().strip()
+            if key == association_tag:
                 self.logger.debug(
-                    f"Key matched {environ.get('ASSOCIATION_TAG').lower().strip()}:")
-                self.logger.debug(f"{key} : {value}")
+                    f"Key matched {association_tag}:")
+                self.logger.debug(f"{k} : {value}")
                 association_route_table_name_in_tags = value.lower().strip()
-            elif (
-                    key.lower().strip() == environ.get("PROPAGATION_TAG").lower().strip()
-            ):
+            elif key == propagation_tag:
                 self.logger.debug(
-                    f"Key matched {environ.get('PROPAGATION_TAG').lower().strip()}:")
-                self.logger.debug(f"{key}: {value}")
+                    f"Key matched {propagation_tag}:")
+                self.logger.debug(f"{k}: {value}")
                 propagation_route_table_names_in_tags = [x.lower().strip() for x in value]
         return association_route_table_name_in_tags, propagation_route_table_names_in_tags
 
+    # this function maps the list of tgw_route_tables to a list of ids,
+    # and validates the route table names in the given tags against the existing route tables on the TGW.
+    # it also updates self.event as a side effect.
+    # TODO split function to separate concerns
     def _get_route_table_ids_for_given_route_table_names(
-            self, association_route_table_name, propagation_route_table_names, tgw_route_tables) -> list:
-        propagate_to_table_ids, rtb_list = [], []
-        # Keep track of whether the given route table was found:
+            self,
+            association_route_table_name: str | None,  # from tags
+            propagation_route_table_names: List[str],  # from tags
+            tgw_route_tables: list[TransitGatewayRouteTableTypeDef]
+    ) -> List[str]:
+        propagate_to_table_ids, tgw_route_table_ids = [], []
+        # Keep track of whether the route table name in the associate-with tag exists on a TGW route table:
         association_table_not_found = True
         # Propagation is harder to keep track of as it's a list, any of which could be missing
         # So keep the propagate_to route table names in the list, and remove them as they are found:
@@ -325,35 +363,42 @@ class TransitGatewayVPCAttachments:
             association_table_not_found = False
 
         for tgw_route_table in tgw_route_tables:
-            # make a list of Route Tables
-            rtb_list.append(tgw_route_table.get("TransitGatewayRouteTableId"))
+            # make a list of Route Table ids
+            tgw_route_table_ids.append(tgw_route_table.get("TransitGatewayRouteTableId"))
             association_table_not_found, propagation_tables_that_are_not_found = self.check_tags_for_tgw_route_table(
                 association_route_table_name,
-                association_table_not_found,
-                propagate_to_table_ids,
+                association_table_not_found,  # careful, used as output parameter
+                propagate_to_table_ids,  # careful, used as output parameter
                 propagation_route_table_names,
-                propagation_tables_that_are_not_found,
-                tgw_route_table)
+                propagation_tables_that_are_not_found,  # careful, used as output parameter
+                tgw_route_table
+            )
 
-        self.check_route_table_status(association_route_table_name, association_table_not_found,
-                                      propagation_tables_that_are_not_found)
+        # throw exception if 'associate-with' tag or 'propagate-to' tag contains a name that doesn't match any route table name of the TGW
+        self.throw_if_not_found(association_route_table_name, association_table_not_found,
+                                propagation_tables_that_are_not_found)
         self.event.update(
             {"PropagationRouteTableIds": propagate_to_table_ids}
         )
-        self.logger.debug(f"TGW Route Tables: {rtb_list}")
-        return rtb_list
+        self.logger.debug(f"TGW Route Tables: {tgw_route_table_ids}")
+        return tgw_route_table_ids
 
-    def check_tags_for_tgw_route_table(self, association_route_table_name, association_table_not_found,
-                                       propagate_to_table_ids, propagation_route_table_names,
-                                       propagation_tables_that_are_not_found, tgw_route_table):
+    def check_tags_for_tgw_route_table(
+            self,
+            association_route_table_name: str | None,
+            association_table_not_found: bool,  # careful, used as output parameter
+            propagate_to_table_ids: List[str],  # careful, used as output parameter
+            propagation_route_table_names: List[str],
+            propagation_tables_that_are_not_found: List[str],  # careful, used as output parameter
+            tgw_route_table: TransitGatewayRouteTableTypeDef
+    ):
         # iterate through tags for each route table
         for tag in tgw_route_table.get("Tags"):
-            name_key = "Name"
             # if tag key is 'Name' then match the value with extracted name from the event
-            if tag.get("Key").lower().strip() == name_key.lower().strip():
-                tag_name_value = tag.get("Value").lower().strip()
-                if association_route_table_name and tag_name_value == association_route_table_name:
-                    # extract route table id for association
+            if tag.get("Key").lower().strip() == "name":
+                route_table_name = tag.get("Value").lower().strip()
+                if route_table_name == association_route_table_name:
+                    # update event with route table id for association
                     association_table_not_found = False
                     self.logger.debug(f"Association RTB Name found: {tag.get('Value')}")
                     self.event.update(
@@ -363,9 +408,9 @@ class TransitGatewayVPCAttachments:
                             )
                         }
                     )
-                if propagation_route_table_names and tag_name_value in propagation_route_table_names:
+                if route_table_name in propagation_route_table_names:
                     # extract route table id for propagation
-                    propagation_tables_that_are_not_found.remove(tag_name_value)
+                    propagation_tables_that_are_not_found.remove(route_table_name)
                     self.logger.info(
                         f"Propagation RTB Name Found: {tag.get('Value')}")
                     propagate_to_table_ids.append(
@@ -374,7 +419,7 @@ class TransitGatewayVPCAttachments:
         return association_table_not_found, propagation_tables_that_are_not_found
 
     @staticmethod
-    def check_route_table_status(
+    def throw_if_not_found(
             association_route_table_name, association_table_not_found,
             propagation_tables_that_are_not_found):
         if association_table_not_found:
