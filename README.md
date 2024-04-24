@@ -182,7 +182,9 @@ See license [here](./LICENSE.txt).
 
 ## Collection of operational metrics
 
-This solution includes an option to send anonymized operational metrics to AWS. We use this data to better understand how customers use this solution and related services and products. For more information, including how to disable this capability, please see the [implementation guide](https://docs.aws.amazon.com/solutions/latest/network-orchestration-aws-transit-gateway/reference.html).
+This solution collects anonymous operational metrics to help AWS improve the quality and features of the solution. For
+more information, including how to disable this capability, please see
+the [implementation guide](https://docs.aws.amazon.com/solutions/latest/network-orchestration-aws-transit-gateway/reference.html).
 
 ---
 

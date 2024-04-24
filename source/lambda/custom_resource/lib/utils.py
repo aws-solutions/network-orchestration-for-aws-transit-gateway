@@ -7,9 +7,9 @@ import json
 import os
 import re
 from datetime import datetime
+from urllib import request, error
 
 import botocore
-import requests
 
 
 def sanitize(name, space_allowed=False, replace_with_character="_"):
@@ -61,10 +61,23 @@ def send_metrics(
     params = {"Solution": solution_id, "UUID": uuid, "Data": data}
     metrics = dict(time_stamp, **params)
     json_data = json.dumps(metrics)
-    headers = {"content-type": "application/json"}
-    req = requests.post(url, data=json_data, headers=headers)
-    code = req.status_code
-    return code
+    headers = {"Content-Type": "application/json"}
+
+    # Prepare the data and headers for the POST request
+    data = json_data.encode('utf-8')  # Encode the data to bytes
+    req = request.Request(url, data=data, headers=headers, method='POST')
+
+    # Execute the request and handle the response
+    try:
+        with request.urlopen(req) as response:
+            code = response.getcode()  # Get the response code
+            return code
+    except error.HTTPError as e:
+        # If an HTTP error occurs, return the HTTP error code
+        return e.code
+    except error.URLError as e:
+        # Handle other URL errors and re-raise them
+        raise ConnectionError(f"Error during POST request: {e.reason}")
 
 
 boto3_config = botocore.config.Config(

@@ -352,7 +352,7 @@ class TestClassSendCfnResponse:
 
         # success
         m1 = mocker.patch(
-            "requests.put",
+            "urllib.request.urlopen",
         )
         send(
             event=CFN_REQUEST_EVENT,

@@ -4,10 +4,11 @@
 
 import json
 import os
+import ssl
 from datetime import datetime
 from decimal import Decimal
+from urllib import request, error
 
-import requests
 from aws_lambda_powertools import Logger
 
 
@@ -37,8 +38,18 @@ class Metrics(object):
                 metrics = dict(time_stamp, **params)
                 json_data = json.dumps(metrics, cls=DecimalEncoder)
                 headers = {'content-type': 'application/json'}
-                r = requests.post(url, data=json_data, headers=headers)
-                code = r.status_code
-                return code
+                context = ssl.create_default_context()
+                req = request.Request(url, data=json_data.encode('utf-8'), headers=headers, method='POST')
+
+                try:
+                    with request.urlopen(req, context=context) as response:
+                        response_code = response.getcode()  # Get the response code
+                        return response_code
+                except error.HTTPError as e:
+                    # Handle HTTP errors
+                    return e.code
+                except error.URLError as e:
+                    # Handle URL errors (e.g., connectivity issues, invalid URL)
+                    return str(e.reason)
         except Exception as err:
             self.logger.error(str(err))
