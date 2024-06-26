@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.6] - 2024-06-25
+
+### Changed
+
+- Bumped jest to `29.7.0`
+- Bumped ts-jest to `29.1.4`
+- Bumped boto3 to `1.34.129`
+- Bumped botocore to `1.34.129`
+
+### Security
+
+- Bumped ejs to `3.1.10` to mitigate [CVE-2024-33883](https://avd.aquasec.com/nvd/cve-2024-33883)
+- Bumped `ws` to resolve [CVE-2024-37890]
+
 ## [3.3.5] - 2024-04
 
 ### Added

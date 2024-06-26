@@ -163,7 +163,6 @@ tomli                                    MIT License
 types-awscrt                             MIT License
 types-s3transfer                         MIT License
 typing_extensions                        Python Software Foundation License
-urllib3                                  MIT License
 websocket-client                         Apache Software License
 wrapt                                    BSD License
 xmltodict                                MIT License
