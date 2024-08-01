@@ -1,6 +1,6 @@
 {
   "name": "cognito-trigger",
-  "version": "3.3.6",
+  "version": "3.3.7",
   "description": "Triggered when a new user is confirmed in the user pool to allow for custom actions to be taken",
   "author": {
     "name": "Amazon Web Services",
@@ -31,5 +31,8 @@
     "build:all": "npm run build:clean && npm run build:install && npm run build:ts && npm prune --production && npm run build:copy && npm run build:zip",
     "test": "jest --coverage  --watchAll=false"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "overrides": {
+    "fast-xml-parser": "4.4.1"
+  }
 }
