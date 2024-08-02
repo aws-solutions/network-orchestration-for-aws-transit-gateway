@@ -632,9 +632,12 @@ class TransitGatewayVPCAttachments:
             # if the return list is empty the API to enable tgw rt propagation will be skipped.
             for tgw_route_table_id in propagation_route_tables:
                 self.logger.info(f"Enabling RT: {tgw_route_table_id} Propagation To Tgw Attachment")
-                self.hub_ec2_client.enable_transit_gateway_route_table_propagation(
+                response = self.hub_ec2_client.enable_transit_gateway_route_table_propagation(
                     tgw_route_table_id,
                     self.event.get("TransitGatewayAttachmentId"))
+
+                if response.get("Error") == "IncorrectState":
+                    raise ResourceBusyException
 
                 self._create_tag(
                     self.event.get("VpcId"),
