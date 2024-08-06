@@ -79,6 +79,40 @@ def test_disassociate_transit_gateway_route_table(vpc_setup_with_explicit_route_
 
 
 @mock_sts
+@patch('tgw_vpc_attachment.lib.clients.ec2.EC2.get_transit_gateway_route_table_associations')
+def test_get_association_state(mock_get_tgw_rtb_associations, vpc_setup_with_explicit_route_table):
+    tgw_attachments = TransitGatewayVPCAttachments(vpc_setup_with_explicit_route_table)
+
+    # disassociated state, returns empty list
+    mock_get_tgw_rtb_associations.return_value = []
+    assert tgw_attachments._get_association_state('myTable') == 'disassociated'
+
+    # state transition from associating -> associated
+    mock_get_tgw_rtb_associations.side_effect = [[{'State': 'associating'}], [{'State': 'associated'}]]
+    os.environ["WAIT_TIME"] = '1'
+    assert tgw_attachments._get_association_state('myTable') == 'associated'
+
+
+@mock_sts
+@patch('tgw_vpc_attachment.lib.clients.ec2.EC2.get_transit_gateway_route_table_associations')
+def test_get_association_state_raises_exception(mock_get_tgw_rtb_associations, vpc_setup_with_explicit_route_table):
+    tgw_attachments = TransitGatewayVPCAttachments(vpc_setup_with_explicit_route_table)
+
+    # first incorrect state, then stuck in associating. 3 return values to match call count.
+    mock_get_tgw_rtb_associations.side_effect = [
+        {'Error': 'IncorrectState'},
+        [{'State': 'associating'}],
+        [{'State': 'associating'}]
+    ]
+    os.environ["WAIT_TIME"] = '1'
+    os.environ["MAX_RETRY"] = '3'
+
+    with pytest.raises(ResourceBusyException):
+        tgw_attachments._get_association_state('myTable')
+
+    assert mock_get_tgw_rtb_associations.call_count == int(os.environ["MAX_RETRY"])
+
+@mock_sts
 def test_get_transit_gateway_attachment_propagations(vpc_setup_with_explicit_route_table):
     # ARRANGE
     override_environment_variables()

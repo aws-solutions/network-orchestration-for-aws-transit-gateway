@@ -545,14 +545,11 @@ class TransitGatewayVPCAttachments:
             )
             self.event.update({"Action": "AssociateTgwRouteTable"})
             transit_gateway_attachment_id = self.event.get("TransitGatewayAttachmentId")
-            response = self.hub_ec2_client.associate_transit_gateway_route_table(
+            self.hub_ec2_client.associate_transit_gateway_route_table(
                 association_route_table_id,
                 transit_gateway_attachment_id,
             )
-            state = self._get_association_state(
-                association_route_table_id,
-                response.get("Association").get("State"),
-            )
+            state = self._get_association_state(association_route_table_id)
             self.event.update({"AssociationState": state})
             self._create_tag(
                 self.event.get("VpcId"),
@@ -570,14 +567,11 @@ class TransitGatewayVPCAttachments:
             existing_association_route_table = self.event.get("ExistingAssociationRouteTableId")
             self.logger.info(f"Disassociating TGW Route Table Id: {existing_association_route_table}")
             self.event.update({"Action": "DisassociateTgwRouteTable"})
-            response = self.hub_ec2_client.disassociate_transit_gateway_route_table(
+            self.hub_ec2_client.disassociate_transit_gateway_route_table(
                 existing_association_route_table,
                 self.event.get("TransitGatewayAttachmentId"),
             )
-            state = self._get_association_state(
-                existing_association_route_table,
-                response.get("Association").get("State"),
-            )
+            state = self._get_association_state(existing_association_route_table)
             self.event.update({"DisassociationState": state})
             self._create_tag(
                 self.event.get("VpcId"),
@@ -588,28 +582,37 @@ class TransitGatewayVPCAttachments:
             self.logger.info(TGW_VPC_ERROR)
         return self.event
 
-    def _get_association_state(self, rtb, state: TransitGatewayAssociationStateType):
-        association_in_transient_state = False
-        if state != "associated" or state != "disassociated":
-            association_in_transient_state = True
+    def _get_association_state(self, rtb):
+        max_retries = int(environ.get("MAX_RETRY", 5))  # Default to 5 retries
+        retry = 0
+        vpc_id = self.event.get("VpcId")
+        tgw_attachment_id = self.event.get("TransitGatewayAttachmentId")
+        wait_time = int(environ.get("WAIT_TIME", 5))  # Default to 5 seconds if not set
 
-        while association_in_transient_state:
-            vpc_id = self.event.get("VpcId")
-            tgw_attachment_id = self.event.get("TransitGatewayAttachmentId")
+        while retry < max_retries:
             response = self.hub_ec2_client.get_transit_gateway_route_table_associations(
                 rtb,
                 tgw_attachment_id,
                 vpc_id,
             )
+
+            if isinstance(response, dict) and response.get("Error") == "IncorrectState":
+                retry += 1
+                continue
+
             # once the TGW RT is disassociated the returned response is empty list
             state = "disassociated"
             if response:
                 state = response[0].get("State")
             self.logger.info(f"Association Status: {state}")
             if state == "associated" or state == "disassociated":
-                association_in_transient_state = False
-            sleep(int(environ.get("WAIT_TIME")))
-        return state
+                return state
+            retry += 1
+            sleep(wait_time)
+
+        self.logger.error("Maximum retries reached, unable to determine association state.")
+        raise ResourceBusyException
+
 
     @service_exception_handler
     def enable_transit_gateway_route_table_propagation(self):
