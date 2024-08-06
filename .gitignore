@@ -16,7 +16,7 @@ reports
 *.pyc
 .eggs
 *.egg-info
-.venv
+.venv*
 .cache
 .pytest_cache
 .mypy_cache
