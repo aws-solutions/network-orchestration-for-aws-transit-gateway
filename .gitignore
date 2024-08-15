@@ -16,7 +16,7 @@ reports
 *.pyc
 .eggs
 *.egg-info
-.venv
+.venv*
 .cache
 .pytest_cache
 .mypy_cache
@@ -30,5 +30,4 @@ node_modules
 .DS_Store
 .idea/
 *sonarlint*
-docs
 test.sh

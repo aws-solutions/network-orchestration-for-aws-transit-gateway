@@ -16,7 +16,6 @@ def resource_exception_handler(func):
             response = func(self, *args, **kwargs)
         except ClientError as err:
             exception_codes = [
-                'IncorrectState',
                 'InsufficientSubnetsException',
                 'OptInRequired',
                 'DuplicateSubnetsInSameZone'
