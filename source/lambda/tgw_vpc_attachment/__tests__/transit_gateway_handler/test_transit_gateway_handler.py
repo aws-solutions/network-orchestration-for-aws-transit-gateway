@@ -2,12 +2,16 @@ import os
 
 import pytest
 from aws_lambda_powertools.utilities.typing import LambdaContext
-from moto import mock_sts
+from moto import mock_sts, mock_ec2
 from mypy_boto3_ec2 import EC2Client
 
 from tgw_vpc_attachment.__tests__.conftest import override_environment_variables
 from tgw_vpc_attachment.lib.clients.ec2 import EC2
+from tgw_vpc_attachment.lib.exceptions import ResourceBusyException
 from tgw_vpc_attachment.main import lambda_handler
+from tgw_vpc_attachment.lib.handlers.tgw_vpc_attachment_handler import TransitGatewayVPCAttachments
+
+from unittest.mock import patch
 
 
 @mock_sts
@@ -75,6 +79,33 @@ def test_disassociate_transit_gateway_route_table(vpc_setup_with_explicit_route_
 
 
 @mock_sts
+@patch('tgw_vpc_attachment.lib.clients.ec2.EC2.get_transit_gateway_route_table_associations')
+def test_get_association_state(mock_get_tgw_rtb_associations, vpc_setup_with_explicit_route_table):
+    tgw_attachments = TransitGatewayVPCAttachments(vpc_setup_with_explicit_route_table)
+
+    # disassociated state, returns empty list
+    mock_get_tgw_rtb_associations.return_value = []
+    assert tgw_attachments._get_association_state('myTable') == 'disassociated'
+
+    # state transition from associating -> associated
+    mock_get_tgw_rtb_associations.side_effect = [[{'State': 'associating'}], [{'State': 'associated'}]]
+    os.environ["WAIT_TIME"] = '1'
+    assert tgw_attachments._get_association_state('myTable') == 'associated'
+
+
+@mock_sts
+@patch('tgw_vpc_attachment.lib.clients.ec2.EC2.get_transit_gateway_route_table_associations')
+def test_get_association_state_raises_exception(mock_get_tgw_rtb_associations, vpc_setup_with_explicit_route_table):
+    tgw_attachments = TransitGatewayVPCAttachments(vpc_setup_with_explicit_route_table)
+
+    mock_get_tgw_rtb_associations.side_effect = [ResourceBusyException]
+
+    with pytest.raises(ResourceBusyException):
+        tgw_attachments._get_association_state('myTable')
+
+    assert mock_get_tgw_rtb_associations.call_count == 1
+
+@mock_sts
 def test_get_transit_gateway_attachment_propagations(vpc_setup_with_explicit_route_table):
     # ARRANGE
     override_environment_variables()
@@ -136,6 +167,26 @@ def test_enable_transit_gateway_route_table_propagation_skip(vpc_setup_with_expl
 
     # ASSERT
     assert response['AttachmentState'] == 'available'
+
+
+@mock_sts
+@mock_ec2
+@patch('tgw_vpc_attachment.lib.clients.ec2.EC2.enable_transit_gateway_route_table_propagation')
+@patch.object(TransitGatewayVPCAttachments, '_get_propagation_route_tables_to_enable')
+def test_enable_transit_gateway_route_table_propagation_raises_exception(
+        mock_get_propagation_rtb, mock_enable_propagation, vpc_setup_with_explicit_route_table):
+
+    # ARRANGE
+    vpc_setup_with_explicit_route_table['AttachmentState'] = "available"
+    mock_get_propagation_rtb.return_value = ['rtb-0000']
+    mock_enable_propagation.side_effect = [ResourceBusyException]
+
+    # ACT
+    tgw_attachments = TransitGatewayVPCAttachments(vpc_setup_with_explicit_route_table)
+
+    # ASSERT
+    with pytest.raises(ResourceBusyException):
+        tgw_attachments.enable_transit_gateway_route_table_propagation()
 
 
 @mock_sts
