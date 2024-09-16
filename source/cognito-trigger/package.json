@@ -1,6 +1,6 @@
 {
   "name": "cognito-trigger",
-  "version": "3.3.8",
+  "version": "3.3.9",
   "description": "Triggered when a new user is confirmed in the user pool to allow for custom actions to be taken",
   "author": {
     "name": "Amazon Web Services",

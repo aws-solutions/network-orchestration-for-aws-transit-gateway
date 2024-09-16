@@ -1,6 +1,6 @@
 {
   "name": "network-orchestrator-for-aws-transit-gateway",
-  "version": "3.3.8",
+  "version": "3.3.9",
   "description": "Network Orchestration for AWS Transit Gateway(SO0058)",
   "license": "Apache-2.0",
   "author": {

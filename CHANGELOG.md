@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.9] - 2024-09-16
+
+### Security
+
+- Bumped micromatch to `4.0.8` to mitigate [CVE-2024-4067](https://github.com/advisories/GHSA-952p-6rrq-rcjv)
+- Bumped webpack to `5.94.0` to mitigate [CVE-2024-43788](https://github.com/advisories/GHSA-4vvj-4cpr-p986)
+- Bumped express to `4.21.0` to mitigate CVEs in sub-dependencies
+- Bump path-to-regexp to `6.3.0` to address [CVE-2024-45296](https://github.com/advisories/GHSA-9wv6-86v2-598j)
+
 ## [3.3.8] - 2024-08-15
 
 ### Fixed
