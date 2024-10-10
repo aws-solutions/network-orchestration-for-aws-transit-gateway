@@ -7,6 +7,8 @@ from os import environ
 from unittest.mock import Mock
 
 import pytest
+import boto3
+from moto import mock_iam
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
@@ -17,7 +19,8 @@ from custom_resource.lib.custom_resource_helper import (
     handle_metrics,
     start_state_machine,
     send,
-    get_resource_type_details
+    get_resource_type_details,
+    check_service_linked_role
 )
 
 logger = Logger(os.getenv('LOG_LEVEL'))
@@ -50,6 +53,9 @@ CREATE_PREFIX["ResourceType"] = "Custom::GetPrefixListArns"
 
 CREATE_METRICS = deepcopy(CFN_REQUEST_EVENT)
 CREATE_METRICS["ResourceType"] = "Custom::SendCFNParameters"
+
+CHECK_SERVICE_LINKED_ROLE = deepcopy(CFN_REQUEST_EVENT)
+CHECK_SERVICE_LINKED_ROLE["ResourceType"] = "Custom::CheckServiceLinkedRole"
 
 context = Mock()
 context.get_remaining_time_in_millis = Mock()
@@ -263,6 +269,26 @@ class TestClassMetrics:
         )
         handle_metrics(CREATE_METRICS)
 
+
+@pytest.mark.BDD
+@mock_iam
+class TestClassServiceLinkedRole:
+    """BDD class for testing checking if service linked role already exist"""
+    iam_client = boto3.client("iam")
+    service_linked_role_name = "AWSServiceRoleForVPCTransitGateway"
+
+    def test__true(self):
+        """true"""
+        self.iam_client.create_role(RoleName=self.service_linked_role_name, AssumeRolePolicyDocument="some policy", Path="/my-path/")
+        resp = check_service_linked_role(CHECK_SERVICE_LINKED_ROLE)
+        self.iam_client.delete_role(RoleName=self.service_linked_role_name)
+
+        assert resp["ServiceLinkedRoleExist"] == "True"
+
+    def test__false(self):
+        """false"""
+        resp = check_service_linked_role(CHECK_SERVICE_LINKED_ROLE)
+        assert resp["ServiceLinkedRoleExist"] == "False"
 
 @pytest.mark.TDD
 class TestClassTriggerSM:
