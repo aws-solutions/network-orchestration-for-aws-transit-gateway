@@ -12,6 +12,7 @@ from urllib import request, error
 from uuid import uuid4
 
 import boto3
+from botocore.exceptions import ClientError
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from aws_lambda_typing import events
@@ -83,8 +84,6 @@ def get_tag_state(event):
         return "-deleted-"
 
 
-
-
 def timeout(event: events.CloudFormationCustomResourceEvent, context: LambdaContext):
     """_summary_
 
@@ -145,6 +144,9 @@ def cfn_handler(event: events.CloudFormationCustomResourceEvent, context: Lambda
 
         if event["ResourceType"] == "Custom::SendCFNParameters":
             handle_metrics(event)
+
+        if event["ResourceType"] == "Custom::CheckServiceLinkedRole":
+            response_data = check_service_linked_role(event)
 
         logger.info("Completed successfully, sending response to cfn")
     except Exception as err:
@@ -282,6 +284,36 @@ def handle_metrics(event: events.CloudFormationCustomResourceEvent):
             logger.info("Metrics sent with response code: %s", resp)
         except Exception as err:
             logger.warning(str(err))
+
+
+def check_service_linked_role(event: events.CloudFormationCustomResourceEvent):
+    """Handles checking if service linked role exist
+
+    Args:
+        event (dict): event from CloudFormation on create, update or delete
+
+    Returns:
+        dict: service linked role status
+
+        {
+            ServiceLinkedRoleExist: boolean
+        }
+    """
+    response = {}
+    iam_client = boto3.client("iam")
+    if event["RequestType"] == "Create" or event["RequestType"] == "Update":
+        try:
+            service_linked_role = iam_client.get_role(RoleName='AWSServiceRoleForVPCTransitGateway')
+            logger.info(service_linked_role)
+            response = {"ServiceLinkedRoleExist": "True"}
+        except ClientError as e:
+            logger.exception('%s', e)
+            if e.response['Error']['Code'] == 'NoSuchEntity':
+                response = {"ServiceLinkedRoleExist": "False"}
+            else:
+                raise e
+    logger.debug(response)
+    return response
 
 
 def send(

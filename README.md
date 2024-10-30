@@ -68,7 +68,7 @@ Use the following steps if you want to customize the solution or extend the solu
 Clone the repository and make desired code changes.
 
 ```
-git clone aws-solutions/network-orchestration-for-aws-transit-gateway
+git clone https://github.com/aws-solutions/network-orchestration-for-aws-transit-gateway.git
 ```
 
 _Note: The following steps have been tested under the preceding pre-requisites._

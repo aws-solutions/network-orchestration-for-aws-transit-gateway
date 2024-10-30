@@ -17,9 +17,9 @@
 [ "$DEBUG" == 'true' ] && set -x
 set -e
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
     echo "Please provide the base source bucket name, trademark approved solution name and version where the lambda code will eventually reside."
-    echo "For example: ./build-s3-dist.sh solutions trademarked-solution-name v1.0.0"
+    echo "For example: ./build-s3-dist.sh solutions trademarked-solution-name v1.0.0 solutions-reference"
     exit 1
 fi
 
@@ -159,4 +159,8 @@ else
     sed -i -e $replace $template_dist_dir/network-orchestration-organization-role.template
     sed -i -e $replace $template_dist_dir/network-orchestration-hub-service-linked-roles.template
     sed -i -e $replace $template_dist_dir/network-orchestration-spoke-service-linked-roles.template
+
+    # Replace template bucket name
+    replace="s/%TEMPLATE_OUTPUT_BUCKET%/$4/g"
+    sed -i -e $replace $template_dist_dir/network-orchestration-spoke.template
 fi
