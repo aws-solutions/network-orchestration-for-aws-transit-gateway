@@ -28,6 +28,15 @@ Mappings:
   EventBridge:
     Bus:
       Name: "Network-Orchestrator-Event-Bus"
+  SourceCode:
+    General:
+      S3Bucket: "%DIST_BUCKET_NAME%"
+      KeyPrefix: "network-orchestration-for-aws-transit-gateway/%VERSION%"
+      Version: "%VERSION%"
+      TemplateBucket: "%TEMPLATE_OUTPUT_BUCKET%"
+  LambdaFunction:
+    Logging:
+      Level: "info"
 
 Conditions:
   # Adding an EventBus as a target within an account is not allowed.
@@ -210,3 +219,77 @@ Resources:
                   - arn:${AWS::Partition}:events:${AWS::Region}:${HubAccount}:event-bus/${EventBusName}
                   - {EventBusName: !FindInMap [EventBridge, Bus, Name]}
 
+  # Lambda to check if the Transit Gateway service linked role already exist
+  ServiceLinkedRoleCheckLambdaFunction:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W92
+            reason: "does not require concurrency reservation"
+          - id: W89
+            reason: "not a valid use-case for vpc"
+          - id: W58
+            reason: "log write permission added to CustomResourceLambdaFunctionRole"
+    Properties:
+      Environment:
+        Variables:
+          LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
+          PARTITION: !Sub ${AWS::Partition}
+      Code:
+        S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], !Ref "AWS::Region"]]
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"custom_resource.zip"]]
+      Description: Network Orchestration for AWS Transit Gateway - custom resource handler
+      Handler: custom_resource.main.lambda_handler
+      MemorySize: 512
+      Role: !Sub ${CustomResourceLambdaFunctionRole.Arn}
+      Runtime: python3.11
+      Timeout: 900
+
+  CustomResourceLambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: STNO-CWLogs-Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+        - PolicyName: STNO-IAM-Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:GetRole
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+
+  CheckServiceLinkedRole:
+    Type: "Custom::CheckServiceLinkedRole"
+    Properties:
+      ServiceToken: !GetAtt ServiceLinkedRoleCheckLambdaFunction.Arn
+
+  ServiceLinkedRoleNestedStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: !Sub
+        - "https://${Bucket}.s3.amazonaws.com/${Prefix}/network-orchestration-spoke-service-linked-roles.template"
+        - Bucket: !FindInMap [ "SourceCode", "General", "TemplateBucket" ]
+          Prefix: !FindInMap [ "SourceCode", "General", "KeyPrefix" ]
+      Parameters:
+        ServiceLinkedRoleExist:
+          !GetAtt CheckServiceLinkedRole.ServiceLinkedRoleExist
