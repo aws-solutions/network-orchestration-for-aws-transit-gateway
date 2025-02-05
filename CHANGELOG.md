@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.13] - 2025-02-06
+
+### Security
+
+- Bumped path-to-regexp to `0.1.12` to mitigate [CVE-2024-52798](https://github.com/advisories/GHSA-rhx6-c78j-4q9w)
+- Bumped nanoid to `3.3.8` to mitigate [CVE-2024-55565](https://github.com/advisories/GHSA-mwcw-c2x4-8c55)
+
 ## [3.3.12] - 2024-11-22
 
 ### Security
