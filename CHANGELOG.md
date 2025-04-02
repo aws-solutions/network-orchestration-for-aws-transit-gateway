@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.15] - 2025-04-05
+
+### Security
+
+- Bump aws-amplify to `5.3.27`
+- Allow only TLS requests on S3 bucket through bucket policy
+- Add CSP security headers on CloudFront
+- Enable MFA for authentication by default
+- Add [AWS Managed WAF rules](https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html) to ACL
+- Disable introspection queries on AppSync endpoint
+
+### Changed
+
+- Disable verbose logging on the AppSync endpoint
+- AppRegistry application tags at resource level
+
+### Fixed
+
+- Remove unused http methods from cache behavior, Cloudfront only needs to process and forward GET/HEAD requests to S3 origin
+- Improve error response for `UpdateTransitNetworkOrchestratorTable` API path
+
 ## [3.3.14] - 2025-03-14
 
 ### Security

@@ -208,9 +208,24 @@ class EC2:
             vpc_id: str,
             subnet_id: str
     ) -> CreateTransitGatewayVpcAttachmentResultTypeDef:
+        tag_specifications = []
+        # get tag key and value from environment variables
+        tgw_attachment_tag_key = os.environ.get('APPLICATION_TAG_KEY')
+        tgw_attachment_tag_value = os.environ.get('APPLICATION_TAG_VALUE')
+        if  tgw_attachment_tag_key is not None and tgw_attachment_tag_value is not None:
+            tag_specifications = [{
+                'ResourceType': 'transit-gateway-attachment', # reference https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_TagSpecification.html
+                'Tags': [
+                    {
+                        'Key': tgw_attachment_tag_key,
+                        'Value': tgw_attachment_tag_value
+                    }
+                ]
+            }]
         response: CreateTransitGatewayVpcAttachmentResultTypeDef = \
             self.ec2_client.create_transit_gateway_vpc_attachment(
-                TransitGatewayId=tgw_id, VpcId=vpc_id, SubnetIds=[subnet_id]
+                TransitGatewayId=tgw_id, VpcId=vpc_id, SubnetIds=[subnet_id],
+                TagSpecifications=tag_specifications # AppRegistry application tags
             )
         self.logger.debug(response)
         return response

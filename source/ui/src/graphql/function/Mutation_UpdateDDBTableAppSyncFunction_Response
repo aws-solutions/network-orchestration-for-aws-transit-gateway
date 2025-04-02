@@ -1,6 +1,11 @@
 ## Raise a GraphQL field error in case of a datasource invocation error
 #if($ctx.error)
-    $util.error($ctx.error.message, $ctx.error.type)
+    $util.log.error($util.toJson($ctx.error))
+    #if($ctx.error.type == "DynamoDB:ConditionalCheckFailedException")
+        $util.error("Invalid input", "BadRequest")
+    #else
+        $util.error("Unknown error encountered, please review logs", "UnknownError")
+    #end
 #end
 ## Pass back the result from DynamoDB. **
 $util.toJson($ctx.result)
