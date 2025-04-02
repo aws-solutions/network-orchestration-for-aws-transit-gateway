@@ -69,7 +69,7 @@ Parameters:
 
   MultiFactorAuthentication:
     Type: String
-    Default: OPTIONAL
+    Default: 'ON'
     AllowedValues:
       - 'ON'
       - OPTIONAL
@@ -423,6 +423,8 @@ Resources:
           Value: !Sub STNO-TGW-${AWS::Region}
         - Key: AWS Solutions
           Value: !Ref 'AWS::StackId'
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   FlatTGWRouteTable:
     Type: AWS::EC2::TransitGatewayRouteTable
@@ -441,6 +443,8 @@ Resources:
         -
           Key: !FindInMap ["SourceCode", "Variables", "ApprovalTagKey"]
           Value: !FindInMap ["SourceCode", "Variables", "ApprovalTagValue"]
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   OnPremTGWRouteTable:
     Type: AWS::EC2::TransitGatewayRouteTable
@@ -459,6 +463,8 @@ Resources:
         -
           Key: !FindInMap ["SourceCode", "Variables", "ApprovalTagKey"]
           Value: !FindInMap ["SourceCode", "Variables", "ApprovalTagValue"]
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   IsolatedTGWRouteTable:
     Type: AWS::EC2::TransitGatewayRouteTable
@@ -474,6 +480,8 @@ Resources:
         -
           Key: !FindInMap ["SourceCode", "Variables", "ApprovalTagKey"]
           Value: !FindInMap ["SourceCode", "Variables", "ApprovalTagValue"]
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   InfrastructureTGWRouteTable:
     Type: AWS::EC2::TransitGatewayRouteTable
@@ -492,6 +500,8 @@ Resources:
         -
           Key: !FindInMap ["SourceCode", "Variables", "ApprovalTagKey"]
           Value: !FindInMap ["SourceCode", "Variables", "ApprovalTagValue"]
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   TGWResourceShare:
     Type: "AWS::RAM::ResourceShare"
@@ -510,6 +520,8 @@ Resources:
       Tags:
         - Key: Network Orchestration for AWS Transit Gateway
           Value: !Ref 'AWS::StackId'
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   ConvertPrefixListIdsToPLArnList:
     Condition: ProvidedPrefixListIds
@@ -530,6 +542,8 @@ Resources:
       Tags:
         - Key: Network Orchestration for AWS Transit Gateway
           Value: !Ref 'AWS::StackId'
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   ApprovalTopic:
     Type: AWS::SNS::Topic
@@ -537,6 +551,9 @@ Resources:
       DisplayName: !FindInMap [NotificationConfiguration ,SNS ,DisplayName]
       TopicName: !FindInMap [NotificationConfiguration ,SNS ,TopicName]
       KmsMasterKeyId: alias/aws/sns
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   NetworkAdminEmailNotification:
     Condition: NotificationCondition
@@ -763,6 +780,9 @@ Resources:
     Type: AWS::Events::EventBus
     Properties:
       Name: !FindInMap [EventBridge, Bus, Name]
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   EventBridgeBusPermission:
     Type: Custom::CWEventPermissions
@@ -801,6 +821,9 @@ Resources:
       Role: !Sub ${CustomResourceLambdaFunctionRole.Arn}
       Runtime: python3.11
       Timeout: 900
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
 
   LambdaPermissionSpokeAccount:
@@ -829,6 +852,10 @@ Resources:
 
   CustomResourceLambdaFunctionRole:
     Type: AWS::IAM::Role
+    Metadata:
+      guard:
+        SuppressedRules:
+          - IAM_NO_INLINE_POLICY_CHECK
     Properties:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -860,6 +887,9 @@ Resources:
                   - events:RemovePermission
                   - events:PutPermission
                 Resource: !Sub ${STNOCustomEventBus.Arn}
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   PolicyIAMEC2:
     Type: AWS::IAM::Policy
@@ -952,6 +982,10 @@ Resources:
 
   DynamoDbTable:
     Type: 'AWS::DynamoDB::Table'
+    Metadata:
+      guard:
+        SuppressedRules:
+          - DYNAMODB_TABLE_ENCRYPTED_KMS
     Properties:
         AttributeDefinitions:
             - AttributeName: SubnetId
@@ -972,6 +1006,9 @@ Resources:
           SSEType: KMS
         PointInTimeRecoverySpecification:
           PointInTimeRecoveryEnabled: true
+        Tags:
+          - Key: !GetAtt Application.ApplicationTagKey
+            Value: !GetAtt Application.ApplicationTagValue
 
   StateMachineLambdaFunction:
     Type: AWS::Lambda::Function
@@ -1014,6 +1051,8 @@ Resources:
           LOG_GROUP_ACTIONS: !Ref CloudWatchLogActions
           USER_AGENT_STRING: AwsSolution/SO0058/%VERSION%
           SOLUTION_UUID: !GetAtt CreateUniqueID.UUID
+          APPLICATION_TAG_KEY: !GetAtt Application.ApplicationTagKey
+          APPLICATION_TAG_VALUE: !GetAtt Application.ApplicationTagValue
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
         S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"tgw_vpc_attachment.zip"]]
@@ -1023,10 +1062,16 @@ Resources:
       Role: !GetAtt 'StateMachineLambdaFunctionRole.Arn'
       Runtime: python3.11
       Timeout: 900
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   StateMachineRole:
     Type: "AWS::IAM::Role"
     Metadata:
+      guard:
+        SuppressedRules:
+          - IAM_NO_INLINE_POLICY_CHECK
       cfn_nag:
         rules_to_suppress:
           - id: W11
@@ -1064,10 +1109,16 @@ Resources:
                   - "logs:DescribeLogGroups"
                 Resource:
                   - "*"
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   StateMachineLambdaFunctionRole:
     Type: AWS::IAM::Role
     Metadata:
+      guard:
+        SuppressedRules:
+          - IAM_NO_INLINE_POLICY_CHECK
       cfn_nag:
         rules_to_suppress:
           - id: W28
@@ -1112,10 +1163,16 @@ Resources:
                       - sts:AssumeRole
                     Resource: !Ref OrganizationManagementAccountRoleArn
                   - !Ref AWS::NoValue
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   OrchestratorStateMachine:
     Type: 'AWS::StepFunctions::StateMachine'
     Properties:
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
       StateMachineName: STNO-StateMachine
       RoleArn: !GetAtt 'StateMachineRole.Arn'
       LoggingConfiguration:
@@ -2017,6 +2074,9 @@ Resources:
   TgwPeeringLambdaFunctionRole:
     Type: AWS::IAM::Role
     Metadata:
+      guard:
+        SuppressedRules:
+          - IAM_NO_INLINE_POLICY_CHECK
       cfn_nag:
         rules_to_suppress:
           - id: W11
@@ -2060,6 +2120,9 @@ Resources:
                 Action:
                   - ec2:DescribeTransitGatewayPeeringAttachments
                 Resource: "*"
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   TgwPeeringLambdaFunction:
     Type: AWS::Lambda::Function
@@ -2093,6 +2156,9 @@ Resources:
       Role: !Sub ${TgwPeeringLambdaFunctionRole.Arn}
       Runtime: python3.11
       Timeout: 900
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   
   ########################################
@@ -2111,6 +2177,8 @@ Resources:
           Value: STNO-Global-Network
         - Key: AWS Serverless Transit Network Orchestrator
           Value: !Ref 'AWS::StackId'
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   GlobalNetworkRegistrationSTNO:
     Type: AWS::NetworkManager::TransitGatewayRegistration
@@ -2136,11 +2204,15 @@ Resources:
         AwsRegion:
           Ref: AWS::Region
         DefaultAction: DENY
+      IntrospectionConfig: DISABLED
       LogConfig:
         CloudWatchLogsRoleArn: !GetAtt AppSyncRole.Arn
-        ExcludeVerboseContent: False
-        FieldLogLevel: NONE
+        ExcludeVerboseContent: True
+        FieldLogLevel: INFO
       XrayEnabled: true
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   STNOGraphQLApiWebACLAssociation:
     Type: AWS::WAFv2::WebACLAssociation
@@ -2321,7 +2393,7 @@ Resources:
                   (${AWS::Region})"
                   EmailMessage:
                     !Sub |
-                        <p>Here are your temporary login credentials for Serverless Transit Network Orchestrator Console: https://${ConsoleCloudFront.DomainName}</p>
+                        <p>Here are your temporary login credentials for Network Orchestration for AWS Transit Gateway Console</p>
                         <p>
                         Region: ${AWS::Region}<br />
                         Username: <strong>{username}</strong><br />
@@ -2426,6 +2498,10 @@ Resources:
   ############################
   FrontEndCognitoTriggerFunctionRole:
     Type: AWS::IAM::Role
+    Metadata:
+      guard:
+        SuppressedRules:
+          - IAM_NO_INLINE_POLICY_CHECK
     Properties:
       AssumeRolePolicyDocument:
         Statement:
@@ -2457,6 +2533,9 @@ Resources:
                   - !Sub arn:${AWS::Partition}:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*
             Version: "2012-10-17"
           PolicyName: AddUserToReadOnlyUserGroupPolicy
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
     Condition: FrontEndCognitoSAMLCondition
 
   FrontEndCognitoTriggerFunction:
@@ -2476,8 +2555,11 @@ Resources:
           SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionId]
           SOLUTION_VERSION: !FindInMap [SourceCode, General, Version]
       Handler: index.handler
-      Runtime: nodejs18.x
+      Runtime: nodejs22.x
       Timeout: 60
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
     DependsOn:
       - FrontEndCognitoTriggerFunctionRole
     Metadata:
@@ -2592,6 +2674,10 @@ Resources:
    ############################
   CognitoAuthRole:
       Type: "AWS::IAM::Role"
+      Metadata:
+        guard:
+          SuppressedRules:
+            - IAM_NO_INLINE_POLICY_CHECK
       Condition: DeployWebUiCondition
       Properties:
           AssumeRolePolicyDocument:
@@ -2621,6 +2707,9 @@ Resources:
                             - "cognito-identity:GetId"
                           Resource:
                             - !Join ["",[!Sub "arn:${AWS::Partition}:cognito-identity:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":identitypool/", !Ref IdentityPool]]
+          Tags:
+            - Key: !GetAtt Application.ApplicationTagKey
+              Value: !GetAtt Application.ApplicationTagValue
 
   IdentityPoolRoleAttachment:
     Type: "AWS::Cognito::IdentityPoolRoleAttachment"
@@ -2640,6 +2729,9 @@ Resources:
                 ClientId: !Ref UserPoolClient
                 ProviderName: !GetAtt STNOUserPool.ProviderName
                 ServerSideTokenCheck: false
+          IdentityPoolTags:
+            - Key: !GetAtt Application.ApplicationTagKey
+              Value: !GetAtt Application.ApplicationTagValue
 
   ##########################
   # Amazon DynamoDB Role #
@@ -2647,6 +2739,10 @@ Resources:
   AppSyncRole:
     Type: AWS::IAM::Role
     Condition: DeployWebUiCondition
+    Metadata:
+      guard:
+        SuppressedRules:
+          - IAM_NO_INLINE_POLICY_CHECK
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -2688,6 +2784,9 @@ Resources:
                 - dynamodb:Scan
                 - dynamodb:Query
                 Resource: !GetAtt DynamoDbTable.Arn
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   ##########################
   # S3 Bucket #
@@ -2712,6 +2811,9 @@ Resources:
               SSEAlgorithm: AES256
       VersioningConfiguration:
         Status: Enabled
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   ConsoleBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
@@ -2763,6 +2865,9 @@ Resources:
         LogFilePrefix: logsbucket_logs/
       VersioningConfiguration:
         Status: Enabled
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   LogsBucketS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -2776,6 +2881,16 @@ Resources:
             Principal: "*"
             Action: s3:DeleteBucket
             Resource: !Sub arn:${AWS::Partition}:s3:::${LogsBucket}
+          - Sid: DenyNonTLSRequests
+            Effect: Deny
+            Action: s3:*
+            Resource:
+              - !GetAtt LogsBucket.Arn
+              - !Join [ "/", [ !GetAtt LogsBucket.Arn, "*" ] ]
+            Condition:
+              Bool:
+                aws:SecureTransport: False
+            Principal: "*"
 
   ##########################
   # Cloud Front #
@@ -2796,6 +2911,9 @@ Resources:
       Description: CIDR ranges allowed access to STNO web UI
       IPAddressVersion: IPV4
       Addresses: !Ref AllowListedRanges
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   STNOGraphQLApiWebACL:
     Type: AWS::WAFv2::WebACL
@@ -2834,6 +2952,45 @@ Resources:
               VendorName: AWS
               Name: "AWSManagedRulesCommonRuleSet"
               ExcludedRules: []
+        - Name: "AWS-AWSManagedRulesAmazonIpReputationList"
+          Priority: 2
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesAmazonIpReputationList"
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: "AWSManagedRulesAmazonIpReputationList"
+        - Name: "AWS-AWSManagedRulesAnonymousIpList"
+          Priority: 3
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesAnonymousIpList"
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: "AWSManagedRulesAnonymousIpList"
+        - Name: "AWS-AWSManagedRulesKnownBadInputsRuleSet"
+          Priority: 4
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesKnownBadInputsRuleSet"
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: "AWSManagedRulesKnownBadInputsRuleSet"
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   SecurityHeaderFunction:
     Type: AWS::CloudFront::Function
@@ -2887,18 +3044,10 @@ Resources:
                   AllowedMethods:
                       - GET
                       - HEAD
-                      - OPTIONS
-                      - PUT
-                      - POST
-                      - PATCH
-                      - DELETE
-                  CachedMethods:
-                      - GET
-                      - HEAD
-                      - OPTIONS
                   ForwardedValues:
                       QueryString: false
                   ViewerProtocolPolicy: redirect-to-https
+                  ResponseHeadersPolicyId: !GetAtt CloudFrontResponseHeadersPolicy.Id
               IPV6Enabled: true
               DefaultRootObject: "index.html"
               CustomErrorResponses:
@@ -2916,6 +3065,26 @@ Resources:
                 Bucket: !Join ['',[!Ref LogsBucket,'.s3.amazonaws.com']]
                 IncludeCookies: false
                 Prefix: cloudfront_logs/
+          Tags:
+            - Key: !GetAtt Application.ApplicationTagKey
+              Value: !GetAtt Application.ApplicationTagValue
+
+  CloudFrontResponseHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub CSP-for-Network-Orchestrator-${AWS::Region}
+        Comment: "Security headers for CSP"
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            ContentSecurityPolicy: !Sub
+              - "upgrade-insecure-requests; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; script-src 'self'; style-src 'self'; \
+              default-src 'self' https://${UserPoolDomain}.auth.${AWSRegion}.amazoncognito.com https://cognito-identity.${AWSRegion}.amazonaws.com \
+              https://cognito-idp.${AWSRegion}.amazonaws.com ${GraphQLEndpoint};"
+              - UserPoolDomain: !Ref UserPoolDomain
+                GraphQLEndpoint: !GetAtt AppSyncPipelineApi.GraphQLUrl
+                AWSRegion: !Ref AWS::Region
+            Override: false
 
   ConsoleIAMPolicy:
     Type: "AWS::IAM::Policy"
@@ -2975,6 +3144,9 @@ Resources:
   CloudWatchLogFailures:
     Type: AWS::Logs::LogGroup
     Metadata:
+      guard:
+        SuppressedRules:
+          - CW_LOGGROUP_RETENTION_PERIOD_CHECK
       cfn_nag:
           rules_to_suppress:
               - id: W84
@@ -2982,10 +3154,16 @@ Resources:
     Properties:
       RetentionInDays: !FindInMap ["LogRetention", "CloudWatchLogs", "RetentionPeriod"]
       LogGroupName: STNO-Hub-Failures
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   CloudWatchLogActions:
     Type: AWS::Logs::LogGroup
     Metadata:
+      guard:
+        SuppressedRules:
+          - CW_LOGGROUP_RETENTION_PERIOD_CHECK
       cfn_nag:
           rules_to_suppress:
               - id: W84
@@ -2993,10 +3171,16 @@ Resources:
     Properties:
       RetentionInDays: !FindInMap ["LogRetention", "CloudWatchLogs", "RetentionPeriod"]
       LogGroupName: STNO-Hub-Actions
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   CloudWatchLogStateMachine:
     Type: AWS::Logs::LogGroup
     Metadata:
+      guard:
+        SuppressedRules:
+          - CW_LOGGROUP_RETENTION_PERIOD_CHECK
       cfn_nag:
         rules_to_suppress:
           - id: W84
@@ -3004,6 +3188,9 @@ Resources:
     Properties:
       RetentionInDays: !FindInMap [ "LogRetention", "CloudWatchLogs", "RetentionPeriod" ]
       LogGroupName: STNO-StateMachine
+      Tags:
+        - Key: !GetAtt Application.ApplicationTagKey
+          Value: !GetAtt Application.ApplicationTagValue
 
   # AppRegistry Application
   Application:
@@ -3024,38 +3211,6 @@ Resources:
         'Solutions:SolutionVersion': "%VERSION%",
         'Solutions:ApplicationType': 'AWS-Solutions'
       }
-
-  AppRegistryApplicationStackAssociation:
-    Type: AWS::ServiceCatalogAppRegistry::ResourceAssociation
-    Condition: DeployIfNotChinaPartition
-    Properties:
-      Application: !GetAtt Application.Id
-      Resource:
-        !Ref AWS::StackId
-      ResourceType: CFN_STACK
-
-  DefaultApplicationAttributeGroup:
-    Type: AWS::ServiceCatalogAppRegistry::AttributeGroup
-    Condition: DeployIfNotChinaPartition
-    Properties:
-      Name: !Sub 'AttrGrp-${AWS::Region}-${AWS::StackName}'
-      Description: Network Orchestration for AWS Transit Gateway.
-      Attributes:
-        { "ApplicationType": "AWS Solution",
-          "Author": "CloudFoundations",
-          "Team": "CloudFoundations",
-          "Version": "%VERSION%",
-          "SolutionID": !FindInMap [ Solution, Metrics, SolutionId ],
-          "SolutionName": !FindInMap [ Solution, Data, SolutionName ],
-        }
-      Tags: { 'CloudFoundations:NetworkOrchestrationForAWSTransitGateway': !Ref "AWS::StackName" }
-
-  AppRegistryApplicationAttributeAssociation:
-    Type: AWS::ServiceCatalogAppRegistry::AttributeGroupAssociation
-    Condition: DeployIfNotChinaPartition
-    Properties:
-      Application: !GetAtt Application.Id
-      AttributeGroup: !GetAtt DefaultApplicationAttributeGroup.Id
 
 ##########################
   # Outputs #
@@ -3120,5 +3275,5 @@ Outputs:
     Value: !Ref DynamoDbTable
   AppSyncAPI:
     Description: The AppSync API
-    Value: !Ref AppSyncPipelineApi
+    Value: !GetAtt AppSyncPipelineApi.GraphQLUrl
     Condition: DeployWebUiCondition

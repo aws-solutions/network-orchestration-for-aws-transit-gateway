@@ -125,6 +125,9 @@ Resources:
   TransitNetworkExecutionRole:
     Type: AWS::IAM::Role
     Metadata:
+      guard:
+        SuppressedRules:
+          - IAM_NO_INLINE_POLICY_CHECK
       cfn_nag:
         rules_to_suppress:
           - id: W28
@@ -197,6 +200,10 @@ Resources:
   # This role is only needed if the spoke account belongs to an AWS Organization
   TransitNetworkEventDeliveryRole:
     Type: AWS::IAM::Role
+    Metadata:
+      guard:
+        SuppressedRules:
+          - IAM_NO_INLINE_POLICY_CHECK
     Properties:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
@@ -248,6 +255,10 @@ Resources:
 
   CustomResourceLambdaFunctionRole:
     Type: AWS::IAM::Role
+    Metadata:
+      guard:
+        SuppressedRules:
+          - IAM_NO_INLINE_POLICY_CHECK
     Properties:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'

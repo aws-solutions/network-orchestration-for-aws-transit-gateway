@@ -19,6 +19,9 @@ Resources:
   OrganizationInformationRole:
     Type: AWS::IAM::Role
     Metadata:
+      guard:
+        SuppressedRules:
+          - IAM_NO_INLINE_POLICY_CHECK
       cfn_nag:
         rules_to_suppress:
           - id: W11
