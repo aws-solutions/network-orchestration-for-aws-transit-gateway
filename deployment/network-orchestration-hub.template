@@ -3071,6 +3071,7 @@ Resources:
 
   CloudFrontResponseHeadersPolicy:
     Type: AWS::CloudFront::ResponseHeadersPolicy
+    Condition: DeployWebUiCondition
     Properties:
       ResponseHeadersPolicyConfig:
         Name: !Sub CSP-for-Network-Orchestrator-${AWS::Region}

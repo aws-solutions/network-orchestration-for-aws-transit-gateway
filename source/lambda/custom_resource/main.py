@@ -14,7 +14,7 @@ logger = Logger(level=os.getenv('LOG_LEVEL'), service="CUSTOM_RESOURCE")
 
 def lambda_handler(event: events.CloudFormationCustomResourceEvent, context: LambdaContext):
     logger.info("Entering custom resource lambda_handler")
-    logger.info(event)
+    logger.debug(event)
     partition = environ.get("PARTITION")
     if event.get("source") in ["aws.tag", "aws.ec2"]:
         start_state_machine(event, context)

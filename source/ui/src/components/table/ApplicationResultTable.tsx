@@ -10,7 +10,6 @@ import Header from "@cloudscape-design/components/header";
 import CollectionPreferences from "@cloudscape-design/components/collection-preferences";
 import { SortingState } from "@cloudscape-design/collection-hooks/cjs/interfaces";
 
-
 export type TableState = {
     header: string,
     start: number,

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.16] - 2025-05-30
+
+### Security
+
+- Bump http-proxy-middleware to `2.0.9` to mitigate [CVE-2025-32997](https://github.com/advisories/GHSA-9gqv-wp59-fq42) 
+
+### Fixed
+
+- Remove setuptools and pkg_resources from lambda packaging
+- Remove event verbose log at `INFO` level
+- Respect tag case when copying vpc tags on TGW attachments
+- Add dependency for CSP resource on `DeployWebUiCondition`
+
 ## [3.3.15] - 2025-04-05
 
 ### Security
