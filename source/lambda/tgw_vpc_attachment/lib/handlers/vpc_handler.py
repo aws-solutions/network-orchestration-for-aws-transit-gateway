@@ -454,12 +454,15 @@ class VPCTagManager:
             )
 
     def _match_keys_with_tag(self, key, value):
-        key = key.lower().strip()
+        # Store the original key before converting to lowercase
+        original_key = key
+        key_lower = key.lower().strip()
 
-        if key == self.association_tag.lower().strip():
+        # Use lowercase for comparison with solution-defined tags
+        if key_lower == self.association_tag.lower().strip():
             self.event.update({self.association_tag: value.lower().strip()})
             self.logger.debug("Modified event with Association Tag", self.event)
-        elif key == self.propagation_tag.lower().strip():
+        elif key_lower == self.propagation_tag.lower().strip():
             # organizations tag policy does not allow comma (,) as a
             # separator. Adding slash (/) and colon (:) as separators
             self.event.update({
@@ -468,7 +471,7 @@ class VPCTagManager:
                 ]
             })
             self.logger.debug("Modified event with Propagation Tag", self.event)
-        elif key == "name":
+        elif key_lower == "name":
             vpc_name = value.strip()
             self.logger.debug(f"Updating the event with vpc name {vpc_name}")
             self.event.update({"VpcName": vpc_name})
@@ -483,7 +486,8 @@ class VPCTagManager:
         if "VPC_TAGS_FOR_ATTACHMENT" in environ:
             tag_keys_to_copy = environ.get("VPC_TAGS_FOR_ATTACHMENT").split(",")
             # Do a case insensitive match, example CostCode/costcode
-            tag_keys_to_copy = [x.lower().strip() for x in tag_keys_to_copy]
-            if key in tag_keys_to_copy:
-                self.logger.debug(f"Attaching tags with key {key} and value {value}")
-                self.event["AttachmentTagsRequired"][key] = value
+            tag_keys_to_copy_lower = [x.lower().strip() for x in tag_keys_to_copy]
+            if key_lower in tag_keys_to_copy_lower:
+                self.logger.debug(f"Attaching tags with key {original_key} and value {value}")
+                # Use the original key to preserve case sensitivity
+                self.event["AttachmentTagsRequired"][original_key] = value
