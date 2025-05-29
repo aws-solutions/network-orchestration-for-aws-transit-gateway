@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Bump http-proxy-middleware to `2.0.9` to mitigate [CVE-2025-32997](https://github.com/advisories/GHSA-9gqv-wp59-fq42) 
+- Bump http-proxy-middleware to `2.0.9` to mitigate [CVE-2025-32997](https://github.com/advisories/GHSA-9gqv-wp59-fq42)
 
 ### Fixed
 
@@ -79,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
-- Bumped micromatch to `4.0.8` to mitigate [CVE-2024-4067](https://github.com/advisories/GHSA-952p-6rrq-rcjv) 
+- Bumped micromatch to `4.0.8` to mitigate [CVE-2024-4067](https://github.com/advisories/GHSA-952p-6rrq-rcjv)
 - Bumped webpack to `5.94.0` to mitigate [CVE-2024-43788](https://github.com/advisories/GHSA-4vvj-4cpr-p986)
 - Bumped express to `4.21.0` to mitigate CVEs in sub-dependencies
 - Bump path-to-regexp to `6.3.0` to address [CVE-2024-45296](https://github.com/advisories/GHSA-9wv6-86v2-598j)
@@ -94,8 +94,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- `resource_exception_handler` decorator does not catch `IncorrectState` 
-  exception, allowing the exception to be raised as `ResourceBusyException ` 
+- `resource_exception_handler` decorator does not catch `IncorrectState`
+  exception, allowing the exception to be raised as `ResourceBusyException `
   by `service_exception_handler` decorator
 
 ### Security
@@ -120,9 +120,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 
 - Bumped ejs to `3.1.10` to mitigate [CVE-2024-33883](https://avd.aquasec.com/nvd/cve-2024-33883)
-- Bumped `ws` to resolve [CVE-2024-37890] 
+- Bumped `ws` to resolve [CVE-2024-37890]
 
-## [3.3.5] - 2024-04
+## [3.3.5] - 2024-04-24
 
 ### Added
 
@@ -132,39 +132,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed dependency on 'requests' library to mitigate CVE-2024-3651
 
-## [3.3.4] - 2024-04
+## [3.3.4] - 2024-04-03
 
 ### Fixed
+
 - Upgrade webpack-dev-middleware to mitigate CVE-2024-29180
 
-## [3.3.3] - 2023-10
+## [3.3.3] - 2023-10-25
 
 ### Changed
+
 - Updated Lambda Function runtime to Python 3.11 and Node.js 18
 - Tags for Application in AppRegistry
 
 ### Fixed
+
 - Upgrade @babel/traverse to mitigate CVE-2023-45133
 - Upgrade urllib3 to mitigate CVE-2023-45803
 
-## [3.3.2] - 2023-10
+## [3.3.2] - 2023-10-03
 
 ### Added
-New CloudFormation parameter to allow users to skip transit gateway registration with the global network. 
+
+- New CloudFormation parameter to allow users to skip transit gateway
+  registration with the global network.
 
 ### Fixed
-Updated package versions to resolve security vulnerabilities. 
+
+- Updated package versions to resolve security vulnerabilities.
 
 ## [3.3.1] - 2023-07-21
 
 ### Changed
-- Move the service linked roles from hub and spoke stacks to separate stacks to allow 
-  multi-region deployments and avoid 'AlreadyExists' error. 
 
-## [3.3] - 2023-06-28
+- Move the service linked roles from hub and spoke stacks to separate stacks to allow
+  multi-region deployments and avoid 'AlreadyExists' error.
+
+## [3.3.0] - 2023-06-28
 
 ### Added
-- Support for new routing tag (route-to-tgw) that allows users to update route table for secondary subnets in the 
+
+- Support for new routing tag (route-to-tgw) that allows users to update route table for secondary subnets in the
   same availability zone.
 - Support to update main route table associated with the subnets in the VPC.
 - Support for new regions - Beijing, Ningxia and Stockholm.
@@ -174,6 +182,7 @@ Updated package versions to resolve security vulnerabilities.
 - Ability to enable MFA for Cognito User Pool
 
 ### Changed
+
 - Updated Web UI console using CloudScape design system.
 - Step Function execution name to reflect create or delete tagging action.
 - Enabled X-Ray for Step Functions and AppSync GraphQL API
@@ -183,6 +192,7 @@ Updated package versions to resolve security vulnerabilities.
 - AppRegistry Attribute Group name with a unique string.
 
 ### Fixed
+
 - Allow spaces in CloudFormation parameters - CIDR blocks and Prefix Lists.
 - Ability to register new and existing transit gateways with existing global network.
 - GitHub Issues: #38, #39, #49, #50, #56, #60, #73, #77, #78, #81
@@ -197,7 +207,10 @@ Updated package versions to resolve security vulnerabilities.
 
 ### Changed
 
-- Updated python requests to 2.28.1 due to security patch required for certifi module which is a dependency. Using the latest requests version 2.28.1 installs the latest patched version of certifi v2022.12.07. For details please refer to https://nvd.nist.gov/vuln/detail/cve-2022-23491.
+- Updated python requests to 2.28.1 due to security patch required for
+  certifi module which is a dependency. Using the latest requests version 2.
+  28.1 installs the latest patched version of certifi v2022.12.07. For
+  details please refer to [CVE-2022-23491](https://nvd.nist.gov/vuln/detail/cve-2022-23491).
 - package-lock.json to address dependabot identified vulnerabilities
 
 ## [3.2.0] - 2022-11-25
@@ -222,12 +235,14 @@ Updated package versions to resolve security vulnerabilities.
 ## [3.1.0] - 2022-06-17
 
 ### Added
+
 - CF template allows to connect external SAML identity provider to cognito user pool
 - If SAML IdP is used, cognito-trigger function will add any federated user to ReadOnlyUserGroup after first login
 - Added WAF protection to the CloudFront distribution
 - Added Security relevant http headers in CloudFront responses
 
 ### Changed
+
 - Creation of ServiceLinkedRole can be skipped if it exists in spoke account
 - Web UI will utilize Cognito Hosted UI instead of Amplify Authenticator component
 
