@@ -635,6 +635,7 @@ react-scripts under the MIT license.
 jest-serializer under the MIT license.
 is-typedarray under the MIT license.
 typedarray-to-buffer under the MIT license.
+typescript under the Apache-2.0 license.
 @pmmmwh/react-refresh-webpack-plugin under the MIT license.
 webpack under the MIT license.
 eslint-scope under the BSD-2-Clause license.
@@ -1112,6 +1113,7 @@ utila under the MIT license.
 htmlparser2 under the MIT license.
 identity-obj-proxy under the MIT license.
 harmony-reflect under the Apache-2.0 license.
+jest under the MIT license.
 @jest/core under the MIT license.
 @jest/console under the MIT license.
 @jest/reporters under the MIT license.
@@ -1420,6 +1422,7 @@ rxjs under the Apache-2.0 license.
 through under the MIT license.
 is-node-process under the MIT license.
 js-levenshtein under the MIT license.
+@aws-sdk/client-cognito-identity-provider under the Apache-2.0 license.
 @smithy/is-array-buffer under the Apache-2.0 license.
 @smithy/util-buffer-from under the Apache-2.0 license.
 @smithy/util-utf8 under the Apache-2.0 license.
@@ -1464,6 +1467,7 @@ js-levenshtein under the MIT license.
 @smithy/util-defaults-mode-node under the Apache-2.0 license.
 @smithy/credential-provider-imds under the Apache-2.0 license.
 @aws-sdk/token-providers under the Apache-2.0 license.
+winston under the MIT license.
 @colors/colors under the MIT license.
 @dabh/diagnostics under the MIT license.
 colorspace under the MIT license.
@@ -1482,6 +1486,8 @@ one-time under the MIT license.
 fn.name under the MIT license.
 stack-trace under the MIT license.
 winston-transport under the MIT license.
+decode-uri-component under the MIT license.
+ts-node under the MIT license.
 diff under the BSD-3-Clause license.
 @cspotcode/source-map-support under the MIT license.
 @tsconfig/node10 under the MIT license.
@@ -1495,7 +1501,9 @@ yn under the MIT license.
 @jest/expect under the MIT license.
 pure-rand under the MIT license.
 create-jest under the MIT license.
+ts-jest under the MIT license.
 bs-logger under the MIT license.
+aws-sdk-client-mock under the MIT license.
 @aws-sdk/client-s3 under the Apache-2.0 license.
 @aws-crypto/sha1-browser under the Apache-2.0 license.
 @aws-sdk/middleware-bucket-endpoint under the Apache-2.0 license.
@@ -1527,30 +1535,57 @@ nise under the BSD-3-Clause license.
 @sinonjs/text-encoding under the Apache-2.0 license.
 just-extend under the MIT license.
 aws-lambda-powertools under the MIT license.
-typing_extensions
-aws_lambda_typing under the MIT license.
+aws-lambda-typing under the MIT license.
 boto3 under the Apache-2.0 license.
-botocore under the Apache-2.0 license.
-jmespath under the MIT license.
-python-dateutil under the Apache-2.0 license.
-six under the MIT license.
 boto3-stubs under the MIT license.
-moto under the Apache-2.0 license.
-pytest-mock under the MIT license.
-pytest under the MIT license.
-sure under the GNU General Public License v3 or later (GPLv3+) license(s).
-pipdeptree under the MIT license.
+botocore under the Apache-2.0 license.
+botocore-stubs under the MIT license.
+certifi under the MPL-2.0 license.
+cffi under the MIT license.
+charset-normalizer under the MIT license.
+colorama under the 0BSD license.
 coverage under the Apache-2.0 license.
+cryptography under the Apache-2.0 license.
+exceptiongroup under the MIT license.
 freezegun under the Apache-2.0 license.
-typescript under the Apache-2.0 license.
-jest under the MIT license.
-@aws-sdk/client-cognito-identity-provider under the Apache-2.0 license.
-winston under the MIT license.
-decode-uri-component under the MIT license.
-ts-node under the MIT license.
-ts-jest under the MIT license.
-aws-sdk-client-mock under the MIT license.
-typing_extensions
+idna under the 0BSD license.
+iniconfig under the MIT license.
+jinja2 under the 0BSD license.
+jmespath under the MIT license.
+markupsafe under the 0BSD license.
+mock under the 0BSD license.
+moto under the Apache-2.0 license.
+mypy-boto3-cloudformation under the MIT license.
+mypy-boto3-dynamodb under the MIT license.
+mypy-boto3-ec2 under the MIT license.
+mypy-boto3-lambda under the MIT license.
+mypy-boto3-logs under the MIT license.
+mypy-boto3-organizations under the MIT license.
+mypy-boto3-ram under the MIT license.
+mypy-boto3-rds under the MIT license.
+mypy-boto3-s3 under the MIT license.
+mypy-boto3-sns under the MIT license.
+mypy-boto3-sqs under the MIT license.
+mypy-boto3-stepfunctions under the MIT license.
+mypy-boto3-sts under the MIT license.
+packaging under the Apache-2.0 license.
+pluggy under the MIT license.
+pycparser under the 0BSD license.
+pytest under the MIT license.
+pytest-mock under the MIT license.
+python-dateutil under the Apache-2.0 license.
+pyyaml under the MIT license.
+requests under the Apache-2.0 license.
+responses under the Apache-2.0 license.
+s3transfer under the Apache-2.0 license.
+six under the MIT license.
+tomli under the MIT license.
+types-awscrt under the MIT license.
+types-s3transfer under the MIT license.
+typing-extensions
+urllib3
+werkzeug under the 0BSD license.
+xmltodict under the MIT license.
 
 ********************
 OPEN SOURCE LICENSES

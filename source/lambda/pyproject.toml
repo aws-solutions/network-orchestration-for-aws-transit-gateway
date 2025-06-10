@@ -1,30 +1,45 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 
 [project]
-name = "network-orchestration-for-tgw"
-version = "3.3.16"
+name = "solution"
+version = "3.3.17"
+authors = [ { name = "Amazon Web Services" }]
 description = "solution packages for network-orchestration-for-tgw"
-requires-python = ">=3.10"
-license = { text = "Apache Software License" }
-dependencies = [
-    "boto3==1.34.91",
-    "botocore==1.34.129",
-    "aws-lambda-powertools==2.25.0",
-]
-[project.optional-dependencies]
-dev = [
-    "moto==4.2.0",
-    "pytest==7.4.2",
-    "mypy-boto3-ec2==1.34.149",
-    "mypy-boto3-dynamodb==1.34.148",
-    "mypy-boto3-sts==1.34.0",
-    "mypy-boto3-sns==1.34.121",
-    "mypy-boto3-ram==1.34.0",
-    "mypy-boto3-organizations==1.34.139"
-]
+license = "Apache-2.0"
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["custom_resource*", "tgw_vpc_attachment*", "tgw_peering_attachment*"]
+[tool.poetry.dependencies]
+boto3 = "^1.34.91"
+botocore = "^1.34.129"
+aws-lambda-powertools = "^2.25.0"
+boto3-stubs = { extras = ["essential", "ram", "sts", "sns", "organizations", "stepfunctions", "lambda", "ec2", "logs"], version = "^1.38.23" }
+aws-lambda-typing = "^2.20.0"
+
+[tool.poetry.group.dev.dependencies]
+moto = "^4.2.0"
+pytest = "^7.4.2"
+typing_extensions = "^4.8.0"
+aws_lambda_typing = "^2.18.0"
+freezegun = "^1.2.2"
+pytest-mock = "3.11.1"
+mock = "^5.2.0"
+coverage = "^7.8.2"
+
+[tool.coverage.run]
+omit = [
+    "*/__init__.py",
+    "*/__tests__/*",
+    ".venv/*",
+    ".venv-test/*"
+    ]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.coverage.xml]
+output = "coverage.xml"
+

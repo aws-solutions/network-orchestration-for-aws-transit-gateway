@@ -382,6 +382,7 @@ Mappings:
       RetentionPeriod: 90
   SourceCode:
     General:
+      LambdaZip: "%SOLUTION_NAME%.zip"
       S3Bucket: "%DIST_BUCKET_NAME%"
       KeyPrefix: "network-orchestration-for-aws-transit-gateway/%VERSION%"
       Version: "%VERSION%"
@@ -814,9 +815,9 @@ Resources:
           PARTITION: !Sub ${AWS::Partition}
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], !Ref "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"custom_resource.zip"]]
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"], !FindInMap ["SourceCode", "General", "LambdaZip"]]]
       Description: Network Orchestration for AWS Transit Gateway - custom resource handler
-      Handler: custom_resource.main.lambda_handler
+      Handler: solution.custom_resource.main.lambda_handler
       MemorySize: 1536
       Role: !Sub ${CustomResourceLambdaFunctionRole.Arn}
       Runtime: python3.11
@@ -1055,9 +1056,9 @@ Resources:
           APPLICATION_TAG_VALUE: !GetAtt Application.ApplicationTagValue
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"tgw_vpc_attachment.zip"]]
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"], !FindInMap ["SourceCode", "General", "LambdaZip"]]]
       Description: Network Orchestration for AWS Transit Gateway - State Machine Handler
-      Handler: tgw_vpc_attachment.main.lambda_handler
+      Handler: solution.tgw_vpc_attachment.main.lambda_handler
       MemorySize: 1536
       Role: !GetAtt 'StateMachineLambdaFunctionRole.Arn'
       Runtime: python3.11
@@ -2149,9 +2150,9 @@ Resources:
           PARTITION: !Sub ${AWS::Partition}
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"tgw_peering_attachment.zip"]]
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"], !FindInMap ["SourceCode", "General", "LambdaZip"]]]
       Description: Network Orchestration for AWS Transit Gateway - TGW peering attachment handler
-      Handler: tgw_peering_attachment.main.lambda_handler
+      Handler: solution.tgw_peering_attachment.main.lambda_handler
       MemorySize: 1536
       Role: !Sub ${TgwPeeringLambdaFunctionRole.Arn}
       Runtime: python3.11

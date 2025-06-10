@@ -3,11 +3,14 @@ global-s3-assets
 regional-s3-assets
 open-source
 
+**/assets/stno_config.js
+
 # Generated ouputs
 console-manifest.json
 dist
 source/**/coverage
 coverage.xml
+.coverage
 *pycache*
 npm-debug.log
 *.zip
