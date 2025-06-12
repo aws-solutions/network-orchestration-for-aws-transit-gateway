@@ -45,6 +45,12 @@ mkdir -p $template_dist_dir
 rm -rf $build_dist_dir
 mkdir -p $build_dist_dir
 
+headline "[Prereqs] Validate poetry installed"
+if ! command -v poetry &> /dev/null; then
+    echo "Poetry is not installed, exiting..."
+    exit 1
+fi
+
 headline "[Init] Clean python generated files & folders"
 cd $lambda_dir
 find . -iname ".venv" -type d | xargs rm -rf
@@ -53,10 +59,25 @@ find . -iname "dist" -type d | xargs rm -rf
 find . -type f -name ".pytest_cache" -delete
 find . -type f -name ".coverage" -delete
 
-headline "[Init] Initiating virtual environment"
-python3 -m venv .venv --upgrade-deps
-source .venv/bin/activate
-pip3 install -r requirements.txt
+headline "[Configure] Poetry"
+poetry config virtualenvs.in-project true --local
+poetry config virtualenvs.options.no-pip true --local
+poetry config virtualenvs.options.always-copy true --local
+
+
+headline "[Install] Solution python package"
+# poetry installs solution in editable mode with symlinks, not apt for packaging
+# build solution wheel and install in poetry environment
+poetry build -f wheel
+poetry run pip install dist/*
+
+headline "[Package] Solution lambda"
+rm -rf dist
+mkdir -p dist
+rsync -a .venv/lib/python3.11/site-packages/ ./dist/ --exclude '*dist-info*' --exclude '*.pyc' --exclude '*__pycache__*'
+cd dist
+zip -rq "$2.zip" .
+cp -R "$2.zip" $build_dist_dir
 
 headline "[Build] Build cognito-trigger function"
 echo "cd $source_dir/cognito-trigger"
@@ -65,30 +86,14 @@ echo "npm run build:all"
 npm run build:all
 cp -R "dist/cognito-trigger.zip" $build_dist_dir
 
-headline "[Build] Lambda zips for STNO Solution"
-cd $lambda_dir
-for microservices in */ ; do
-  echo "building $microservices"
-  microservice_name=$(basename $microservices)
-  cd $lambda_dir/$microservice_name
-  mkdir -p dist/$microservice_name
-  rsync -aq --exclude 'setuptools/' --exclude 'setuptools-*.dist-info/' --exclude 'pkg_resources/' $lambda_dir/.venv/lib/python3.11/site-packages/ ./dist/
-  cp -R lib __init__.py main.py ./dist/$microservice_name/
-  cd dist
-  zip -rq "$microservice_name.zip" .
-  cp -R "$microservice_name.zip" $build_dist_dir
-  rm -rf $lambda_dir/$microservice_name/dist
-done
-deactivate
-
 headline "[Stage] Copy ui files to regional-s3-assets, build console and zip"
 cp -R $source_dir/ui $build_dist_dir/
 mkdir -p $build_dist_dir/graphql
 cp -R $source_dir/ui/src/graphql/schema.graphql $source_dir/ui/src/graphql/resolver $source_dir/ui/src/graphql/function $build_dist_dir/graphql
 cd $build_dist_dir/ui/
-[ -e node_modules ] && rm -rf node_modules 
+[ -e node_modules ] && rm -rf node_modules
 npm ci
-[ -e build ] && rm -r build 
+[ -e build ] && rm -r build
 npm run build
 cp -R ./build ../console
 cd ../../.. && rm -rf $build_dist_dir/ui
@@ -98,7 +103,7 @@ cd $template_dir/manifest-generator
 [ -e node_modules ] && rm -rf node_modules
 npm ci
 node app.js --target "$build_dist_dir/console" --output "$build_dist_dir/console-manifest.json"
-cd $build_dist_dir && zip -rq ./custom_resource.zip ./console-manifest.json
+cd $build_dist_dir && zip -rq ./$2.zip ./console-manifest.json
 cd ../..
 
 headline "[Stage] Copy templates to global-s3-assets directory"

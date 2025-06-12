@@ -1,7 +1,0 @@
-moto~=4.2.0
-pytest-mock==3.11.1
-pytest==7.4.2
-sure~=2.0.1
-pipdeptree~=2.13.0
-coverage~=7.3.2
-freezegun~=1.2.2

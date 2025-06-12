@@ -30,6 +30,7 @@ Mappings:
       Name: "Network-Orchestrator-Event-Bus"
   SourceCode:
     General:
+      LambdaZip: "%SOLUTION_NAME%.zip"
       S3Bucket: "%DIST_BUCKET_NAME%"
       KeyPrefix: "network-orchestration-for-aws-transit-gateway/%VERSION%"
       Version: "%VERSION%"
@@ -245,9 +246,9 @@ Resources:
           PARTITION: !Sub ${AWS::Partition}
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], !Ref "AWS::Region"]]
-        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"],"custom_resource.zip"]]
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"], !FindInMap ["SourceCode", "General", "LambdaZip"]]]
       Description: Network Orchestration for AWS Transit Gateway - custom resource handler
-      Handler: custom_resource.main.lambda_handler
+      Handler: solution.custom_resource.main.lambda_handler
       MemorySize: 512
       Role: !Sub ${CustomResourceLambdaFunctionRole.Arn}
       Runtime: python3.11

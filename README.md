@@ -63,6 +63,7 @@ Use the following steps if you want to customize the solution or extend the solu
 ### Setup
 
 - Python Prerequisite: python=3.11 | pip3=23.2.1
+- Poetry >=2.1.3
 - Javascript Prerequisite: node=v18.16.0 | npm=9.5.1
 
 Clone the repository and make desired code changes.
@@ -78,10 +79,15 @@ _Note: The following steps have been tested under the preceding pre-requisites._
 Run unit tests to ensure that your added customization passes the tests.
 
 ```
-cd ./source
-chmod +x ./run-unit-tests.sh
-./run-unit-tests.sh
-cd ..
+# Python
+cd ./source/lambda
+poetry install
+poetry run pytest
+
+# Nodejs
+cd ./source/ui
+npm ci
+npm run test 
 ```
 
 _✅ Ensure that all unit tests pass. Review the generated coverage report._

@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.17] - 2025-06-10
+
+### Security
+
+- Bump `webpack-dev-server` to mitigate [CVE-2025-30360](https://avd.aquasec.com/nvd/cve-2025-30360)
+
+### Changed
+
+- Remove `requirements.txt` in favor of `poetry.lock` for dependency management with poetry
+- Refactor `lambda` as standard python package with poetry
+
 ## [3.3.16] - 2025-05-30
 
 ### Security
