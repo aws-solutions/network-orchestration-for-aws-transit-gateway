@@ -62,7 +62,7 @@ find . -type f -name ".coverage" -delete
 headline "[Configure] Poetry"
 poetry config virtualenvs.in-project true --local
 poetry config virtualenvs.options.no-pip true --local
-poetry config virtualenvs.options.always-copy true --local
+poetry config virtualenvs.options.always-copy false --local
 
 
 headline "[Install] Solution python package"
@@ -139,6 +139,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' -e $replace $template_dist_dir/network-orchestration-organization-role.template
     sed -i '' -e $replace $template_dist_dir/network-orchestration-hub-service-linked-roles.template
     sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke-service-linked-roles.template
+    # Replace template bucket name
+    replace="s/%TEMPLATE_OUTPUT_BUCKET%/$4/g"
+    sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke.template
 else
     # Other linux
     # Replace source code s3 bucket name with real value

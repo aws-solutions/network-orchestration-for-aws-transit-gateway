@@ -27,37 +27,3 @@ def test_create_tags_batch_success(mocker):
     ec2.create_tags_batch(resource_id, tags_list)
     spy_logger.assert_called_with(log_message)
 
-def test_create_tgw_attachment_with_app_registry_tags():
-    #  Arrange
-    ec2 = EC2()
-    ec2_client_stub = Stubber(ec2.ec2_client)
-
-    tgw_id = "my_tgw"
-    vpc_id = "my_vpc_id"
-    subnet_id = "my_subnet"
-    os.environ["APPLICATION_TAG_KEY"] = "awsApplication"
-    os.environ["APPLICATION_TAG_VALUE"] = "myApp"
-    expected_params = {
-        "SubnetIds": [subnet_id],
-        "TransitGatewayId": tgw_id,
-        "VpcId": vpc_id,
-        "TagSpecifications": [
-            {
-                "ResourceType": "transit-gateway-attachment",
-                "Tags": [
-                    {
-                        "Key": os.getenv("APPLICATION_TAG_KEY"),
-                        "Value": os.getenv("APPLICATION_TAG_VALUE")
-                    }
-                ]
-            }
-        ]
-    }
-
-    ec2_client_stub.add_response("create_transit_gateway_vpc_attachment", {}, expected_params)
-    ec2_client_stub.activate()
-
-    # Act/Assert
-    with ec2_client_stub:
-        ec2.create_transit_gateway_vpc_attachment(tgw_id, vpc_id, subnet_id)
-        ec2_client_stub.assert_no_pending_responses()

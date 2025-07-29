@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "solution"
-version = "3.3.17"
+version = "3.3.18"
 authors = [ { name = "Amazon Web Services" }]
 description = "solution packages for network-orchestration-for-tgw"
 license = "Apache-2.0"
