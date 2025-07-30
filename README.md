@@ -132,7 +132,7 @@ VERSION=custom001
 ```
 cd ./deployment
 chmod +x ./build-s3-dist.sh
-./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION
+./build-s3-dist.sh $DIST_OUTPUT_BUCKET $SOLUTION_NAME $VERSION $DIST_OUTPUT_BUCKET-$REGION
 ```
 
 _✅ All assets are now built. You should see templates under deployment/global-s3-assets and other artifacts (console and lambda binaries) under deployment/regional-s3-assets._

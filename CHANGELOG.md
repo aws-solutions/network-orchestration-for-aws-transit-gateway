@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.18] - 2025-07-30
+
+### Security
+
+- Bump `form-data` to address [CVE-2025-7783] (<https://avd.aquasec.com/nvd/cve-2025-7783>)
+- Bump `brace-expansion` to address [CVE-2025-5889]
+- Bump `urllib3` to address [CVE-2025-50181], [CVE-2025-50182] (<https://avd.aquasec.com/nvd/cve-2025-50181>), (<https://avd.aquasec.com/nvd/cve-2025-50182>)
+
+### Removed
+
+- AppRegistry application tags at resource level
+
 ## [3.3.17] - 2025-06-10
 
 ### Security
@@ -106,7 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `resource_exception_handler` decorator does not catch `IncorrectState`
-  exception, allowing the exception to be raised as `ResourceBusyException `
+  exception, allowing the exception to be raised as `ResourceBusyException`
   by `service_exception_handler` decorator
 
 ### Security

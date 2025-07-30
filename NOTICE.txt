@@ -14,6 +14,9 @@ This software includes third party software subject to the following copyrights:
 
 @aws-amplify/auth under the Apache-2.0 license.
 @aws-amplify/core under the Apache-2.0 license.
+@aws-sdk/nested-clients under the Apache-2.0 license.
+@babel/helper-globals under the MIT license.
+@types/uuid under the MIT license.
 @jest/environment under the MIT license.
 @jest/types under the MIT license.
 ansi-styles under the MIT license.
@@ -1582,10 +1585,16 @@ six under the MIT license.
 tomli under the MIT license.
 types-awscrt under the MIT license.
 types-s3transfer under the MIT license.
-typing-extensions
-urllib3
+typing-extensions under the MIT license.
+urllib3 under the MIT license.
 werkzeug under the 0BSD license.
 xmltodict under the MIT license.
+is-inside-container under the MIT license.
+default-browser under the MIT license.
+bundle-name under the MIT license.
+run-applescript under the MIT license.
+default-browser-id under the MIT license.
+is-network-error under the MIT license.
 
 ********************
 OPEN SOURCE LICENSES
