@@ -44,7 +44,7 @@ Resources:
             Condition:
               ArnEquals:
                 aws:PrincipalArn:
-                - !Sub arn:${AWS::Partition}:iam::${HubAccount}:role/STNO-StateMachineLambdaFunctionRole-* // remove region, use wildcard
+                - !Sub arn:${AWS::Partition}:iam::${HubAccount}:role/STNO-StateMachineLambdaFunctionRole-*
       Policies:
         - PolicyName: OrganizationDetailsReadOnly
           PolicyDocument:

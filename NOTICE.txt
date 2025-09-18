@@ -1407,6 +1407,7 @@ cli-cursor under the MIT license.
 restore-cursor under the MIT license.
 cli-width under the ISC license.
 external-editor under the MIT license.
+@inquirer/external-editor under the MIT license.
 chardet under the MIT license.
 os-tmpdir under the MIT license.
 figures under the MIT license.
