@@ -34,3 +34,7 @@ node_modules
 .idea/
 *sonarlint*
 test.sh
+
+
+/.temp_redpencil
+/bom.json

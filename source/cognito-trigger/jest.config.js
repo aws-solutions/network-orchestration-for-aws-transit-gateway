@@ -5,6 +5,7 @@ module.exports = {
         "^.+\\.tsx?$": "ts-jest",
     },
     coverageReporters: ["text", ["lcov", { projectRoot: "../../" }]],
+    coverageProvider: "v8",
     setupFiles: ["./setJestEnvironmentVariables.ts"],
     moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
     preset: 'ts-jest',

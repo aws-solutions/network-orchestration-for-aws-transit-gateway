@@ -1596,6 +1596,39 @@ bundle-name under the MIT license.
 run-applescript under the MIT license.
 default-browser-id under the MIT license.
 is-network-error under the MIT license.
+@aws-sdk/credential-provider-login under the Apache-2.0 license.
+@aws/lambda-invoke-store under the Apache-2.0 license.
+@babel/plugin-transform-explicit-resource-management under the MIT license.
+@babel/plugin-transform-regexp-modifiers under the MIT license.
+@isaacs/balanced-match under the MIT license.
+@isaacs/brace-expansion under the MIT license.
+@jridgewell/remapping under the MIT license.
+@jsonjoy.com/buffers under the Apache-2.0 license.
+@jsonjoy.com/codegen under the Apache-2.0 license.
+@jsonjoy.com/json-pointer under the Apache-2.0 license.
+@rtsao/scc under the MIT license.
+@smithy/uuid under the Apache-2.0 license.
+@so-ric/colorspace under the MIT license.
+@types/eslint-scope under the MIT license.
+acorn-import-phases under the MIT license.
+async-function under the MIT license.
+baseline-browser-mapping under the Apache-2.0 license.
+call-bound under the MIT license.
+fdir under the MIT license.
+generator-function under the MIT license.
+glob-to-regex.js under the Apache-2.0 license.
+handlebars under the MIT license.
+own-keys under the MIT license.
+regjsgen under the MIT license.
+safe-push-apply under the MIT license.
+set-proto under the MIT license.
+side-channel-list under the MIT license.
+side-channel-map under the MIT license.
+side-channel-weakmap under the MIT license.
+tinyglobby under the MIT license.
+uglify-js under the BSD-2-Clause license.
+wordwrap under the MIT license.
+wsl-utils under the MIT license.
 
 ********************
 OPEN SOURCE LICENSES
