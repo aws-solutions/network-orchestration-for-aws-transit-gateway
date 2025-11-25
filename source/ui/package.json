@@ -1,6 +1,6 @@
 {
   "name": "network-orchestrator-for-aws-transit-gateway",
-  "version": "3.3.19",
+  "version": "3.3.20",
   "description": "Network Orchestration for AWS Transit Gateway(SO0058)",
   "license": "Apache-2.0",
   "author": {
@@ -97,6 +97,9 @@
     "resolve-url-loader": {
       "postcss": "8.4.31"
     },
-    "webpack-dev-server": "~5.2.0"
+    "webpack-dev-server": "~5.2.0",
+    "glob": "^11.1.0",
+    "js-yaml": "^4.1.1",
+    "test-exclude": "^7.0.0"
   }
 }
