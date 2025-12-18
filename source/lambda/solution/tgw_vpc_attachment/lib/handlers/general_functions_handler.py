@@ -22,29 +22,6 @@ class GeneralFunctions:
         self.logger = Logger(level=os.getenv('LOG_LEVEL'), service=self.__class__.__name__)
         self.logger.info(event)
 
-    def send_anonymous_data(self):
-        try:
-            self.logger.info(
-                EXECUTING
-                + self.__class__.__name__
-                + "/"
-                + inspect.stack()[0][3]
-            )
-            data = {
-                "Action": self.event.get("Action", "None"),
-                "Status": self.event.get("Status", "None"),
-                "AdminAction": self.event.get("AdminAction", "None"),
-                "ApprovalRequired": self.event.get("ApprovalRequired", "None"),
-                "TagEventSource": self.event.get("TagEventSource", "None"),
-                "RouteTableType": self.event.get("RouteTableType", "None"),
-                "Region": environ.get("AWS_REGION"),
-                "SolutionVersion": environ.get("SOLUTION_VERSION", "None")
-            }
-            Metrics().metrics(data)
-            return self.event
-        except Exception:
-            return self.event
-
     def send_failure_notification(self):
         try:
             self.logger.info(
@@ -77,7 +54,8 @@ class GeneralFunctions:
         try:
             cause = json.loads(error_info["Cause"])
             error_message = cause["errorMessage"]
-        except Exception:
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            self.logger.warning(f"Failed to parse error info: {str(e)}")
             error_message = str(error_info)
         return error_message
 
@@ -94,10 +72,10 @@ class GeneralFunctions:
             event_str = json.dumps(self.event, indent=4)
             message += event_str
             notify.publish(topic_arn, message, subject)
-        except Exception:
+        except Exception as e:
             # The rest of the steps (failure logging) would not complete
             # if this step fails, so continue:
-            pass
+            self.logger.warning(f"Failed to send SNS notification: {str(e)}")
 
     def log_in_cloudwatch(self):
         """

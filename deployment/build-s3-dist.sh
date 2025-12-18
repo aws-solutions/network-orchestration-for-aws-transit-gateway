@@ -74,7 +74,7 @@ poetry run pip install dist/*
 headline "[Package] Solution lambda"
 rm -rf dist
 mkdir -p dist
-rsync -a .venv/lib/python3.11/site-packages/ ./dist/ --exclude '*dist-info*' --exclude '*.pyc' --exclude '*__pycache__*'
+rsync -a .venv/lib/python3.12/site-packages/ ./dist/ --exclude '*dist-info*' --exclude '*.pyc' --exclude '*__pycache__*'
 cd dist
 zip -rq "$2.zip" .
 cp -R "$2.zip" $build_dist_dir

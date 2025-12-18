@@ -39,18 +39,21 @@ const ActionItems = () => {
     }
 
     const updateOperation = async (type: string) => {
+        if (!selectedItems || selectedItems.length === 0) {
+            console.error('No items selected for update operation');
+            return;
+        }
         const currentTimeStamp = new Date();
         const UTCTimeStamp = currentTimeStamp.toISOString();
 
         const input = {
-            SubnetId: selectedItems![0].SubnetId,
+            SubnetId: selectedItems[0].SubnetId,
             Version: "latest",
             Status: "processing",
             UserId: user.username,
             GraphQLTimeStamp: UTCTimeStamp,
             AdminAction: type,
         };
-
 
         await API.graphql(
             graphqlOperation(updateTransitNetworkOrchestratorTable, {input})

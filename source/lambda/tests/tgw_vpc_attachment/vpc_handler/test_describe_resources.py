@@ -130,24 +130,23 @@ def test_vpc_describe_resources_subnet_no_tag(organizations_setup, vpc_setup_wit
     # ARRANGE
     override_environment_variables()
 
-    # ASSERT
-    # Raising an exception is probably not the originally intended behavior of the code,
-    # but the observed behavior at the time this test is written.
-    # The test captures the observed behavior, since it was not reported as bug so far.
-    with pytest.raises(Exception):
-        # ACT
-        lambda_handler({
-            'params': {
-                'ClassName': 'VPC',
-                'FunctionName': 'describe_resources'
-            },
-            'event': {
-                'AWSSpokeAccountId': DEFAULT_ACCOUNT_ID,
-                'resources': ['arn:aws:ec2:us-east-1:555555555555:subnet/' + vpc_setup_with_explicit_route_table['subnet_id']],
-                'SubnetId': vpc_setup_with_explicit_route_table['subnet_id'],
-                'detail': {'tags': [{'Key': 'Propagate-to', 'Value': ''}]},
-            }
-        }, LambdaContext())
+    # ACT
+    # Fixed: Subnets with no tags should not raise an exception
+    # The function should handle None tags gracefully
+    response = lambda_handler({
+        'params': {
+            'ClassName': 'VPC',
+            'FunctionName': 'describe_resources'
+        },
+        'event': {
+            'AWSSpokeAccountId': DEFAULT_ACCOUNT_ID,
+            'resources': ['arn:aws:ec2:us-east-1:555555555555:subnet/' + vpc_setup_with_explicit_route_table['subnet_id']],
+            'SubnetId': vpc_setup_with_explicit_route_table['subnet_id'],
+            'detail': {'tags': [{'Key': 'Propagate-to', 'Value': ''}]},
+        }
+    }, LambdaContext())
+
+    assert response['SubnetTagFound'] == 'no'
 
 
 @mock_sts

@@ -7,6 +7,7 @@ import json
 import os
 import threading
 import time
+from datetime import datetime, timezone
 from os import environ, path
 from urllib import request, error
 from uuid import uuid4
@@ -24,10 +25,10 @@ from solution.custom_resource.lib.utils import boto3_config
 from solution.custom_resource.lib.utils import (
     sanitize,
     send_metrics,
+    METRICS_TIMESTAMP_FORMAT,
 )
 
 logger = Logger(os.getenv('LOG_LEVEL'))
-
 
 def start_state_machine(event: events.CloudFormationCustomResourceEvent, context: LambdaContext):
     log_message = {
@@ -116,6 +117,7 @@ def cfn_handler(event: events.CloudFormationCustomResourceEvent, context: Lambda
     response_data = {}
     status = "SUCCESS"
     reason = None
+    request_type = event.get('RequestType', '').lower()
 
     # Setup timer to catch timeouts
     timer = threading.Timer(
@@ -124,28 +126,24 @@ def cfn_handler(event: events.CloudFormationCustomResourceEvent, context: Lambda
         args=[event, context, logger],
     )
     timer.start()
-    log_message[
-        "MESSAGE"
-    ] = f"{event['RequestType']} for {event['ResourceType']}"
-    logger.debug(str(log_message))
     try:
-        if event["ResourceType"] == "Custom::CreateUUID":
-            response_data = handle_uuid(event)
-
-        if event["ResourceType"] == "Custom::CWEventPermissions":
-            handle_cwe_permissions(event)
-
-        if event["ResourceType"] == "Custom::ConsoleDeploy":
-            s3_client = boto3.client("s3", config=boto3_config)
-            ConsoleDeployment(s3_client, open, path.exists).deploy(event)
-
-        if event["ResourceType"] == "Custom::GetPrefixListArns":
-            response_data = handle_prefix(event)
-
-        if event["ResourceType"] == "Custom::SendCFNParameters":
+        resource_type = event.get("ResourceType")
+        log_message["MESSAGE"] = f"{event.get('RequestType')} for {resource_type}"
+        logger.debug(str(log_message))
+        
+        if resource_type == "Custom::SendCFNParameters":
             handle_metrics(event)
 
-        if event["ResourceType"] == "Custom::CheckServiceLinkedRole":
+        elif resource_type == "Custom::CreateUUID":
+            response_data = handle_uuid(event)
+        elif resource_type == "Custom::CWEventPermissions":
+            handle_cwe_permissions(event)
+        elif resource_type == "Custom::ConsoleDeploy":
+            s3_client = boto3.client("s3", config=boto3_config)
+            ConsoleDeployment(s3_client, open, path.exists).deploy(event)
+        elif resource_type == "Custom::GetPrefixListArns":
+            response_data = handle_prefix(event)
+        elif resource_type == "Custom::CheckServiceLinkedRole":
             response_data = check_service_linked_role(event)
 
         logger.info("Completed successfully, sending response to cfn")
@@ -154,7 +152,7 @@ def cfn_handler(event: events.CloudFormationCustomResourceEvent, context: Lambda
         logger.error(str(log_message))
         status = "FAILED"
         reason = str(err)
-    finally:
+    finally:        
         send(
             event,
             context,
@@ -249,7 +247,7 @@ def handle_prefix(event: events.CloudFormationCustomResourceEvent):
 
 
 def handle_metrics(event: events.CloudFormationCustomResourceEvent):
-    """Handles sending launch parameters to aws-solutions
+    """Handles sending launch parameters to aws-solutions 
 
     Args:
         event (dict): event from CloudFormation on create, update or delete
@@ -257,9 +255,14 @@ def handle_metrics(event: events.CloudFormationCustomResourceEvent):
     Returns:
         None
     """
-    if environ.get("SEND_METRIC") == "Yes":
-        properties = event["ResourceProperties"]
-        data = {
+    properties = event["ResourceProperties"]
+    request_type = event.get('RequestType', '').lower()
+    data = {
+        "event": {
+            "type": "solution",
+            "action": request_type
+        },
+        "solution": {
             "PrincipalType": properties.get("PrincipalType"),
             "ApprovalNotificationFlag": properties.get("ApprovalNotification"),
             "AuditTrailRetentionPeriod": properties.get(
@@ -268,22 +271,41 @@ def handle_metrics(event: events.CloudFormationCustomResourceEvent):
             "DefaultRoute": properties.get("DefaultRoute"),
             "DeployWebUI": properties.get("DeployWebUI"),
             "Region": environ.get("AWS_REGION"),
-            "SolutionVersion": environ.get("SOLUTION_VERSION"),
-            "Event": f"Solution_{event['RequestType']}",
             "CreatedNewTransitGateway": properties.get(
                 "CreatedNewTransitGateway"
-            ),
-        }
-        try:
-            resp = send_metrics(
-                uuid=properties.get("Uuid"),
-                data=data,
-                solution_id=environ.get("SOLUTION_ID"),
-                url=environ.get("METRICS_ENDPOINT"),
             )
-            logger.info("Metrics sent with response code: %s", resp)
-        except Exception as err:
-            logger.warning(str(err))
+        },
+        "version": environ.get("SOLUTION_VERSION")
+    }
+    cfn_client = boto3.client('cloudformation', config=boto3_config)
+    creation_time = None
+    created_at = None
+    try:
+        stack_info = cfn_client.describe_stacks(StackName=event['StackId'])
+        if stack_info['Stacks']:
+            creation_time = stack_info['Stacks'][0]['CreationTime']
+            created_at = creation_time.strftime(METRICS_TIMESTAMP_FORMAT)
+
+        data["solution"]["created_at"] = created_at
+        if request_type == "delete":
+            timestamp = datetime.now(timezone.utc)
+            if created_at and creation_time:
+                deleted_at = timestamp.strftime(METRICS_TIMESTAMP_FORMAT)
+                lifespan_hours = round(
+                    (timestamp - creation_time).total_seconds() / 3600, 2)
+                data["solution"].update({
+                    "deleted_at": deleted_at,
+                    "lifespan_hours": lifespan_hours
+                })
+        resp = send_metrics(
+            uuid=properties.get("Uuid"),
+            data=data,
+            solution_id=environ.get("SOLUTION_ID"),
+            url=environ.get("METRICS_ENDPOINT"),
+        )
+        logger.info("Metrics sent with response code: %s", resp)
+    except Exception as err:
+        logger.warning(str(err))
 
 
 def check_service_linked_role(event: events.CloudFormationCustomResourceEvent):
@@ -369,3 +391,4 @@ def send(
         # Handle URL errors (e.g., connectivity issues, invalid URL)
         logger.error("send(..) failed sending PUT request: %s", str(e.reason))
         raise
+

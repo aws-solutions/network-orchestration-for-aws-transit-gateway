@@ -6,10 +6,12 @@
 import json
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib import request, error
 
 import botocore
+
+METRICS_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S.%f"  # This is the required format for the metrics API. Any changes should be taken with care
 
 
 def sanitize(name, space_allowed=False, replace_with_character="_"):
@@ -44,7 +46,7 @@ def send_metrics(
     """sends metric to aws-solutions
 
     Args:
-        uuid (string): unique id to make metrics anonymous
+        uuid (string): unique id for metrics collection
         data (dict): usage metrics from the solution
         solution_id (string): solution id
         url (str, optional): aws-solutions endpoint. \
@@ -54,11 +56,15 @@ def send_metrics(
         int: request code
     """
     time_stamp = {
-        "TimeStamp": str(datetime.utcnow().isoformat())
-        .replace("T", " ")
-        .replace("Z", "")
+        "TimeStamp": datetime.now(timezone.utc).strftime(METRICS_TIMESTAMP_FORMAT)
     }  # Date and time instant in a java.sql.Timestamp compatible format,
-    params = {"Solution": solution_id, "UUID": uuid, "Data": data}
+    params = {
+        "Solution": solution_id, 
+        "UUID": uuid, 
+        "AccountId": os.environ.get("AWS_ACCOUNT_ID", "unknown"),
+        "StackId": os.environ.get("STACK_ID", "unknown"),
+        "Data": data
+    }
     metrics = dict(time_stamp, **params)
     json_data = json.dumps(metrics)
     headers = {"Content-Type": "application/json"}

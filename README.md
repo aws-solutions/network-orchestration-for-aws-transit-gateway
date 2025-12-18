@@ -62,7 +62,7 @@ Use the following steps if you want to customize the solution or extend the solu
 
 ### Setup
 
-- Python Prerequisite: python=3.11 | pip3=23.2.1
+- Python Prerequisite: python=3.12 | pip3=23.2.1
 - Poetry >=2.1.3
 - Javascript Prerequisite: node=v18.16.0 | npm=9.5.1
 
@@ -186,11 +186,11 @@ Network Orchestration for AWS Transit Gateway solution consists of:
 
 See license [here](./LICENSE.txt).
 
-## Collection of operational metrics
+## Data Collection
 
-This solution collects anonymous operational metrics to help AWS improve the quality and features of the solution. For
-more information, including how to disable this capability, please see
-the [implementation guide](https://docs.aws.amazon.com/solutions/latest/network-orchestration-aws-transit-gateway/reference.html).
+This solution sends operational metrics to AWS (the "Data") about the use of this solution. 
+We use this Data to better understand how customers use this solution and related services and products. 
+AWS's collection of this Data is subject to the [AWS Privacy Notice](https://aws.amazon.com/privacy/).
 
 ---
 

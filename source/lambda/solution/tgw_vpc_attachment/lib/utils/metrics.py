@@ -5,11 +5,13 @@
 import json
 import os
 import ssl
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from urllib import request, error
 
 from aws_lambda_powertools import Logger
+
+METRICS_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S.%f"  # This is the required format for the metrics API. Any changes should be taken with care
 
 
 class DecimalEncoder(json.JSONEncoder):
@@ -28,28 +30,28 @@ class Metrics(object):
 
     def metrics(self, data, solution_id='SO0058', url='https://metrics.awssolutionsbuilder.com/generic'):
         try:
-            send_metrics = os.environ.get('METRICS_FLAG', 'no')
-            if send_metrics.lower() == 'yes':
-                uuid = os.environ.get('SOLUTION_UUID')
-                time_stamp = {'TimeStamp': str(datetime.utcnow().isoformat())}
-                params = {'Solution': solution_id,
-                          'UUID': uuid,
-                          'Data': data}
-                metrics = dict(time_stamp, **params)
-                json_data = json.dumps(metrics, cls=DecimalEncoder)
-                headers = {'content-type': 'application/json'}
-                context = ssl.create_default_context()
-                req = request.Request(url, data=json_data.encode('utf-8'), headers=headers, method='POST')
+            uuid = os.environ.get('SOLUTION_UUID')
+            time_stamp = {'TimeStamp': datetime.now(timezone.utc).strftime(METRICS_TIMESTAMP_FORMAT)}
+            params = {'Solution': solution_id,
+                      'UUID': uuid,
+                      'AccountId': os.environ.get('AWS_ACCOUNT_ID', 'unknown'),
+                      'StackId': os.environ.get('STACK_ID', 'unknown'),
+                      'Data': data}
+            metrics = dict(time_stamp, **params)
+            json_data = json.dumps(metrics, cls=DecimalEncoder)
+            headers = {'content-type': 'application/json'}
+            context = ssl.create_default_context()
+            req = request.Request(url, data=json_data.encode('utf-8'), headers=headers, method='POST')
 
-                try:
-                    with request.urlopen(req, context=context) as response:
-                        response_code = response.getcode()  # Get the response code
-                        return response_code
-                except error.HTTPError as e:
-                    # Handle HTTP errors
-                    return e.code
-                except error.URLError as e:
-                    # Handle URL errors (e.g., connectivity issues, invalid URL)
-                    return str(e.reason)
+            try:
+                with request.urlopen(req, context=context) as response:
+                    response_code = response.getcode()  # Get the response code
+                    return response_code
+            except error.HTTPError as e:
+                # Handle HTTP errors
+                return e.code
+            except error.URLError as e:
+                # Handle URL errors (e.g., connectivity issues, invalid URL)
+                return str(e.reason)
         except Exception as err:
             self.logger.error(str(err))

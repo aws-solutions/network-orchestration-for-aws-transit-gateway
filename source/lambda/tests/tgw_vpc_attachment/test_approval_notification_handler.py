@@ -1,7 +1,7 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 import boto3
 import pytest
@@ -222,7 +222,7 @@ def test_topic_doesnt_exist(dynamodb_table):
                 'VpcId': 'foo',
                 "Associate-with": "foo",
                 "Propagate-to": ["bar"],
-                'time': datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+                'time': datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             }}, LambdaContext())
 
     # ASSERT

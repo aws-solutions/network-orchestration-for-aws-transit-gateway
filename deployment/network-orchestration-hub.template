@@ -396,9 +396,6 @@ Mappings:
     Metrics:
       SolutionId: "SO0058"
       MetricsEndpoint: "https://metrics.awssolutionsbuilder.com/generic"
-  AnonymizedData:
-    SendAnonymizedData:
-      Data: "Yes"
 
 Resources:
 
@@ -779,12 +776,13 @@ Resources:
       Environment:
         Variables:
           LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
-          SEND_METRIC: !FindInMap [AnonymizedData, SendAnonymizedData, Data]
           SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionId]
           SOLUTION_VERSION: !FindInMap [SourceCode, General, Version]
           METRICS_ENDPOINT: !FindInMap [Solution, Metrics, MetricsEndpoint]
           USER_AGENT_STRING: AwsSolution/SO0058/%VERSION%
           PARTITION: !Sub ${AWS::Partition}
+          AWS_ACCOUNT_ID: !Ref AWS::AccountId
+          STACK_ID: !Ref AWS::StackId
       Code:
         S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], !Ref "AWS::Region"]]
         S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"], !FindInMap ["SourceCode", "General", "LambdaZip"]]]
@@ -792,7 +790,7 @@ Resources:
       Handler: solution.custom_resource.main.lambda_handler
       MemorySize: 1536
       Role: !Sub ${CustomResourceLambdaFunctionRole.Arn}
-      Runtime: python3.11
+      Runtime: python3.12
       Timeout: 900
 
   LambdaPermissionSpokeAccount:
@@ -856,6 +854,14 @@ Resources:
                   - events:RemovePermission
                   - events:PutPermission
                 Resource: !Sub ${STNOCustomEventBus.Arn}
+        - PolicyName: STNO-CloudFormation-Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                Resource: !Ref AWS::StackId
 
   PolicyIAMEC2:
     Type: AWS::IAM::Policy
@@ -1005,7 +1011,9 @@ Resources:
           FIRST_PRINCIPAL: !Select [ 0, !Ref Principals ]
           PARTITION: !Sub ${AWS::Partition}
           RESOURCE_SHARE_ARN: !GetAtt TGWResourceShare.Arn
-          METRICS_FLAG: !FindInMap [AnonymizedData, SendAnonymizedData, Data]
+          METRICS_FLAG: "Yes"
+          AWS_ACCOUNT_ID: !Ref AWS::AccountId
+          STACK_ID: !Ref AWS::StackId
           SOLUTION_VERSION: !FindInMap ["SourceCode", "General", "Version"]
           STNO_CONSOLE_LINK: !If [DeployWebUiCondition, !Sub "https://${ConsoleCloudFront.DomainName}", !Ref AWS::NoValue]
           VPC_TAGS_FOR_ATTACHMENT: !Ref ListOfVpcTagsForAttachment
@@ -1021,7 +1029,7 @@ Resources:
       Handler: solution.tgw_vpc_attachment.main.lambda_handler
       MemorySize: 1536
       Role: !GetAtt 'StateMachineLambdaFunctionRole.Arn'
-      Runtime: python3.11
+      Runtime: python3.12
       Timeout: 900
 
   StateMachineRole:
@@ -2020,6 +2028,120 @@ Resources:
       Principal: "events.amazonaws.com"
       SourceArn: !Sub ${TgwTagEventRule.Arn}
 
+  
+  MetricsCollectorLambda:
+    Type: AWS::Lambda::Function
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W92
+            reason: "does not require concurrency reservation"
+          - id: W89
+            reason: "not a valid use-case for vpc"
+          - id: W58
+            reason: "log write permission added to MetricsCollectorLambdaRole"
+    Properties:
+      Environment:
+        Variables:
+          LOG_LEVEL: !FindInMap [LambdaFunction, Logging, Level]
+          TGW_ID: !If [CreateNewTransitGateway, !Ref AWSTransitGateway, !Ref ExistingTransitGatewayId]
+          SOLUTION_ID: !FindInMap [Solution, Metrics, SolutionId]
+          SOLUTION_VERSION: !FindInMap [SourceCode, General, Version]
+          USER_AGENT_STRING: AwsSolution/SO0058/%VERSION%
+          PARTITION: !Sub ${AWS::Partition}
+          METRICS_FLAG: "Yes"
+          SOLUTION_UUID: !GetAtt CreateUniqueID.UUID
+          AWS_ACCOUNT_ID: !Ref AWS::AccountId
+          STACK_ID: !Ref AWS::StackId
+      Code:
+        S3Bucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], !Ref "AWS::Region"]]
+        S3Key: !Join ["/", [!FindInMap ["SourceCode", "General", "KeyPrefix"], !FindInMap ["SourceCode", "General", "LambdaZip"]]]
+      Description: Network Orchestration for AWS Transit Gateway - Metrics Collector
+      Handler: solution.metrics_collector.main.lambda_handler
+      MemorySize: 512
+      Role: !Sub ${MetricsCollectorLambdaRole.Arn}
+      Runtime: python3.14
+      Timeout: 300
+
+  MetricsCollectorLambdaRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      guard:
+        SuppressedRules:
+          - IAM_NO_INLINE_POLICY_CHECK
+          - IAM_POLICYDOCUMENT_NO_WILDCARD_RESOURCE
+      cfn_nag:
+        rules_to_suppress:
+          - id: W12
+            reason: "CloudWatch GetMetricData/GetMetricStatistics and EC2 Describe actions do not support resource-level permissions"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: STNO-MetricsCollector-CWLogs-Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+        - PolicyName: STNO-MetricsCollector-CloudWatch-Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudwatch:GetMetricData
+                  - cloudwatch:GetMetricStatistics
+                Resource: "*"
+        - PolicyName: STNO-MetricsCollector-EC2-Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeTransitGateways
+                  - ec2:DescribeTransitGatewayVpcAttachments
+                  - ec2:DescribeTransitGatewayAttachments
+                Resource: "*"
+
+
+  DailyMetricsCollectionRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Serverless Transit Network Orchestrator - Metrics collection rule for transit gateway attachments
+      ScheduleExpression: "rate(1 day)"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt MetricsCollectorLambda.Arn
+          Id: 'DailyMetricsCollection'
+          Input: !Sub |
+            {
+              "source": "aws.events",
+              "detail-type": "Scheduled Event",
+              "detail": {
+                "action": "collect_all_metrics"
+              }
+            }
+
+  PermissionForDailyMetricsRule:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref "MetricsCollectorLambda"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !Sub ${DailyMetricsCollectionRule.Arn}
+
   TgwPeeringLambdaFunctionRole:
     Type: AWS::IAM::Role
     Metadata:
@@ -2100,7 +2222,7 @@ Resources:
       Handler: solution.tgw_peering_attachment.main.lambda_handler
       MemorySize: 1536
       Role: !Sub ${TgwPeeringLambdaFunctionRole.Arn}
-      Runtime: python3.11
+      Runtime: python3.12
       Timeout: 900
   
   ########################################

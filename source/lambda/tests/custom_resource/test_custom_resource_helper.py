@@ -4,11 +4,13 @@
 import os
 from copy import deepcopy
 from os import environ
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
+from datetime import datetime, timezone
 
 import pytest
 import boto3
 from moto import mock_iam
+from botocore.exceptions import ClientError
 from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities.typing import LambdaContext
 
@@ -217,36 +219,42 @@ class TestClassMetrics:
     properties = CREATE_METRICS["ResourceProperties"]
     environ["AWS_REGION"] = "my-region"
 
-    @pytest.mark.TDD
-    def test__success__no_metric(self, mocker):
-        """success, metric not sent when flag set to no"""
-        environ["SEND_METRIC"] = "No"
-        m1 = mocker.patch("solution.custom_resource.lib.custom_resource_helper.send")
-        handle_metrics(CREATE_METRICS)
-        assert m1.call_count == 0
-
     @pytest.mark.BDD
     def test__success(self, mocker):
         """success, metric sent"""
-        environ["SEND_METRIC"] = "Yes"
         environ["SOLUTION_ID"] = "SO-ID"
         environ["METRICS_ENDPOINT"] = "https://endpoint"
+        environ["SOLUTION_VERSION"] = "v1.0.0"
+        
+        # Mock CloudFormation client and response
+        mock_cfn_client = mocker.patch("boto3.client")
+        mock_cfn_instance = Mock()
+        mock_cfn_client.return_value = mock_cfn_instance
+        
+        # Mock describe_stacks response
+        creation_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        mock_cfn_instance.describe_stacks.return_value = {
+            'Stacks': [{
+                'CreationTime': creation_time
+            }]
+        }
+        
         data = {
-            "PrincipalType": self.properties.get("PrincipalType"),
-            "ApprovalNotificationFlag": self.properties.get(
-                "ApprovalNotification"
-            ),
-            "AuditTrailRetentionPeriod": self.properties.get(
-                "AuditTrailRetentionPeriod"
-            ),
-            "DefaultRoute": self.properties.get("DefaultRoute"),
-            "DeployWebUI": self.properties.get("DeployWebUI"),
-            "Region": environ.get("AWS_REGION"),
-            "SolutionVersion": environ.get("SOLUTION_VERSION"),
-            "Event": f"Solution_{CREATE_METRICS['RequestType']}",
-            "CreatedNewTransitGateway": self.properties.get(
-                "CreatedNewTransitGateway"
-            ),
+            "event": {
+                "type": "solution",
+                "action": "create"
+            },
+            "solution": {
+                "PrincipalType": self.properties.get("PrincipalType"),
+                "ApprovalNotificationFlag": self.properties.get("ApprovalNotification"),
+                "AuditTrailRetentionPeriod": self.properties.get("AuditTrailRetentionPeriod"),
+                "DefaultRoute": self.properties.get("DefaultRoute"),
+                "DeployWebUI": self.properties.get("DeployWebUI"),
+                "Region": environ.get("AWS_REGION"),
+                "CreatedNewTransitGateway": self.properties.get("CreatedNewTransitGateway"),
+                "created_at": creation_time.strftime("%Y-%m-%d %H:%M:%S.%f")
+            },
+            "version": environ.get("SOLUTION_VERSION")
         }
 
         # successfully sent
@@ -402,3 +410,214 @@ class TestClassSendCfnResponse:
 class AWSLambdaContext:
     def __init__(self):
         self.invoked_function_arn = "abc:abc:abc:abc:abc:abc:abc"
+
+
+@pytest.mark.TDD
+class TestClassAdditionalCoverage:
+    def test_timeout_function(self, mocker):
+
+        from solution.custom_resource.lib.custom_resource_helper import timeout
+        mock_send = mocker.patch("solution.custom_resource.lib.custom_resource_helper.send")
+        
+        timeout(CFN_REQUEST_EVENT, context)
+        mock_send.assert_called_once_with(CFN_REQUEST_EVENT, context, "FAILED", {}, "Execution timed out")
+
+    def test_handle_uuid_non_create(self):
+        """Test handle_uuid for non-Create requests"""
+        from solution.custom_resource.lib.custom_resource_helper import handle_uuid
+        
+        # Test Update request
+        update_event = {"RequestType": "Update"}
+        result = handle_uuid(update_event)
+        assert result == {}
+        
+        # Test Delete request
+        delete_event = {"RequestType": "Delete"}
+        result = handle_uuid(delete_event)
+        assert result == {}
+
+    def test_handle_uuid_create_request(self):
+        from solution.custom_resource.lib.custom_resource_helper import handle_uuid
+        create_event = {"RequestType": "Create"}
+        result = handle_uuid(create_event)
+        assert "UUID" in result
+        assert len(result["UUID"]) > 0
+
+    def test_handle_cwe_permissions_delete(self, mocker):
+
+        delete_event = deepcopy(CREATE_CWE_PERMISSIONS)
+        delete_event["RequestType"] = "Delete"
+        
+        result = handle_cwe_permissions(delete_event)
+        assert result is None
+
+    def test_handle_prefix_delete(self):
+    
+        delete_event = deepcopy(CREATE_PREFIX)
+        delete_event["RequestType"] = "Delete"
+        
+        result = handle_prefix(delete_event)
+        assert result == {}
+
+    def test_check_service_linked_role_delete(self):
+
+        delete_event = deepcopy(CHECK_SERVICE_LINKED_ROLE)
+        delete_event["RequestType"] = "Delete"
+        
+        result = check_service_linked_role(delete_event)
+        assert result == {}
+
+    @patch('boto3.client')
+    def test_check_service_linked_role_client_error(self, mock_boto_client):
+
+        mock_iam = Mock()
+        mock_boto_client.return_value = mock_iam
+        
+        error_response = {'Error': {'Code': 'AccessDenied', 'Message': 'Access denied'}}
+        mock_iam.get_role.side_effect = ClientError(error_response, 'GetRole')
+        
+        with pytest.raises(ClientError):
+            check_service_linked_role(CHECK_SERVICE_LINKED_ROLE)
+
+    def test_send_http_errors(self, mocker):
+
+        from urllib.error import HTTPError, URLError
+        
+        # Test HTTPError
+        mock_urlopen = mocker.patch("urllib.request.urlopen")
+        mock_urlopen.side_effect = HTTPError(None, 500, "Server Error", None, None)
+        
+        with pytest.raises(HTTPError):
+            send(CFN_REQUEST_EVENT, context, "SUCCESS", {})
+        
+        # Test URLError with reason attribute
+        url_error = URLError("Connection failed")
+        url_error.reason = "Network unreachable"
+        mock_urlopen.side_effect = url_error
+        
+        with pytest.raises(URLError):
+            send(CFN_REQUEST_EVENT, context, "SUCCESS", {})
+
+    def test_send_with_long_reason_truncation(self, mocker):
+        mock_urlopen = mocker.patch("urllib.request.urlopen")
+        
+
+        long_reason = "x" * 300
+        
+        send(CFN_REQUEST_EVENT, context, "FAILED", {}, reason=long_reason)
+        
+        mock_urlopen.assert_called_once()
+
+    def test_send_with_existing_physical_resource_id(self, mocker):
+        mock_urlopen = mocker.patch("urllib.request.urlopen")
+        
+        event_with_physical_id = deepcopy(CFN_REQUEST_EVENT)
+        event_with_physical_id["PhysicalResourceId"] = "existing-physical-id"
+        
+        send(event_with_physical_id, context, "SUCCESS", {})
+        
+        mock_urlopen.assert_called_once()
+
+
+    def test_timeout_handling_variations(self, mocker):
+        from solution.custom_resource.lib.custom_resource_helper import timeout
+        
+        # Test with minimal context
+        minimal_context = Mock()
+        minimal_context.log_stream_name = "test-stream"
+        mock_send = mocker.patch("solution.custom_resource.lib.custom_resource_helper.send")
+        
+        timeout(CFN_REQUEST_EVENT, minimal_context)
+        mock_send.assert_called_with(
+            CFN_REQUEST_EVENT, 
+            minimal_context, 
+            "FAILED", 
+            {}, 
+            "Execution timed out"
+        )
+
+    def test_send_with_various_response_data(self, mocker):
+
+        from solution.custom_resource.lib.custom_resource_helper import send
+        
+        mock_urlopen = mocker.patch("urllib.request.urlopen")
+        
+        test_cases = [
+            {},
+            {"complex": {"nested": "data"}}, 
+            {"list": [1, 2, 3]}, 
+            {"none_value": None} 
+        ]
+        
+        for response_data in test_cases:
+            send(CFN_REQUEST_EVENT, context, "SUCCESS", response_data)
+            assert mock_urlopen.called
+            mock_urlopen.reset_mock()
+
+
+    def test_send_with_none_reason(self, mocker):
+        from solution.custom_resource.lib.custom_resource_helper import send
+        
+        mock_urlopen = mocker.patch("urllib.request.urlopen")
+        
+
+        send(CFN_REQUEST_EVENT, context, "SUCCESS", {}, reason=None)
+        mock_urlopen.assert_called_once()
+
+    def test_start_state_machine_specific_branches(self, mocker):
+        mocker.patch("solution.custom_resource.lib.step_functions.StepFunctions.trigger_state_machine")
+        mock_get_resource_type = mocker.patch("solution.custom_resource.lib.custom_resource_helper.get_resource_type_details")
+        mock_get_resource_type.return_value = "test-resource-type"
+        
+        context_mock = Mock()
+        context_mock.invoked_function_arn = "arn:aws:lambda:us-east-1:123456789:function:test"
+
+        event1 = {
+            "account": "123456789",
+            "detail": {
+                "eventName": "DeleteSubnet"
+            }
+        }
+        start_state_machine(event1, context_mock)
+
+        event2 = {
+            "account": "123456789", 
+            "detail": {
+                "resource-type": "vpc"
+            }
+        }
+        start_state_machine(event2, context_mock)
+        mock_get_resource_type.assert_called_once_with(event2)
+
+    def test_cfn_handler_specific_resource_types(self, mocker):
+        mocker.patch("solution.custom_resource.lib.custom_resource_helper.send")
+
+        mock_handle_prefix = mocker.patch("solution.custom_resource.lib.custom_resource_helper.handle_prefix")
+        mock_handle_prefix.return_value = {"PrefixListArns": ["arn:test"]}
+        
+        prefix_event = deepcopy(CFN_REQUEST_EVENT)
+        prefix_event["ResourceType"] = "Custom::GetPrefixListArns"
+        cfn_handler(prefix_event, context)
+        mock_handle_prefix.assert_called_once_with(prefix_event)
+
+        mock_check_role = mocker.patch("solution.custom_resource.lib.custom_resource_helper.check_service_linked_role")
+        mock_check_role.return_value = {"ServiceLinkedRoleExist": "True"}
+        
+        role_event = deepcopy(CFN_REQUEST_EVENT)
+        role_event["ResourceType"] = "Custom::CheckServiceLinkedRole"
+        cfn_handler(role_event, context)
+        mock_check_role.assert_called_once_with(role_event)
+
+    def test_cfn_handler_console_deploy(self, mocker):
+        mocker.patch("solution.custom_resource.lib.custom_resource_helper.send")
+        mock_console_deploy = mocker.patch(
+            "solution.custom_resource.lib.console_deployment.ConsoleDeployment.deploy"
+        )
+        mock_s3_client = mocker.patch("boto3.client")
+        
+        console_event = deepcopy(CFN_REQUEST_EVENT)
+        console_event["ResourceType"] = "Custom::ConsoleDeploy"
+        cfn_handler(console_event, context)
+        
+
+        mock_console_deploy.assert_called_once_with(console_event)
