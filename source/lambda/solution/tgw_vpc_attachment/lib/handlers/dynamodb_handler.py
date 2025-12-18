@@ -84,8 +84,6 @@ class DynamoDb:
             item.update({"Version": "latest"})
             ddb.put_item(item)
 
-            GeneralFunctions(self.event).send_anonymous_data()
-
             return self.event
         except Exception as e:
             message = {

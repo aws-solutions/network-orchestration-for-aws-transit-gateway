@@ -251,7 +251,7 @@ Resources:
       Handler: solution.custom_resource.main.lambda_handler
       MemorySize: 512
       Role: !Sub ${CustomResourceLambdaFunctionRole.Arn}
-      Runtime: python3.11
+      Runtime: python3.12
       Timeout: 900
 
   CustomResourceLambdaFunctionRole:
@@ -281,6 +281,14 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+        - PolicyName: STNO-CloudFormation-Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                Resource: !Ref AWS::StackId
         - PolicyName: STNO-IAM-Policy
           PolicyDocument:
             Version: '2012-10-17'

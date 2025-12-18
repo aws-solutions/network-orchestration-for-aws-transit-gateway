@@ -108,7 +108,8 @@ class VPCHandler:
 
     def _check_subnet_tags(self, subnet):
         tag_key_list = dict()
-        for tag in subnet.get("Tags"):
+        tags = subnet.get("Tags") or []  # Handle None case when subnet has no tags
+        for tag in tags:
             tag_key_list[tag.get("Key").lower().strip()] = tag.get("Value").lower().strip()
         self.logger.debug(f"list of tag keys: {tag_key_list}")
 

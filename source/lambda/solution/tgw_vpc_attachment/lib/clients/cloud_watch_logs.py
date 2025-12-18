@@ -4,13 +4,12 @@
 
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 import boto3
 from aws_lambda_powertools import Logger
 
 from solution.tgw_vpc_attachment.lib.clients.boto3_config import boto3_config
-
 
 class CloudWatchLogs:
 
@@ -28,7 +27,7 @@ class CloudWatchLogs:
             f"Calling the log method with log group {log_group} and message {message}"
         )
         uuid_str = str(uuid.uuid4())
-        timestamp_str = datetime.utcnow().strftime("%Y/%m/%d/%H/%M/%S")
+        timestamp_str = datetime.now(timezone.utc).strftime("%Y/%m/%d/%H/%M/%S")
         log_stream = f"{timestamp_str}-{uuid_str}"
         self.create_log_stream(log_group, log_stream)
         self.put_log_events(log_stream, log_group, message)
@@ -69,7 +68,7 @@ class CloudWatchLogs:
                 logStreamName=log_stream,
                 logEvents=[
                     {
-                        "timestamp": int(datetime.now().timestamp() * 1000),
+                        "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000),
                         "message": message,
                     }
                 ],

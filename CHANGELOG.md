@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.21] - 2025-12-18
+
+### Changed
+
+- Enhanced operational metrics sent by the solution to include Transit Gateway attachment metrics
+
+### Security
+
+- Bump `node-forge` to address [CVE-2025-12816] (<https://avd.aquasec.com/nvd/2025/cve-2025-12816>) and [CVE-2025-66031] (<https://avd.aquasec.com/nvd/2025/cve-2025-66031>)
+- Bump `werkzeug` to address [CVE-2025-66221] (<https://avd.aquasec.com/nvd/2025/cve-2025-66221>)
+- Bump `urllib3` to address [CVE-2025-66418] (<https://avd.aquasec.com/nvd/2025/cve-2025-66418>) and [CVE-2025-66471] (<https://avd.aquasec.com/nvd/2025/cve-2025-66471>)
+
 ## [3.3.20] - 2025-11-25
 
 ### Security

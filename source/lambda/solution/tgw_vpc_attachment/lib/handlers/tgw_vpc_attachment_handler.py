@@ -3,7 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import hashlib
 from collections import Counter
+from datetime import datetime, timezone
 from os import environ
 from secrets import choice
 from time import sleep
@@ -22,8 +24,10 @@ from solution.tgw_vpc_attachment.lib.exceptions import (
 from solution.tgw_vpc_attachment.lib.handlers.approval_tag_handler import ApprovalTagHandler
 from solution.tgw_vpc_attachment.lib.handlers.tgw_vpc_attachment_model import TgwVpcAttachmentModel
 from solution.tgw_vpc_attachment.lib.utils.helper import timestamp_message
+from solution.tgw_vpc_attachment.lib.utils.metrics import Metrics
 
 TGW_VPC_ERROR = "The TGW-VPC Attachment is not in 'available' state."
+METRICS_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 
 def throw_exception_if_duplicate_names(tgw_route_tables: List[
@@ -146,37 +150,74 @@ class TransitGatewayVPCAttachments:
     @service_exception_handler
     def _create_tgw_attachment(self):
         self.logger.info(f"Creating TGW Attachment with Subnet ID: {self.event.get('SubnetId')}")
-        response = self.spoke_ec2_client.create_transit_gateway_vpc_attachment(
-            environ.get("TGW_ID"),
-            self.event.get("VpcId"),
-            self.event.get('SubnetId'),
-        )
-        # denormalize event - return dict
-        # merge with event (cleaner)
-        self.event.update({
-            "AttachmentState": response.get("TransitGatewayVpcAttachment", {}).get("State")
-        }
-        )
-        self.event.update(
-            {
-                "TransitGatewayAttachmentId": response.get(
-                    "TransitGatewayVpcAttachment",
-                    {}).get("TransitGatewayAttachmentId")
+        try:
+            response = self.spoke_ec2_client.create_transit_gateway_vpc_attachment(
+                environ.get("TGW_ID"),
+                self.event.get("VpcId"),
+                self.event.get('SubnetId'),
+            )
+            # denormalize event - return dict
+            self.event.update({
+                "AttachmentState": response.get("TransitGatewayVpcAttachment", {}).get("State")
             }
-        )
-        self.event.update({"Action": "CreateTgwVpcAttachment"})
-        self.event.update({"TgwAttachmentExist": "yes"})
+            )
+            self.event.update(
+                {
+                    "TransitGatewayAttachmentId": response.get(
+                        "TransitGatewayVpcAttachment",
+                        {}).get("TransitGatewayAttachmentId")
+                }
+            )
+            self.event.update({"Action": "CreateTgwVpcAttachment"})
+            self.event.update({"TgwAttachmentExist": "yes"})
 
-        self._create_tag(
-            self.event.get('SubnetId'),
-            "Subnet",
-            "Subnet added to the TGW attachment.",
-        )
-        self._create_tag(
-            self.event.get("VpcId"),
-            "VPCAttachment",
-            "VPC has been attached to the Transit Gateway",
-        )
+            # Send operational metrics for successful attachment creation
+            self.logger.info("OPERATIONAL_METRICS: Sending TGW attachment creation metrics")
+            metrics_data = {
+                "event": {
+                    "type": "tgw_attachment",
+                    "action": "create",
+                    "status": "succeeded"
+                },
+                "attachment": {
+                    "tgw_id_hash": hashlib.sha256(environ.get("TGW_ID", "").encode()).hexdigest(),
+                    "attachment_id_hash": hashlib.sha256(self.event.get("TransitGatewayAttachmentId", "").encode()).hexdigest(),
+                    "created_at": datetime.now(timezone.utc).strftime(METRICS_TIMESTAMP_FORMAT)
+                }
+            }
+            result = Metrics().metrics(metrics_data)
+            self.logger.info(f"OPERATIONAL_METRICS: TGW attachment creation metrics sent with result: {result}")
+
+
+            self._create_tag(
+                self.event.get('SubnetId'),
+                "Subnet",
+                "Subnet added to the TGW attachment.",
+            )
+            self._create_tag(
+                self.event.get("VpcId"),
+                "VPCAttachment",
+                "VPC has been attached to the Transit Gateway",
+            )
+        except Exception as e:
+            failure_metrics_data = {
+                "event": {
+                    "type": "tgw_attachment",
+                    "action": "create",
+                    "status": "failed"
+                },
+                "attachment": {
+                    "tgw_id_hash": hashlib.sha256(environ.get("TGW_ID", "").encode()).hexdigest(),
+                    "attachment_id_hash": hashlib.sha256(self.event.get("TransitGatewayAttachmentId", "").encode()).hexdigest()
+                },
+                "failure": {
+                    "code": type(e).__name__,
+                    "message": str(e),
+                    "action": self.event.get("Action")
+                }
+            }
+            Metrics().metrics(failure_metrics_data)
+            raise
 
     def _add_subnet_to_tgw_attachment(self):
 
@@ -234,35 +275,95 @@ class TransitGatewayVPCAttachments:
             )
 
     def _delete_tgw_attachment(self):
+        try:
+            # Get creation time before deleting for lifespan calculation
+            attachment_info = self.spoke_ec2_client.describe_transit_gateway_vpc_attachments(
+                environ.get("TGW_ID"),
+                self.event.get("VpcId")
+            )
+            created_at = None
+            creation_time = None
+            if attachment_info:
+                creation_time = attachment_info[0].get("CreationTime")
+                if creation_time:
+                    created_at = creation_time.strftime(METRICS_TIMESTAMP_FORMAT)
 
-        # if this exception is thrown then it is safe to delete transit gateway attachment
-        delete_response = self.spoke_ec2_client.delete_transit_gateway_vpc_attachment(
-            self.event.get("TransitGatewayAttachmentId")
-        )
-        self.event.update(
-            {
-                "AttachmentState": delete_response.get(
-                    "TransitGatewayVpcAttachment", {}
-                ).get("State")
+            delete_response = self.spoke_ec2_client.delete_transit_gateway_vpc_attachment(
+                self.event.get("TransitGatewayAttachmentId")
+            )
+            self.event.update(
+                {
+                    "AttachmentState": delete_response.get(
+                        "TransitGatewayVpcAttachment", {}
+                    ).get("State")
+                }
+            )
+
+            # Send operational metrics for successful attachment deletion
+            delete_timestamp = datetime.now(timezone.utc)
+            deleted_at = delete_timestamp.strftime(METRICS_TIMESTAMP_FORMAT)
+            lifespan_hours = 0
+            if creation_time:
+                try:
+                    lifespan_hours = round((delete_timestamp - creation_time).total_seconds() / 3600, 2)
+                except Exception as e:
+                    self.logger.warning(f"Failed to calculate attachment lifespan: {str(e)}")
+
+            self.logger.info("OPERATIONAL_METRICS: Sending TGW attachment deletion metrics")
+            metrics_data = {
+                "event": {
+                    "type": "tgw_attachment",
+                    "action": "delete",
+                    "status": "succeeded"
+                },
+                "attachment": {
+                    "tgw_id_hash": hashlib.sha256(environ.get("TGW_ID", "").encode()).hexdigest(),
+                    "attachment_id_hash": hashlib.sha256(self.event.get("TransitGatewayAttachmentId", "").encode()).hexdigest(),
+                    "created_at": created_at,
+                    "deleted_at": deleted_at,
+                    "lifespan_hours": lifespan_hours
+                }
             }
-        )
-        # during this step the associations and propagation are also removed.
-        self._create_tag(
-            self.event.get("VpcId"),
-            "VPCAttachment",
-            "VPC has been detached from the Transit Gateway",
-        )
-        self._create_tag(
-            self.event.get("VpcId"),
-            "VPCAssociation",
-            "VPC has been dissociated with the Transit Gateway Routing Table/Domain",
-        )
-        self._create_tag(
-            self.event.get("VpcId"),
-            "VPCPropagation",
-            "VPC RT propagation has been disabled from the "
-            "Transit Gateway Routing Table/Domain",
-        )
+            result = Metrics().metrics(metrics_data)
+            self.logger.info(f"OPERATIONAL_METRICS: TGW attachment deletion metrics sent with result: {result}")
+
+            # during this step the associations and propagation are also removed.
+            self._create_tag(
+                self.event.get("VpcId"),
+                "VPCAttachment",
+                "VPC has been detached from the Transit Gateway",
+            )
+            self._create_tag(
+                self.event.get("VpcId"),
+                "VPCAssociation",
+                "VPC has been dissociated with the Transit Gateway Routing Table/Domain",
+            )
+            self._create_tag(
+                self.event.get("VpcId"),
+                "VPCPropagation",
+                "VPC RT propagation has been disabled from the "
+                "Transit Gateway Routing Table/Domain",
+            )
+        except Exception as e:
+            # Send operational metrics for failed attachment deletion
+            failure_metrics_data = {
+                "event": {
+                    "type": "tgw_attachment",
+                    "action": "delete",
+                    "status": "failed"
+                },
+                "attachment": {
+                    "tgw_id_hash": hashlib.sha256(environ.get("TGW_ID", "").encode()).hexdigest(),
+                    "attachment_id_hash": hashlib.sha256(self.event.get("TransitGatewayAttachmentId", "").encode()).hexdigest()
+                },
+                "failure": {
+                    "code": type(e).__name__,
+                    "message": str(e),
+                    "action": self.event.get("Action")
+                }
+            }
+            Metrics().metrics(failure_metrics_data)
+            raise
 
     # the function is called by a step function workflow triggered by a tag change.
     # the VPC has an associate-with tag with tgw route table name
@@ -334,7 +435,6 @@ class TransitGatewayVPCAttachments:
     # this function maps the list of tgw_route_tables to a list of ids,
     # and validates the route table names in the given tags against the existing route tables on the TGW.
     # it also updates self.event as a side effect.
-    # TODO split function to separate concerns
     def _get_route_table_ids_for_given_route_table_names(
             self,
             association_route_table_name: str | None,  # from tags
