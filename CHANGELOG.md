@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.22] - 2026-01-14
+
+### Security
+
+- Bump `@remix-run/router` to address [CVE-2026-22029] (<https://avd.aquasec.com/nvd/cve-2026-22029>)
+- Bump `werkzeug` to address [CVE-2026-21860] (<https://avd.aquasec.com/nvd/cve-2026-21860>)
+- Bump `urllib3` to address [CVE-2026-21441] (<https://avd.aquasec.com/nvd/cve-2026-21441>)
+- Bump `qs` to address [CVE-2025-15284] (<https://avd.aquasec.com/nvd/cve-2025-15284>)
+
 ## [3.3.21] - 2025-12-18
 
 ### Changed
