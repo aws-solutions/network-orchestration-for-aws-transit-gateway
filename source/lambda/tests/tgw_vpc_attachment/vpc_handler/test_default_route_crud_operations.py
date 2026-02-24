@@ -263,6 +263,21 @@ def test_vpc_default_route_crud_operations_rfc_1918(vpc_setup_with_explicit_rout
     override_environment_variables()
     os.environ['RFC_1918_ROUTES'] = '10.0.12.0/24,10.0.13.0/24,10.0.14.0/24,10.0.15.0/24,10.0.16.0/24'
     os.environ['DEFAULT_ROUTE'] = 'RFC-1918'
+    # Create a second subnet in the same VPC sharing the same route table
+    subnet2 = ec2_client.create_subnet(
+        VpcId=vpc_setup_with_explicit_route_table['vpc_id'],
+        CidrBlock='10.0.0.16/28',
+        AvailabilityZone='us-east-1b'
+    )
+    subnet2_id = subnet2['Subnet']['SubnetId']    
+    ec2_client.associate_route_table(
+        RouteTableId=vpc_setup_with_explicit_route_table['route_table_id'],
+        SubnetId=subnet2_id
+    )    
+    ec2_client.modify_transit_gateway_vpc_attachment(
+        TransitGatewayAttachmentId=vpc_setup_with_explicit_route_table['tgw_vpc_attachment'],
+        AddSubnetIds=[subnet2_id]
+    )
 
     ec2_client.create_route(
         RouteTableId=vpc_setup_with_explicit_route_table['route_table_id'],
@@ -312,8 +327,16 @@ def test_vpc_default_route_crud_operations_rfc_1918(vpc_setup_with_explicit_rout
     # ASSERT
     assert response['SubnetId'] == vpc_setup_with_explicit_route_table['subnet_id']
     assert response['RouteTableType'] == 'Explicit'
-    assert response['DefaultRouteToTgwExists'] == 'no'
-    assert response['DestinationRouteExists'] == 'yes'
+    route_tables = ec2_client.describe_route_tables(
+        RouteTableIds=[vpc_setup_with_explicit_route_table['route_table_id']]
+    )
+    routes = route_tables['RouteTables'][0]['Routes']
+    tgw_route_exists = any(
+        route.get('DestinationCidrBlock') == '10.0.12.0/24' and 
+        route.get('TransitGatewayId') == vpc_setup_with_explicit_route_table['tgw_id']
+        for route in routes
+    )
+    assert tgw_route_exists, "TGW route should still exist because subnet2 is still in attachment"
 
 
 @mock_sts

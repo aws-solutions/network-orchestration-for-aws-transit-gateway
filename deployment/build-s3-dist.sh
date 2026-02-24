@@ -111,7 +111,6 @@ cp -f $template_dir/network-orchestration-hub.template $template_dist_dir
 cp -f $template_dir/network-orchestration-spoke.template $template_dist_dir
 cp -f $template_dir/network-orchestration-organization-role.template $template_dist_dir
 cp -f $template_dir/network-orchestration-hub-service-linked-roles.template $template_dist_dir
-cp -f $template_dir/network-orchestration-spoke-service-linked-roles.template $template_dist_dir
 
 # Find and replace bucket_name, solution_name, and version
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -122,7 +121,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke.template
     sed -i '' -e $replace $template_dist_dir/network-orchestration-organization-role.template
     sed -i '' -e $replace $template_dist_dir/network-orchestration-hub-service-linked-roles.template
-    sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke-service-linked-roles.template
 
     # Replace solution name with real value
     replace="s/%SOLUTION_NAME%/$2/g"
@@ -130,7 +128,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke.template
     sed -i '' -e $replace $template_dist_dir/network-orchestration-organization-role.template
     sed -i '' -e $replace $template_dist_dir/network-orchestration-hub-service-linked-roles.template
-    sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke-service-linked-roles.template
 
     # Replace version variable with real value
     replace="s/%VERSION%/$3/g"
@@ -138,7 +135,6 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke.template
     sed -i '' -e $replace $template_dist_dir/network-orchestration-organization-role.template
     sed -i '' -e $replace $template_dist_dir/network-orchestration-hub-service-linked-roles.template
-    sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke-service-linked-roles.template
     # Replace template bucket name
     replace="s/%TEMPLATE_OUTPUT_BUCKET%/$4/g"
     sed -i '' -e $replace $template_dist_dir/network-orchestration-spoke.template
@@ -150,7 +146,6 @@ else
     sed -i -e $replace $template_dist_dir/network-orchestration-spoke.template
     sed -i -e $replace $template_dist_dir/network-orchestration-organization-role.template
     sed -i -e $replace $template_dist_dir/network-orchestration-hub-service-linked-roles.template
-    sed -i -e $replace $template_dist_dir/network-orchestration-spoke-service-linked-roles.template
 
     # Replace solution name with real value
     replace="s/%SOLUTION_NAME%/$2/g"
@@ -158,7 +153,6 @@ else
     sed -i -e $replace $template_dist_dir/network-orchestration-spoke.template
     sed -i -e $replace $template_dist_dir/network-orchestration-organization-role.template
     sed -i -e $replace $template_dist_dir/network-orchestration-hub-service-linked-roles.template
-    sed -i -e $replace $template_dist_dir/network-orchestration-spoke-service-linked-roles.template
 
     # Replace version variable with real value
     replace="s/%VERSION%/$3/g"
@@ -166,7 +160,6 @@ else
     sed -i -e $replace $template_dist_dir/network-orchestration-spoke.template
     sed -i -e $replace $template_dist_dir/network-orchestration-organization-role.template
     sed -i -e $replace $template_dist_dir/network-orchestration-hub-service-linked-roles.template
-    sed -i -e $replace $template_dist_dir/network-orchestration-spoke-service-linked-roles.template
 
     # Replace template bucket name
     replace="s/%TEMPLATE_OUTPUT_BUCKET%/$4/g"

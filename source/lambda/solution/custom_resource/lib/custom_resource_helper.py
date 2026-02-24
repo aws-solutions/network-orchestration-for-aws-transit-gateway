@@ -9,6 +9,7 @@ import threading
 import time
 from datetime import datetime, timezone
 from os import environ, path
+from typing import TYPE_CHECKING, TypedDict
 from urllib import request, error
 from uuid import uuid4
 
@@ -18,6 +19,10 @@ from aws_lambda_powertools import Logger
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from aws_lambda_typing import events
 
+if TYPE_CHECKING:
+    from mypy_boto3_iam.client import IAMClient
+else:
+    IAMClient = object
 from solution.custom_resource.lib.cloudwatch_events import CloudWatchEvents
 from solution.custom_resource.lib.console_deployment import ConsoleDeployment
 from solution.custom_resource.lib.step_functions import StepFunctions
@@ -29,6 +34,19 @@ from solution.custom_resource.lib.utils import (
 )
 
 logger = Logger(os.getenv('LOG_LEVEL'))
+SERVICE_LINKED_ROLE_NAME = 'AWSServiceRoleForVPCTransitGateway'
+SERVICE_LINKED_ROLE_SERVICE = 'transitgateway.amazonaws.com'
+SERVICE_LINKED_ROLE_DESCRIPTION = 'Allows VPC Transit Gateway to access EC2 resources on your behalf.'
+
+class ServiceLinkedRoleResponse(TypedDict):
+    """Response from service-linked role operations"""
+    PhysicalResourceId: str
+    RoleName: str
+
+class DeletionResponse(TypedDict):
+    """Response from deletion operations"""
+    Deleted: str
+    Reason: str
 
 def start_state_machine(event: events.CloudFormationCustomResourceEvent, context: LambdaContext):
     log_message = {
@@ -117,7 +135,6 @@ def cfn_handler(event: events.CloudFormationCustomResourceEvent, context: Lambda
     response_data = {}
     status = "SUCCESS"
     reason = None
-    request_type = event.get('RequestType', '').lower()
 
     # Setup timer to catch timeouts
     timer = threading.Timer(
@@ -143,8 +160,8 @@ def cfn_handler(event: events.CloudFormationCustomResourceEvent, context: Lambda
             ConsoleDeployment(s3_client, open, path.exists).deploy(event)
         elif resource_type == "Custom::GetPrefixListArns":
             response_data = handle_prefix(event)
-        elif resource_type == "Custom::CheckServiceLinkedRole":
-            response_data = check_service_linked_role(event)
+        elif resource_type == "Custom::CreateServiceLinkedRole":
+            response_data = create_service_linked_role(event)
 
         logger.info("Completed successfully, sending response to cfn")
     except Exception as err:
@@ -308,34 +325,110 @@ def handle_metrics(event: events.CloudFormationCustomResourceEvent):
         logger.warning(str(err))
 
 
-def check_service_linked_role(event: events.CloudFormationCustomResourceEvent):
-    """Handles checking if service linked role exist
-
+def create_service_linked_role(event: events.CloudFormationCustomResourceEvent) -> ServiceLinkedRoleResponse | DeletionResponse | dict:
+    """Create or delete service-linked role.
+    
     Args:
         event (dict): event from CloudFormation on create, update or delete
-
+        
     Returns:
-        dict: service linked role status
-
-        {
-            ServiceLinkedRoleExist: boolean
-        }
+        dict: Response with operation status and PhysicalResourceId
     """
-    response = {}
-    iam_client = boto3.client("iam")
-    if event["RequestType"] == "Create" or event["RequestType"] == "Update":
-        try:
-            service_linked_role = iam_client.get_role(RoleName='AWSServiceRoleForVPCTransitGateway')
-            logger.info(service_linked_role)
-            response = {"ServiceLinkedRoleExist": "True"}
-        except ClientError as e:
-            logger.exception('%s', e)
-            if e.response['Error']['Code'] == 'NoSuchEntity':
-                response = {"ServiceLinkedRoleExist": "False"}
-            else:
-                raise e
+    iam_client: IAMClient = boto3.client('iam', config=boto3_config)
+    request_type = event["RequestType"]    
+    if request_type in ("Create", "Update"):
+        response = _handle_create_or_update_service_linked_role(iam_client)
+    elif request_type == "Delete":
+        response = _handle_delete_service_linked_role(iam_client)
+    else:
+        response = {}
+    
     logger.debug(response)
     return response
+
+def _handle_create_or_update_service_linked_role(iam_client: IAMClient) -> ServiceLinkedRoleResponse:
+    try:
+        iam_client.get_role(RoleName=SERVICE_LINKED_ROLE_NAME)
+        logger.info("Service-linked role already exists")
+        return {
+            "PhysicalResourceId": SERVICE_LINKED_ROLE_NAME,
+            "RoleName": SERVICE_LINKED_ROLE_NAME
+        }
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'NoSuchEntity':
+            return _create_role_via_iam(iam_client)
+        raise
+
+def _create_role_via_iam(iam_client: IAMClient) -> ServiceLinkedRoleResponse:
+    try:
+        result = iam_client.create_service_linked_role(
+            AWSServiceName=SERVICE_LINKED_ROLE_SERVICE,
+            Description=SERVICE_LINKED_ROLE_DESCRIPTION
+        )
+        logger.info("Created service-linked role")
+        return {
+            "PhysicalResourceId": SERVICE_LINKED_ROLE_NAME,
+            "RoleName": result['Role']['RoleName']
+        }
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'InvalidInput':
+            logger.info("Role creation race condition - role already exists")
+            return {
+                "PhysicalResourceId": SERVICE_LINKED_ROLE_NAME,
+                "RoleName": SERVICE_LINKED_ROLE_NAME
+            }
+        raise
+
+def _handle_delete_service_linked_role(iam_client: IAMClient) -> DeletionResponse:
+    logger.info("Delete requested for service-linked role")
+    return _delete_service_linked_role(iam_client)
+
+def _delete_service_linked_role(iam_client: IAMClient) -> DeletionResponse:
+    """Attempt to delete the service-linked role.
+    Never raises — if deletion fails, role is retained and success is returned.
+    """
+    try:
+        response = iam_client.delete_service_linked_role(RoleName=SERVICE_LINKED_ROLE_NAME)
+        deletion_task_id = response['DeletionTaskId']
+        return _poll_deletion_status(iam_client, deletion_task_id)
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'NoSuchEntity':
+            logger.info("Role does not exist, deletion complete")
+            return {"Deleted": "True", "Reason": "Role does not exist"}
+        logger.warning(f"Error deleting role: {e}")
+        return {"Deleted": "False", "Reason": f"Error: {str(e)}"}
+
+def _poll_deletion_status(iam_client: IAMClient, deletion_task_id: str) -> DeletionResponse:
+    """Poll deletion task with graceful error handling.
+    Args:
+        iam_client: IAM boto3 client
+        deletion_task_id: Deletion task ID from delete_service_linked_role
+    Returns:
+        dict: Deletion status
+    """
+    for _ in range(30):
+        time.sleep(2)
+        try:
+            status_response = iam_client.get_service_linked_role_deletion_status(
+                DeletionTaskId=deletion_task_id
+            )
+            status = status_response['Status']
+            if status == 'SUCCEEDED':
+                logger.info("Service-linked role deleted successfully")
+                return {"Deleted": "True"}
+            elif status == 'FAILED':
+                reason = status_response.get('Reason', {}).get('Reason', 'Role is in use')
+                logger.warning(f"Role deletion failed: {reason}")
+                return {"Deleted": "False", "Reason": f"Deletion failed: {reason}"}
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchEntity':
+                logger.info("Deletion task disappeared - treating as deleted")
+                return {"Deleted": "True"}
+            logger.warning(f"Error checking deletion status: {e}")
+            return {"Deleted": "False", "Reason": f"Error: {str(e)}"}
+    logger.warning("Role deletion timed out after 60 seconds")
+    return {"Deleted": "False", "Reason": "Deletion timed out - role may still be in use"}
+
 
 
 def send(
@@ -361,9 +454,9 @@ def send(
     response_body = {"Status": response_status}
     msg = "See details in CloudWatch logstream: " + context.log_stream_name
     response_body["Reason"] = str(reason)[0:255] + "... " + msg
-    response_body["PhysicalResourceId"] = event.get(
-        "PhysicalResourceId", context.log_stream_name
-    )
+    response_body["PhysicalResourceId"] = (
+        response_data.get("PhysicalResourceId") if response_data else None
+    ) or event.get("PhysicalResourceId", context.log_stream_name)
     response_body["StackId"] = event["StackId"]
     response_body["RequestId"] = event["RequestId"]
     response_body["LogicalResourceId"] = event["LogicalResourceId"]

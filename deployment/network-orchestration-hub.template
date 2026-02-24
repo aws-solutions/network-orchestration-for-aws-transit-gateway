@@ -3177,6 +3177,7 @@ Resources:
       DefaultRoute: !Ref DefaultRoute
       CreatedNewTransitGateway: !If [CreateNewTransitGateway, 'Yes', 'No']
       DeployWebUI: !Ref DeployWebUi
+      SolutionVersion: !FindInMap [SourceCode, General, Version]
       ServiceToken: !Sub ${CustomResourceLambda.Arn}
 
   CloudWatchLogFailures:

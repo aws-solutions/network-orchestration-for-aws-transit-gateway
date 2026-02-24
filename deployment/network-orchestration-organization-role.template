@@ -42,6 +42,8 @@ Resources:
             Action:
               - sts:AssumeRole
             Condition:
+              StringEquals:
+                sts:ExternalId: "STNOOrganizationInformation"
               ArnEquals:
                 aws:PrincipalArn:
                 - !Sub arn:${AWS::Partition}:iam::${HubAccount}:role/STNO-StateMachineLambdaFunctionRole-*

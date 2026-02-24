@@ -631,6 +631,7 @@ events under the MIT license.
 @aws-sdk/client-rekognition under the Apache-2.0 license.
 @aws-sdk/client-textract under the Apache-2.0 license.
 @aws-sdk/client-translate under the Apache-2.0 license.
+@aws-sdk/crc64-nvme under the Apache-2.0 license.
 react-router-dom under the MIT license.
 @remix-run/router under the MIT license.
 react-router under the MIT license.
@@ -1647,3 +1648,34 @@ MPL-2.0 - https://www.mozilla.org/MPL/2.0/
 Python-2.0 - https://opensource.org/licenses/Python-2.0
 Unlicense - https://unlicense.org/
 Zlib - http://www.zlib.net/zlib_license.html
+@react-native/debugger-shell under the MIT license.
+fb-dotslash under the MIT license.
+hermes-compiler under the MIT license.
+@material/material-color-utilities under the Apache-2.0 license.
+@peculiar/x509 under the MIT license.
+@peculiar/asn1-cms under the MIT license.
+@peculiar/asn1-schema under the MIT license.
+asn1js under the BSD-3-Clause license.
+pvtsutils under the MIT license.
+pvutils under the MIT license.
+@peculiar/asn1-x509 under the MIT license.
+@peculiar/asn1-x509-attr under the MIT license.
+@peculiar/asn1-csr under the MIT license.
+@peculiar/asn1-ecc under the MIT license.
+@peculiar/asn1-pkcs9 under the MIT license.
+@peculiar/asn1-pfx under the MIT license.
+@peculiar/asn1-pkcs8 under the MIT license.
+@peculiar/asn1-rsa under the MIT license.
+reflect-metadata under the Apache-2.0 license.
+tsyringe under the MIT license.
+pkijs under the BSD-3-Clause license.
+@noble/hashes under the MIT license.
+bytestreamjs under the BSD-3-Clause license.
+@jsonjoy.com/fs-core under the Apache-2.0 license.
+@jsonjoy.com/fs-fsa under the Apache-2.0 license.
+@jsonjoy.com/fs-node under the Apache-2.0 license.
+@jsonjoy.com/fs-node-builtins under the Apache-2.0 license.
+@jsonjoy.com/fs-node-to-fsa under the Apache-2.0 license.
+@jsonjoy.com/fs-node-utils under the Apache-2.0 license.
+@jsonjoy.com/fs-print under the Apache-2.0 license.
+@jsonjoy.com/fs-snapshot under the Apache-2.0 license.

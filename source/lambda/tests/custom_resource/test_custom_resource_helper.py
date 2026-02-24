@@ -22,7 +22,8 @@ from solution.custom_resource.lib.custom_resource_helper import (
     start_state_machine,
     send,
     get_resource_type_details,
-    check_service_linked_role
+    create_service_linked_role,
+    SERVICE_LINKED_ROLE_NAME
 )
 
 logger = Logger(os.getenv('LOG_LEVEL'))
@@ -55,9 +56,6 @@ CREATE_PREFIX["ResourceType"] = "Custom::GetPrefixListArns"
 
 CREATE_METRICS = deepcopy(CFN_REQUEST_EVENT)
 CREATE_METRICS["ResourceType"] = "Custom::SendCFNParameters"
-
-CHECK_SERVICE_LINKED_ROLE = deepcopy(CFN_REQUEST_EVENT)
-CHECK_SERVICE_LINKED_ROLE["ResourceType"] = "Custom::CheckServiceLinkedRole"
 
 context = Mock()
 context.get_remaining_time_in_millis = Mock()
@@ -280,23 +278,149 @@ class TestClassMetrics:
 
 @pytest.mark.BDD
 @mock_iam
-class TestClassServiceLinkedRole:
-    """BDD class for testing checking if service linked role already exist"""
+class TestClassCreateServiceLinkedRole:
+    """BDD class for testing creation of service linked role"""
     iam_client = boto3.client("iam")
-    service_linked_role_name = "AWSServiceRoleForVPCTransitGateway"
 
-    def test__true(self):
-        """true"""
-        self.iam_client.create_role(RoleName=self.service_linked_role_name, AssumeRolePolicyDocument="some policy", Path="/my-path/")
-        resp = check_service_linked_role(CHECK_SERVICE_LINKED_ROLE)
-        self.iam_client.delete_role(RoleName=self.service_linked_role_name)
+    @staticmethod
+    def _setup_aws_mocks(mocker):
+        """Setup IAM client mock (no EC2 needed - IAM handles role-in-use validation)"""
+        mock_boto = mocker.patch('boto3.client')
+        mock_iam = Mock()
+        mock_boto.return_value = mock_iam
+        return {'iam': mock_iam}
 
-        assert resp["ServiceLinkedRoleExist"] == "True"
+    @staticmethod
+    def _create_delete_event(physical_resource_id):
+        """Create a delete event with specified PhysicalResourceId"""
+        delete_event = deepcopy(CFN_REQUEST_EVENT)
+        delete_event["RequestType"] = "Delete"
+        delete_event["ResourceType"] = "Custom::CreateServiceLinkedRole"
+        delete_event["PhysicalResourceId"] = physical_resource_id
+        delete_event["ResourceProperties"] = {}
+        return delete_event
 
-    def test__false(self):
-        """false"""
-        resp = check_service_linked_role(CHECK_SERVICE_LINKED_ROLE)
-        assert resp["ServiceLinkedRoleExist"] == "False"
+    def test__create_when_not_exists(self, mocker):
+        mock_clients = self._setup_aws_mocks(mocker)
+        error_response = {'Error': {'Code': 'NoSuchEntity', 'Message': 'Role not found'}}
+        mock_clients['iam'].get_role.side_effect = ClientError(error_response, 'GetRole')
+        mock_clients['iam'].create_service_linked_role.return_value = {
+            'Role': {'RoleName': SERVICE_LINKED_ROLE_NAME}
+        }
+        
+        create_event = deepcopy(CFN_REQUEST_EVENT)
+        create_event["ResourceType"] = "Custom::CreateServiceLinkedRole"
+        create_event["ResourceProperties"] = {}
+        
+        resp = create_service_linked_role(create_event)
+        
+        assert resp["RoleName"] == SERVICE_LINKED_ROLE_NAME
+        assert resp["PhysicalResourceId"] == SERVICE_LINKED_ROLE_NAME
+        mock_clients['iam'].create_service_linked_role.assert_called_once()
+
+    def test__skip_when_exists(self, mocker):
+        mock_clients = self._setup_aws_mocks(mocker)
+        mock_clients['iam'].get_role.return_value = {'Role': {'RoleName': SERVICE_LINKED_ROLE_NAME}}
+        
+        create_event = deepcopy(CFN_REQUEST_EVENT)
+        create_event["ResourceType"] = "Custom::CreateServiceLinkedRole"
+        create_event["ResourceProperties"] = {}
+        
+        resp = create_service_linked_role(create_event)
+        
+        assert resp["RoleName"] == SERVICE_LINKED_ROLE_NAME
+        assert resp["PhysicalResourceId"] == SERVICE_LINKED_ROLE_NAME
+
+    def test__update_with_existing_role(self, mocker):
+        mock_clients = self._setup_aws_mocks(mocker)
+        mock_clients['iam'].get_role.return_value = {'Role': {'RoleName': SERVICE_LINKED_ROLE_NAME}}
+        
+        update_event = deepcopy(CFN_REQUEST_EVENT)
+        update_event["RequestType"] = "Update"
+        update_event["ResourceType"] = "Custom::CreateServiceLinkedRole"
+        update_event["ResourceProperties"] = {}
+        
+        resp = create_service_linked_role(update_event)
+        
+        assert resp["RoleName"] == SERVICE_LINKED_ROLE_NAME
+        assert resp["PhysicalResourceId"] == SERVICE_LINKED_ROLE_NAME
+
+    def test__delete_succeeds(self, mocker):
+        """Test deletion completes successfully"""
+        mocker.patch('time.sleep')
+        mock_clients = self._setup_aws_mocks(mocker)
+        mock_clients['iam'].delete_service_linked_role.return_value = {'DeletionTaskId': 'task-123'}
+        mock_clients['iam'].get_service_linked_role_deletion_status.return_value = {'Status': 'SUCCEEDED'}
+        delete_event = self._create_delete_event(SERVICE_LINKED_ROLE_NAME)
+        
+        resp = create_service_linked_role(delete_event)
+        
+        assert resp["Deleted"] == "True"
+
+    def test__delete_when_role_already_deleted(self, mocker):
+        """Test deletion handles already-deleted role gracefully"""
+        mock_clients = self._setup_aws_mocks(mocker)
+        error_response = {'Error': {'Code': 'NoSuchEntity', 'Message': 'Role not found'}}
+        mock_clients['iam'].delete_service_linked_role.side_effect = ClientError(error_response, 'DeleteServiceLinkedRole')
+        delete_event = self._create_delete_event(SERVICE_LINKED_ROLE_NAME)
+        
+        resp = create_service_linked_role(delete_event)
+        
+        assert resp["Deleted"] == "True"
+
+    def test__delete_role_in_use_returns_gracefully(self, mocker):
+        """Test deletion handles role-in-use gracefully (IAM returns FAILED)"""
+        mocker.patch('time.sleep')
+        mock_clients = self._setup_aws_mocks(mocker)
+        mock_clients['iam'].delete_service_linked_role.return_value = {'DeletionTaskId': 'task-123'}
+        mock_clients['iam'].get_service_linked_role_deletion_status.return_value = {
+            'Status': 'FAILED',
+            'Reason': {'Reason': 'Role is in use by Transit Gateway'}
+        }
+        delete_event = self._create_delete_event(SERVICE_LINKED_ROLE_NAME)
+        
+        resp = create_service_linked_role(delete_event)
+        
+        assert resp["Deleted"] == "False"
+        assert "Deletion failed" in resp["Reason"]
+
+    def test__delete_task_disappears(self, mocker):
+        """Test when deletion task disappears (NoSuchEntity) - treated as deleted"""
+        mocker.patch('time.sleep')
+        mock_clients = self._setup_aws_mocks(mocker)
+        mock_clients['iam'].delete_service_linked_role.return_value = {'DeletionTaskId': 'task-123'}
+        error_response = {'Error': {'Code': 'NoSuchEntity', 'Message': 'Task not found'}}
+        mock_clients['iam'].get_service_linked_role_deletion_status.side_effect = ClientError(error_response, 'GetServiceLinkedRoleDeletionStatus')
+        delete_event = self._create_delete_event(SERVICE_LINKED_ROLE_NAME)
+        
+        resp = create_service_linked_role(delete_event)
+        
+        assert resp["Deleted"] == "True"
+
+    def test__delete_timeout(self, mocker):
+        """Test when deletion times out after 60 seconds"""
+        mocker.patch('time.sleep')
+        mock_clients = self._setup_aws_mocks(mocker)
+        mock_clients['iam'].delete_service_linked_role.return_value = {'DeletionTaskId': 'task-123'}
+        mock_clients['iam'].get_service_linked_role_deletion_status.return_value = {'Status': 'IN_PROGRESS'}
+        delete_event = self._create_delete_event(SERVICE_LINKED_ROLE_NAME)
+        
+        resp = create_service_linked_role(delete_event)
+        
+        assert resp["Deleted"] == "False"
+        assert "timed out" in resp["Reason"]
+
+    def test__delete_unknown_physical_resource_id(self, mocker):
+        """Test deletion always attempts deletion regardless of PhysicalResourceId"""
+        mocker.patch('time.sleep')
+        mock_clients = self._setup_aws_mocks(mocker)
+        mock_clients['iam'].delete_service_linked_role.return_value = {'DeletionTaskId': 'task-123'}
+        mock_clients['iam'].get_service_linked_role_deletion_status.return_value = {'Status': 'SUCCEEDED'}
+        delete_event = self._create_delete_event("unknown-format-id")
+        
+        resp = create_service_linked_role(delete_event)
+        
+        assert resp["Deleted"] == "True"
 
 @pytest.mark.TDD
 class TestClassTriggerSM:
@@ -459,25 +583,6 @@ class TestClassAdditionalCoverage:
         result = handle_prefix(delete_event)
         assert result == {}
 
-    def test_check_service_linked_role_delete(self):
-
-        delete_event = deepcopy(CHECK_SERVICE_LINKED_ROLE)
-        delete_event["RequestType"] = "Delete"
-        
-        result = check_service_linked_role(delete_event)
-        assert result == {}
-
-    @patch('boto3.client')
-    def test_check_service_linked_role_client_error(self, mock_boto_client):
-
-        mock_iam = Mock()
-        mock_boto_client.return_value = mock_iam
-        
-        error_response = {'Error': {'Code': 'AccessDenied', 'Message': 'Access denied'}}
-        mock_iam.get_role.side_effect = ClientError(error_response, 'GetRole')
-        
-        with pytest.raises(ClientError):
-            check_service_linked_role(CHECK_SERVICE_LINKED_ROLE)
 
     def test_send_http_errors(self, mocker):
 
@@ -600,13 +705,13 @@ class TestClassAdditionalCoverage:
         cfn_handler(prefix_event, context)
         mock_handle_prefix.assert_called_once_with(prefix_event)
 
-        mock_check_role = mocker.patch("solution.custom_resource.lib.custom_resource_helper.check_service_linked_role")
-        mock_check_role.return_value = {"ServiceLinkedRoleExist": "True"}
+        mock_create_role = mocker.patch("solution.custom_resource.lib.custom_resource_helper.create_service_linked_role")
+        mock_create_role.return_value = {"RoleName": SERVICE_LINKED_ROLE_NAME}
         
         role_event = deepcopy(CFN_REQUEST_EVENT)
-        role_event["ResourceType"] = "Custom::CheckServiceLinkedRole"
+        role_event["ResourceType"] = "Custom::CreateServiceLinkedRole"
         cfn_handler(role_event, context)
-        mock_check_role.assert_called_once_with(role_event)
+        mock_create_role.assert_called_once_with(role_event)
 
     def test_cfn_handler_console_deploy(self, mocker):
         mocker.patch("solution.custom_resource.lib.custom_resource_helper.send")
