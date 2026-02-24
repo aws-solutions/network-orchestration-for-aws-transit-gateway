@@ -27,7 +27,7 @@ class Organizations:
 
         if org_role_arn != "":
             sts = STS()
-            credentials = sts.assume_role(org_role_arn, "stno-get-org-details")
+            credentials = sts.assume_role(org_role_arn, "stno-get-org-details", external_id="STNOOrganizationInformation")
 
         if credentials is not None:
             self.org_client: OrganizationsClient = boto3.client(

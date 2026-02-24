@@ -40,7 +40,8 @@ class STS:
                     + environ.get("AWS_REGION")
             )
             session_name = "transit-network-role"
-            credentials = self.assume_role(role_arn, session_name)
+            external_id = "STNOTransitNetworkExecution"
+            credentials = self.assume_role(role_arn, session_name, external_id=external_id)
             return credentials
         except Exception as error:
             self.logger.exception(
@@ -52,7 +53,8 @@ class STS:
             self,
             role_arn: str,
             session_name: str,
-            duration_in_seconds=900
+            duration_in_seconds=900,
+            external_id: str = None
     ) -> CredentialsTypeDef:
         self.log_message = {
             "METHOD": "assume_role",
@@ -60,11 +62,15 @@ class STS:
         }
         self.logger.debug(self.log_message)
         try:
-            response = self.sts_client.assume_role(
-                RoleArn=role_arn,
-                RoleSessionName=session_name,
-                DurationSeconds=duration_in_seconds,
-            )
+            assume_role_params = {
+                "RoleArn": role_arn,
+                "RoleSessionName": session_name,
+                "DurationSeconds": duration_in_seconds,
+            }
+            if external_id:
+                assume_role_params["ExternalId"] = external_id
+            
+            response = self.sts_client.assume_role(**assume_role_params)
             return response["Credentials"]
         except ClientError as err:
             self.log_message["EXCEPTION"] = str(err)

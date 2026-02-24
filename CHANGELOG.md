@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.23] - 2026-02-24
+
+### Security
+
+- Bump `minimatch` to 10.2.1 to address [CVE-2026-26996](https://avd.aquasec.com/nvd/cve-2026-26996)
+- Bump `@isaacs/brace-expansion` to 5.0.1 to address [CVE-2026-25547] (<https://avd.aquasec.com/nvd/2026/cve-2026-25547>)
+- Bump `bfj` to 9.1.3 to address [CVE-2025-61140] (<https://avd.aquasec.com/nvd/2025/cve-2025-61140>) and [CVE-2026-1615] (<https://avd.aquasec.com/nvd/2026/cve-2026-1615>)
+- Bump `lodash` to 4.17.23 to address [CVE-2025-13465] (<https://avd.aquasec.com/nvd/2025/cve-2025-13465>)
+- Bump `cryptography` to 46.0.5 to address [CVE-2026-26007] (<https://avd.aquasec.com/nvd/cve-2026-26007>)
+- Bump `axios` to 1.13.5 to address [CVE-2026-25639] (<https://avd.aquasec.com/nvd/cve-2026-25639>)
+- Bump `werkzeug` to 3.1.6 to address [CVE-2026-27199](https://avd.aquasec.com/nvd/cve-2026-27199)
+- Added ExternalId to cross-account AssumeRole operations for enhanced security in IAM trust policies
+
+### Changed
+
+- Consolidated nested spoke service-linked-role template into main spoke template for StackSet support
+
+### Fixed
+
+- Fixed route table deletion issue where removing the "Attach-to-tgw" tag from one subnet incorrectly deleted routes from shared route tables, breaking connectivity for other subnets still in the TGW attachment
+- Fixed intermittent state machine failures during Transit Gateway route table association/disassociation by increasing default retry count to handle longer-running AWS API operations
+
 ## [3.3.22] - 2026-01-14
 
 ### Security

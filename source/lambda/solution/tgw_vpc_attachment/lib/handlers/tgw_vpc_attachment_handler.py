@@ -679,7 +679,7 @@ class TransitGatewayVPCAttachments:
         return self.event
 
     def _get_association_state(self, rtb):
-        max_retries = int(environ.get("MAX_RETRY", 5))  # Default to 5 retries
+        max_retries = int(environ.get("MAX_RETRY", 10))  # Default to 10 retries
         retry = 0
         vpc_id = self.event.get("VpcId")
         tgw_attachment_id = self.event.get("TransitGatewayAttachmentId")

@@ -268,6 +268,12 @@ class VPCHandler:
                     self.event.get("DefaultRouteToTgwExists") == "yes"
                     and self.event.get("DestinationRouteExists") == "yes"
             ):
+                if self.event.get("Action") == "RemoveSubnet" and self._has_other_tgw_subnets_using_route_table():
+                    self.logger.info(
+                        f"Skipping route deletion, other subnets still using route table {self.event.get('RouteTableId')}"
+                    )
+                    return
+
                 self.logger.info(
                     f"Removing destination : {destination} "
                     f"to TGW gateway: {environ.get('TGW_ID')}  "
@@ -292,6 +298,35 @@ class VPCHandler:
                 self.event.get("RouteTableId"), "RouteTable-Error", e
             )
             raise e
+
+    def _has_other_tgw_subnets_using_route_table(self):
+        try:
+            route_table_id = self.event.get("RouteTableId")
+            subnet_being_removed = self.event.get("SubnetId")
+            vpc_id = self.event.get("VpcId")            
+            remaining_subnets = self._get_remaining_subnets_in_attachment(vpc_id, subnet_being_removed)
+            if not remaining_subnets:
+                return False            
+            return self._check_if_subnets_use_route_table(remaining_subnets, route_table_id)
+        except Exception as e:
+            self.logger.error(f"Error checking route table usage: {e}")
+            return True
+
+    def _get_remaining_subnets_in_attachment(self, vpc_id, subnet_being_removed):
+        tgw_attachments = self.spoke_ec2_client.describe_transit_gateway_vpc_attachments(
+            environ.get("TGW_ID"), vpc_id
+        )
+        if not tgw_attachments:
+            return []        
+        attachment = tgw_attachments[0]
+        return [s for s in attachment.get("SubnetIds", []) if s != subnet_being_removed]
+        
+    def _check_if_subnets_use_route_table(self, subnet_ids, route_table_id):
+        for subnet_id in subnet_ids:
+            route_tables = self.spoke_ec2_client.describe_route_tables_for_subnet(subnet_id)
+            if route_tables and route_tables[0].get("RouteTableId") == route_table_id:
+                return True
+        return False
 
     def _update_route_table_with_cidr_blocks(self, existing_routes):
         cidr_blocks = convert_string_to_list_with_no_whitespaces(environ.get("CIDR_BLOCKS"))

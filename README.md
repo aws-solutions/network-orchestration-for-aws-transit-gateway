@@ -167,8 +167,7 @@ Network Orchestration for AWS Transit Gateway solution consists of:
   |-manifest-generator                                        [ generates manifest files for solution ui ]
   |-network-orchestration-hub.template                        [ hub template ]
   |-network-orchestration-hub-service-linked-roles.template   [ hub template, deploys service linked roles]
-  |-network-orchestration-spoke.template                      [ spoke template]  
-  |-network-orchestration-spoke-service-linked-roles.template [ spoke template, deploys only service linked roles ]  
+  |-network-orchestration-spoke.template                      [ spoke template, consolidated with service-linked roles for StackSets support]  
   |-network-orchestration-organization-role.template          [ role template, deploys in management account ]
   |-build-s3-dist.sh                                          [ script to build solution microservices ]
 |-source/

@@ -21,8 +21,6 @@ Metadata:
     ParameterLabels:
       HubAccount:
         default: Network (Hub) Account
-      CreateServiceRoleForVPCTransitGateway:
-        default: Skip the creation of AWSServiceRoleForVPCTransitGateway
 
 Mappings:
   EventBridge:
@@ -146,6 +144,9 @@ Resources:
                 - !Join ['', ['arn:', !Ref 'AWS::Partition', ':iam::', !Ref HubAccount, ':role/STNO-StateMachineLambdaFunctionRole', '-', !Ref 'AWS::Region']]
             Action:
               - sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: "STNOTransitNetworkExecution"
       Policies:
         - PolicyName: TransitNetworkExecutionPolicy
           PolicyDocument:
@@ -295,21 +296,18 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
+                  - iam:CreateServiceLinkedRole
+                  - iam:GetServiceLinkedRoleDeletionStatus
+                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/transitgateway.amazonaws.com/*
+              - Effect: Allow
+                Action:
+                  - iam:DeleteServiceLinkedRole
                   - iam:GetRole
-                Resource: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/*
+                Resource: 
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/transitgateway.amazonaws.com/*
+                  - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/AWSServiceRoleForVPCTransitGateway
 
-  CheckServiceLinkedRole:
-    Type: "Custom::CheckServiceLinkedRole"
+  TransitGatewayServiceLinkedRole:
+    Type: "Custom::CreateServiceLinkedRole"
     Properties:
       ServiceToken: !GetAtt ServiceLinkedRoleCheckLambdaFunction.Arn
-
-  ServiceLinkedRoleNestedStack:
-    Type: 'AWS::CloudFormation::Stack'
-    Properties:
-      TemplateURL: !Sub
-        - "https://${Bucket}.s3.amazonaws.com/${Prefix}/network-orchestration-spoke-service-linked-roles.template"
-        - Bucket: !FindInMap [ "SourceCode", "General", "TemplateBucket" ]
-          Prefix: !FindInMap [ "SourceCode", "General", "KeyPrefix" ]
-      Parameters:
-        ServiceLinkedRoleExist:
-          !GetAtt CheckServiceLinkedRole.ServiceLinkedRoleExist
