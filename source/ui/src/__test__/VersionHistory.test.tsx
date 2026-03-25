@@ -8,8 +8,8 @@ import data from "./TestData";
 const dashboardItem1 = data.dashboardItem1;
 const dashboardItem2 = data.dashboardItem2;
 
-jest.mock('react-router-dom', () => ({
-    ...jest.requireActual('react-router-dom'), // use actual for all non-hook parts
+vi.mock('react-router-dom', async () => ({
+    ...(await vi.importActual('react-router-dom')), // use actual for all non-hook parts
     useParams: () => ({
         subnetId: "1234",
         vpcId: "1234"
@@ -29,12 +29,12 @@ function mockServerToReturnItems(items: any) {
 
 
 describe("Version History", () => {
-    let consoleErrorSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>;
-    let consoleWarnSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>;
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+    let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
     beforeAll(() => {
-        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     });
 
     afterAll(() => {

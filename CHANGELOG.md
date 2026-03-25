@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.24] - 2026-03-25
+
+### Changed
+
+- Migrated `source/ui` from Create React App (`react-scripts`) to Vite + Vitest
+
+### Fixed
+
+- Fixed VPC CIDR display showing only the primary CIDR block. Now captures all associated CIDRs (primary + secondary) and automatically updates on CIDR changes
+
+### Security
+
+- Removed deprecated `react-scripts` and its transitive dependency tree, eliminating associated CVEs
+- Removed dead security overrides (`svgo`, `node-forge`, `qs`, `@isaacs/brace-expansion`, `lodash`) that no longer apply
+
 ## [3.3.23] - 2026-02-24
 
 ### Security

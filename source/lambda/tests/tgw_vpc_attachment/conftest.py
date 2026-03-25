@@ -218,6 +218,57 @@ def vpc_setup_with_explicit_route_table(ec2_client: EC2Client):
     }
 
 @pytest.fixture
+def vpc_setup_with_multiple_cidrs(ec2_client: EC2Client):
+    transit_gateway: TransitGatewayTypeDef = ec2_client.create_transit_gateway()['TransitGateway']
+    os.environ["TGW_ID"] = transit_gateway['TransitGatewayId']
+
+    vpc: VpcTypeDef = ec2_client.create_vpc(
+        CidrBlock='10.0.0.0/24'  # NOSONAR
+    )['Vpc']
+    ec2_client.associate_vpc_cidr_block(
+        VpcId=vpc['VpcId'],
+        CidrBlock='10.1.0.0/24'  # NOSONAR
+    )
+    subnet: SubnetTypeDef = ec2_client.create_subnet(
+        CidrBlock='10.0.0.0/28',  # NOSONAR
+        VpcId=vpc['VpcId']
+    )['Subnet']
+    tgw_vpc_attachment: TransitGatewayVpcAttachmentTypeDef = ec2_client.create_transit_gateway_vpc_attachment(
+        TransitGatewayId=transit_gateway['TransitGatewayId'],
+        VpcId=vpc['VpcId'],
+        SubnetIds=[subnet['SubnetId']]
+    )['TransitGatewayVpcAttachment']
+    route_table: RouteTableTypeDef = ec2_client.create_route_table(
+        VpcId=vpc['VpcId']
+    )['RouteTable']
+    gateway_route_table: TransitGatewayRouteTableTypeDef = ec2_client.create_transit_gateway_route_table(
+        TransitGatewayId=transit_gateway['TransitGatewayId'],
+        TagSpecifications=[
+            {
+                'ResourceType': 'transit-gateway-route-table',
+                'Tags': [
+                    {'Key': 'Name', 'Value': 'flat'},
+                    {'Key': os.environ['APPROVAL_KEY'], 'Value': 'No'}
+                ]
+            },
+        ]
+    )['TransitGatewayRouteTable']
+    ec2_client.associate_route_table(
+        RouteTableId=route_table['RouteTableId'],
+        SubnetId=subnet['SubnetId']
+    )
+
+    yield {
+        'tgw_id': transit_gateway['TransitGatewayId'],
+        'vpc_id': vpc['VpcId'],
+        'subnet_id': subnet['SubnetId'],
+        'tgw_vpc_attachment': tgw_vpc_attachment['TransitGatewayAttachmentId'],
+        'route_table_id': route_table['RouteTableId'],
+        'transit_gateway_route_table': gateway_route_table['TransitGatewayRouteTableId'],
+    }
+
+
+@pytest.fixture
 def vpc_setup_no_explicit_route_table(ec2_client: EC2Client):
     transit_gateway: TransitGatewayTypeDef = ec2_client.create_transit_gateway()['TransitGateway']
     os.environ["TGW_ID"] = transit_gateway['TransitGatewayId']

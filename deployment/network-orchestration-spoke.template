@@ -80,6 +80,40 @@ Resources:
           RoleArn: !GetAtt TransitNetworkEventDeliveryRole.Arn
 
 
+  VpcCidrChangeEventRule:
+    Condition: "IsSpokeAccountOtherThanHubAccount"
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Serverless Transit Network Orchestrator - Spoke - Rule for VPC CIDR changes
+      EventPattern:
+        {
+          "account": [
+            !Ref "AWS::AccountId"
+          ],
+          "source": [
+            "aws.ec2"
+          ],
+          "detail-type": [
+            "AWS API Call via CloudTrail"
+          ],
+          "detail": {
+            "eventSource": [
+              "ec2.amazonaws.com"
+            ],
+            "eventName": [
+              "AssociateVpcCidrBlock",
+              "DisassociateVpcCidrBlock"
+            ]
+          }
+        }
+      State: ENABLED
+      Targets:
+        - Arn: !Sub
+            - arn:${AWS::Partition}:events:${AWS::Region}:${HubAccount}:event-bus/${EventBusName}
+            - {EventBusName: !FindInMap [EventBridge, Bus, Name]}
+          Id: SpokeVpcCidrChangeEvent
+          RoleArn: !GetAtt TransitNetworkEventDeliveryRole.Arn
+
   SubnetDeletionEventRule:
     Condition: "IsSpokeAccountOtherThanHubAccount"  # Adding an EventBus as a target within an account is not allowed.
     Type: AWS::Events::Rule

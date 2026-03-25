@@ -8,6 +8,7 @@ from aws_lambda_powertools import Logger
 from mypy_boto3_ec2.type_defs import RouteTableTypeDef
 
 from solution.tgw_vpc_attachment.lib.clients.ec2 import EC2
+from solution.tgw_vpc_attachment.lib.clients.dynamodb import DDB
 from solution.tgw_vpc_attachment.lib.clients.organizations import Organizations
 from solution.tgw_vpc_attachment.lib.clients.sts import STS
 from solution.tgw_vpc_attachment.lib.exceptions import service_exception_handler
@@ -135,6 +136,68 @@ class VPCHandler:
 
         if environ.get("ROUTING_TAG").lower().strip() not in tag_key_list and route_to_tgw_tag_in_event:
             self.event.update({"RouteToTgw": "delete"})
+
+    @staticmethod
+    def _extract_vpc_id_from_event(detail):
+        """Extract VPC ID from CloudTrail event detail.
+        CloudTrail nests EC2 API params in structures like AssociateVpcCidrBlockRequest.VpcId
+        and for Disassociate, the VPC ID is in responseElements."""
+        for section in ("requestParameters", "responseElements"):
+            params = detail.get(section, {})
+            if params.get("vpcId"):
+                return params["vpcId"]
+            for val in params.values():
+                if not isinstance(val, dict):
+                    continue
+                found = val.get("VpcId") or val.get("vpcId")
+                if found:
+                    return found
+        return None
+
+    def _get_associated_cidrs(self, vpc_id):
+        """Fetch the currently associated CIDR blocks for a VPC from the spoke account."""
+        vpc = self.spoke_ec2_client.describe_vpcs(vpc_id)
+        cidrs = [
+            assoc.get("CidrBlock")
+            for assoc in vpc.get("CidrBlockAssociationSet", [])
+            if assoc.get("CidrBlockState", {}).get("State") == "associated"
+        ]
+        return ", ".join(cidrs) if cidrs else vpc.get("CidrBlock", "None")
+
+    @staticmethod
+    def _update_vpc_cidr_in_ddb(table_name, vpc_id, new_cidr):
+        """Update VpcCidr for all DynamoDB records matching the given VPC."""
+        ddb = DDB(table_name)
+        scan_kwargs = {
+            "FilterExpression": "VpcId = :vpc_id",
+            "ExpressionAttributeValues": {":vpc_id": vpc_id}
+        }
+        while True:
+            response = ddb.table.scan(**scan_kwargs)
+            for item in response.get("Items", []):
+                ddb.table.update_item(
+                    Key={"SubnetId": item["SubnetId"], "Version": item["Version"]},
+                    UpdateExpression="SET VpcCidr = :cidr",
+                    ExpressionAttributeValues={":cidr": new_cidr}
+                )
+            if "LastEvaluatedKey" not in response:
+                break
+            scan_kwargs["ExclusiveStartKey"] = response["LastEvaluatedKey"]
+
+    @service_exception_handler
+    def update_vpc_cidr(self):
+        """Handle VPC CIDR change events (AssociateVpcCidrBlock/DisassociateVpcCidrBlock).
+        Updates the VpcCidr field in DynamoDB for all records matching the VPC."""
+        vpc_id = self._extract_vpc_id_from_event(self.event.get("detail", {}))
+        if not vpc_id:
+            self.logger.info("No vpcId in event, skipping")
+            return self.event
+
+        new_cidr = self._get_associated_cidrs(vpc_id)
+        self._update_vpc_cidr_in_ddb(environ.get("TABLE_NAME"), vpc_id, new_cidr)
+
+        self.logger.info(f"Updated VpcCidr to '{new_cidr}' for VPC {vpc_id}")
+        return self.event
 
     def default_route_crud_operations(self):
         # this condition will be met if VPC is tagged and not is Subnet
@@ -408,8 +471,16 @@ class VPCTagManager:
     def update_event_with_vpc_details(self):
         vpc = self.spoke_ec2_client.describe_vpcs(self.event.get("VpcId"))
 
-        # Cidr block associated with this VPC
-        self.event.update({"VpcCidr": vpc.get("CidrBlock")})
+        # All CIDR blocks associated with this VPC (primary + secondary)
+        cidr_associations = vpc.get("CidrBlockAssociationSet", [])
+        associated_cidrs = [
+            assoc["CidrBlock"]
+            for assoc in cidr_associations
+            if assoc.get("CidrBlockState", {}).get("State") == "associated"
+        ]
+        if not associated_cidrs:
+            associated_cidrs = [vpc.get("CidrBlock", "None")]
+        self.event.update({"VpcCidr": ", ".join(associated_cidrs)})
 
         # Assuming VPC is not tagged
         self.event.update({"VpcTagFound": "no"})

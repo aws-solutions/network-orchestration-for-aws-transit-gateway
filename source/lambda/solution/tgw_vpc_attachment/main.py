@@ -115,6 +115,8 @@ def vpc(event, function_name):
         response = vpc_handler.describe_resources()
     elif function_name == "default_route_crud_operations":
         response = vpc_handler.default_route_crud_operations()
+    elif function_name == "update_vpc_cidr":
+        response = vpc_handler.update_vpc_cidr()
     else:
         logger.info(ERROR_MESSAGE)
         return {"Message": ERROR_MESSAGE}
