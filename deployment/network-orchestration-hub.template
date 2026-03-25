@@ -696,6 +696,60 @@ Resources:
       Principal: "events.amazonaws.com"
       SourceArn: !Sub ${LambdaEventRuleHubAccount.Arn}
 
+  # For hub account VPC CIDR changes:
+  LambdaEventRuleOnVpcCidrChangeHubAccount:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Serverless Transit Network Orchestrator - Invokes StateMachineLambda on VPC CIDR changes in the hub account
+      EventPattern:
+        {
+          "account": [
+            !Ref "AWS::AccountId"
+          ],
+          "source": [
+            "aws.ec2"
+          ],
+          "detail-type": [
+            "AWS API Call via CloudTrail"
+          ],
+          "detail": {
+            "eventSource": [
+              "ec2.amazonaws.com"
+            ],
+            "eventName": [
+              "AssociateVpcCidrBlock",
+              "DisassociateVpcCidrBlock"
+            ]
+          }
+        }
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt StateMachineLambdaFunction.Arn
+          Id: 'StateMachineLambdaOnCidrChangeHub'
+          InputTransformer:
+            InputPathsMap:
+              "detail" : "$.detail"
+              "account": "$.account"
+            InputTemplate: |
+              {
+                "params": {
+                  "ClassName": "VPC",
+                  "FunctionName": "update_vpc_cidr"
+                },
+                "event": {
+                  "detail" : <detail>,
+                  "account" : <account>
+                }
+              }
+
+  PermissionForVpcCidrChangeHubAccountRule:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref "StateMachineLambdaFunction"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !Sub ${LambdaEventRuleOnVpcCidrChangeHubAccount.Arn}
+
   LambdaEventRuleOnSubnetDeletion:
     Type: AWS::Events::Rule
     Properties:
@@ -749,6 +803,59 @@ Resources:
       Action: "lambda:InvokeFunction"
       Principal: "events.amazonaws.com"
       SourceArn: !Sub ${LambdaEventRuleOnSubnetDeletion.Arn}
+
+  # For spoke account VPC CIDR changes:
+  LambdaEventRuleOnVpcCidrChangeSpokeAccounts:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Serverless Transit Network Orchestrator - Invokes StateMachineLambda on VPC CIDR changes in spoke accounts
+      EventBusName: !Ref STNOCustomEventBus
+      EventPattern:
+        {
+          "account": !If [ IsNotMemberOfOrganization, !Ref Principals, !Ref "AWS::NoValue" ],
+          "source": [
+            "aws.ec2"
+          ],
+          "detail-type": [
+            "AWS API Call via CloudTrail"
+          ],
+          "detail": {
+            "eventSource": [
+              "ec2.amazonaws.com"
+            ],
+            "eventName": [
+              "AssociateVpcCidrBlock",
+              "DisassociateVpcCidrBlock"
+            ]
+          }
+        }
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt StateMachineLambdaFunction.Arn
+          Id: 'StateMachineLambdaOnCidrChange'
+          InputTransformer:
+            InputPathsMap:
+              "detail" : "$.detail"
+              "account": "$.account"
+            InputTemplate: |
+              {
+                "params": {
+                  "ClassName": "VPC",
+                  "FunctionName": "update_vpc_cidr"
+                },
+                "event": {
+                  "detail" : <detail>,
+                  "account" : <account>
+                }
+              }
+
+  PermissionForVpcCidrChangeRule:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref "StateMachineLambdaFunction"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !Sub ${LambdaEventRuleOnVpcCidrChangeSpokeAccounts.Arn}
 
   STNOCustomEventBus:
     Type: AWS::Events::EventBus
@@ -1118,6 +1225,8 @@ Resources:
               - Effect: Allow
                 Action:
                   - dynamodb:PutItem
+                  - dynamodb:Scan
+                  - dynamodb:UpdateItem
                 Resource: !GetAtt DynamoDbTable.Arn
               - !If
                   - OrganizationManagementAccountRoleArn

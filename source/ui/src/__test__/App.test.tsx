@@ -5,30 +5,38 @@ import React from 'react';
 import {act, render, screen, waitFor} from "@testing-library/react"
 import App from '../App';
 import {UserContext, UserContextProvider} from '../components/context';
-import {Auth} from 'aws-amplify';
 import userEvent from '@testing-library/user-event';
 import {server} from "../setupTests";
 import {graphql} from "msw";
 
 
-jest.mock("@aws-amplify/auth");
+const signInMockFunction = vi.fn().mockResolvedValue(undefined);
+const signOutMockFunction = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("@aws-amplify/auth", () => ({
+    default: {
+        federatedSignIn: (...args: any[]) => signInMockFunction(...args),
+        signOut: (...args: any[]) => signOutMockFunction(...args),
+    },
+    Auth: {
+        federatedSignIn: (...args: any[]) => signInMockFunction(...args),
+        signOut: (...args: any[]) => signOutMockFunction(...args),
+    },
+}));
 
 describe('renders App Component', () => {
-    let consoleErrorSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>;
-    let consoleWarnSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>;
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+    let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
     beforeAll(() => {
-        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     });
 
     afterAll(() => {
         consoleErrorSpy.mockRestore();
         consoleWarnSpy.mockRestore();
     });
-
-    let signInMockFunction: jest.Mock;
-    let signOutMockFunction: jest.Mock;
 
 
     let userContext = {
@@ -40,13 +48,8 @@ describe('renders App Component', () => {
     }
 
     beforeEach(() => {
-        signInMockFunction = jest.fn();
-        signInMockFunction.mockReturnValue(new Promise(() => true));
-        Auth.federatedSignIn = signInMockFunction;
-
-        signOutMockFunction = jest.fn();
-        signOutMockFunction.mockReturnValue(new Promise(() => true));
-        Auth.signOut = signOutMockFunction;
+        signInMockFunction.mockClear();
+        signOutMockFunction.mockClear();
     })
 
     describe('when no user is logged in', () => {
@@ -116,10 +119,6 @@ describe('renders App Component', () => {
             );
         })
 
-
-        describe('Side Navigation', () => {
-
-        });
 
         describe('Sign Out button', () => {
 

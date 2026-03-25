@@ -126,6 +126,30 @@ def test_vpc_describe_resources_vpc_tagged(organizations_setup, vpc_setup_with_e
 
 
 @mock_sts
+def test_vpc_describe_resources_multiple_cidrs(organizations_setup, vpc_setup_with_multiple_cidrs):
+    # ARRANGE
+    override_environment_variables()
+
+    # ACT
+    response = lambda_handler({
+        'params': {
+            'ClassName': 'VPC',
+            'FunctionName': 'describe_resources'
+        },
+        'event': {
+            'AWSSpokeAccountId': DEFAULT_ACCOUNT_ID,
+            'resources': ['arn:aws:ec2:us-east-1:555555555555:vpc/' + vpc_setup_with_multiple_cidrs['vpc_id']]
+        }
+    }, LambdaContext())
+
+    # ASSERT - should contain both primary and secondary CIDRs
+    cidrs = response['VpcCidr'].split(', ')
+    assert '10.0.0.0/24' in cidrs
+    assert '10.1.0.0/24' in cidrs
+    assert len(cidrs) == 2
+
+
+@mock_sts
 def test_vpc_describe_resources_subnet_no_tag(organizations_setup, vpc_setup_with_explicit_route_table):
     # ARRANGE
     override_environment_variables()
@@ -204,3 +228,111 @@ def test_vpc_describe_resources_console_event(organizations_setup, vpc_setup_wit
 
     # ASSERT
     assert response['SubnetTagFound'] == 'yes'
+
+
+@mock_sts
+def test_update_vpc_cidr_associate(organizations_setup, vpc_setup_with_multiple_cidrs, dynamodb_table):
+    # ARRANGE
+    override_environment_variables()
+    vpc_id = vpc_setup_with_multiple_cidrs['vpc_id']
+    dynamodb_table.put_item(Item={
+        'SubnetId': vpc_setup_with_multiple_cidrs['subnet_id'],
+        'Version': 'latest',
+        'VpcId': vpc_id,
+        'VpcCidr': '10.0.0.0/24',
+        'Status': 'auto-approved',
+    })
+
+    # ACT
+    lambda_handler({
+        'params': {
+            'ClassName': 'VPC',
+            'FunctionName': 'update_vpc_cidr'
+        },
+        'event': {
+            'account': DEFAULT_ACCOUNT_ID,
+            'detail': {
+                'eventName': 'AssociateVpcCidrBlock',
+                'requestParameters': {
+                    'AssociateVpcCidrBlockRequest': {
+                        'VpcId': vpc_id,
+                        'CidrBlock': '10.1.0.0/24'
+                    }
+                },
+                'responseElements': {}
+            }
+        }
+    }, LambdaContext())
+
+    # ASSERT - DynamoDB record should have updated CIDRs
+    item = dynamodb_table.get_item(Key={'SubnetId': vpc_setup_with_multiple_cidrs['subnet_id'], 'Version': 'latest'})['Item']
+    cidrs = item['VpcCidr'].split(', ')
+    assert '10.0.0.0/24' in cidrs
+    assert '10.1.0.0/24' in cidrs
+
+
+@mock_sts
+def test_update_vpc_cidr_disassociate(organizations_setup, vpc_setup_with_multiple_cidrs, dynamodb_table):
+    # ARRANGE
+    override_environment_variables()
+    vpc_id = vpc_setup_with_multiple_cidrs['vpc_id']
+    dynamodb_table.put_item(Item={
+        'SubnetId': vpc_setup_with_multiple_cidrs['subnet_id'],
+        'Version': 'latest',
+        'VpcId': vpc_id,
+        'VpcCidr': '10.0.0.0/24, 10.1.0.0/24',
+        'Status': 'auto-approved',
+    })
+
+    # ACT
+    lambda_handler({
+        'params': {
+            'ClassName': 'VPC',
+            'FunctionName': 'update_vpc_cidr'
+        },
+        'event': {
+            'account': DEFAULT_ACCOUNT_ID,
+            'detail': {
+                'eventName': 'DisassociateVpcCidrBlock',
+                'requestParameters': {
+                    'DisassociateVpcCidrBlockRequest': {
+                        'AssociationId': 'vpc-cidr-assoc-12345'
+                    }
+                },
+                'responseElements': {
+                    'DisassociateVpcCidrBlockResponse': {
+                        'vpcId': vpc_id
+                    }
+                }
+            }
+        }
+    }, LambdaContext())
+
+    # ASSERT
+    item = dynamodb_table.get_item(Key={'SubnetId': vpc_setup_with_multiple_cidrs['subnet_id'], 'Version': 'latest'})['Item']
+    assert '10.0.0.0/24' in item['VpcCidr']
+
+
+@mock_sts
+def test_update_vpc_cidr_no_vpc_id(organizations_setup, vpc_setup_with_multiple_cidrs):
+    # ARRANGE
+    override_environment_variables()
+
+    # ACT - event with no vpcId
+    response = lambda_handler({
+        'params': {
+            'ClassName': 'VPC',
+            'FunctionName': 'update_vpc_cidr'
+        },
+        'event': {
+            'account': DEFAULT_ACCOUNT_ID,
+            'detail': {
+                'eventName': 'AssociateVpcCidrBlock',
+                'requestParameters': {},
+                'responseElements': {}
+            }
+        }
+    }, LambdaContext())
+
+    # ASSERT - should return without error
+    assert response is not None

@@ -34,7 +34,9 @@ const ActionItems = () => {
     }
 
     const onSelectItems = (item: CommonItem[]) => {
-        item.find((item) => item.Status === 'processing') ? setActionVisible(false) : setActionVisible(true)
+        const hasProcessing = item.some((i) => i.Status === 'processing');
+        const isVpcOnly = item.some((i) => i.TagEventSource === 'vpc' && (!i.SubnetId || i.SubnetId === i.VpcId || i.SubnetId === 'None'));
+        setActionVisible(!hasProcessing && !isVpcOnly);
         setSelectedItems(item)
     }
 

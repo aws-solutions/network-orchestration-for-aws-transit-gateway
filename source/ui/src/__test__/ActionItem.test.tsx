@@ -9,14 +9,14 @@ import ActionItems from "../pages/action-items";
 import data from "./TestData";
 import userEvent from "@testing-library/user-event";
 
-jest.mock("@aws-amplify/auth");
+vi.mock("@aws-amplify/auth");
 
 const actionItem1 = data.actionItem1;
 const actionItem2 = data.actionItem2;
 
-const mockedUsedNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-    ...jest.requireActual('react-router-dom'),
+const mockedUsedNavigate = vi.fn();
+vi.mock('react-router-dom', () => ({
+    ...vi.importActual('react-router-dom'),
     useNavigate: () => mockedUsedNavigate,
 }));
 
@@ -66,21 +66,21 @@ function mockServerToReturnItems(items: any) {
 }
 
 
-jest.mock('react', () => ({
-    ...jest.requireActual('react'),
-    useContext: jest.fn(),
+vi.mock('react', async () => ({
+    ...(await vi.importActual('react')),
+    useContext: vi.fn(),
 }));
 
 
 describe("Action Items", () => {
 
-    let consoleErrorSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>;
-    let consoleWarnSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>;
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+    let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
     beforeAll(() => {
-        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {
+        consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {
         });
-        consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {
+        consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {
         });
     });
 

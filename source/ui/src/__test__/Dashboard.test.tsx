@@ -14,21 +14,21 @@ import Dashboard from "../pages/dashboard";
 const dashboardItem1 = data.dashboardItem1;
 const dashboardItem2 = data.dashboardItem2;
 
-const mockedUsedNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-    ...jest.requireActual('react-router-dom'),
+const mockedUsedNavigate = vi.fn();
+vi.mock('react-router-dom', () => ({
+    ...vi.importActual('react-router-dom'),
     useNavigate: () => mockedUsedNavigate,
 }));
 
 function mockServerToReturnItems(items: any) {
     server.use(
         graphql.query("getDashboardItemsFromTransitNetworkOrchestratorTables", (req, res, ctx) => {
-            return res.once(
+            return res(
                 ctx.data({getDashboardItemsFromTransitNetworkOrchestratorTables: {items: items, nextToken: null}})
             );
         }),
         graphql.query("GetVersionHistoryForSubnetFromTransitNetworkOrchestratorTables", (req, res, ctx) => {
-            return res.once(
+            return res(
                 ctx.data({getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables: {items: [], nextToken: null}})
             );
         })
@@ -37,12 +37,12 @@ function mockServerToReturnItems(items: any) {
 
 
 describe("Dashboard", () => {
-    let consoleErrorSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>;
-    let consoleWarnSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>;
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+    let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
     beforeAll(() => {
-        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     });
 
     afterAll(() => {
