@@ -21,7 +21,7 @@ aws-lambda-typing = "^2.20.0"
 
 [tool.poetry.group.dev.dependencies]
 moto = "^4.2.0"
-pytest = "^7.4.2"
+pytest = "^9.0.3"
 typing_extensions = "^4.8.0"
 aws_lambda_typing = "^2.18.0"
 freezegun = "^1.2.2"
