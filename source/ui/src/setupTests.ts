@@ -3,7 +3,7 @@
 
 import "@testing-library/jest-dom";
 
-import Amplify from "@aws-amplify/core";
+import {Amplify} from "aws-amplify";
 import { setupServer } from "msw/node";
 
 export const server = setupServer();
@@ -12,12 +12,19 @@ export const server = setupServer();
 beforeAll(() => {
     server.listen();
     Amplify.configure({
-        "aws_user_pools_id": "us-east-1_xEEQi6J0U",
-        "aws_user_pools_web_client_id": "1p4fndmnt1if15dsfbbd232rfs",
-        "aws_cognito_identity_pool_id": "us-east-1:0e7a3f0d-45f5-4ff6-b5b1-d3eceda8743d",
-
-        "aws_appsync_graphqlEndpoint": "http://localhost",
-        "aws_appsync_authenticationType": "NONE"
+        Auth: {
+            Cognito: {
+                userPoolId: "us-east-1_xEEQi6J0U",
+                userPoolClientId: "1p4fndmnt1if15dsfbbd232rfs",
+                identityPoolId: "us-east-1:0e7a3f0d-45f5-4ff6-b5b1-d3eceda8743d",
+            }
+        },
+        API: {
+            GraphQL: {
+                endpoint: "http://localhost",
+                defaultAuthMode: "none",
+            }
+        }
     });
 });
 

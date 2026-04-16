@@ -9,7 +9,7 @@ import ActionItems from "../pages/action-items";
 import data from "./TestData";
 import userEvent from "@testing-library/user-event";
 
-vi.mock("@aws-amplify/auth");
+vi.mock("aws-amplify/auth");
 
 const actionItem1 = data.actionItem1;
 const actionItem2 = data.actionItem2;
@@ -23,8 +23,8 @@ vi.mock('react-router-dom', () => ({
 
 function mockUserContextWithGroups(newVar: any) {
     return {
-        attributes: {email: "test"},
-        signInUserSession: {idToken: {payload: {"cognito:groups": newVar}}}
+        username: "test",
+        groups: newVar,
     };
 }
 

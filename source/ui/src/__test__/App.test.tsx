@@ -13,15 +13,9 @@ import {graphql} from "msw";
 const signInMockFunction = vi.fn().mockResolvedValue(undefined);
 const signOutMockFunction = vi.fn().mockResolvedValue(undefined);
 
-vi.mock("@aws-amplify/auth", () => ({
-    default: {
-        federatedSignIn: (...args: any[]) => signInMockFunction(...args),
-        signOut: (...args: any[]) => signOutMockFunction(...args),
-    },
-    Auth: {
-        federatedSignIn: (...args: any[]) => signInMockFunction(...args),
-        signOut: (...args: any[]) => signOutMockFunction(...args),
-    },
+vi.mock("aws-amplify/auth", () => ({
+    signInWithRedirect: (...args: any[]) => signInMockFunction(...args),
+    signOut: (...args: any[]) => signOutMockFunction(...args),
 }));
 
 describe('renders App Component', () => {
@@ -53,7 +47,7 @@ describe('renders App Component', () => {
     })
 
     describe('when no user is logged in', () => {
-        test('should redirect to login via Amplify Auth.federatedSignIn', async () => {
+        test('should redirect to login via signInWithRedirect', async () => {
             // ARRANGE
             const userContextFalsy = null;
 
@@ -79,7 +73,7 @@ describe('renders App Component', () => {
     function mockUserContextWithGroups(newVar: any) {
         return {
             username: username,
-            user: {signInUserSession: {idToken: {payload: {"cognito:groups": newVar}}}}
+            groups: newVar,
         };
     }
 

@@ -3,13 +3,15 @@
 
 import React, {useContext, useEffect, useState} from "react";
 import {Button, ButtonDropdown, SpaceBetween} from "@cloudscape-design/components";
-import {API, graphqlOperation} from "aws-amplify";
+import {generateClient} from "aws-amplify/api";
 import {getActionItemsFromTransitNetworkOrchestratorTables} from "../../graphql/queries";
 import {CommonItem} from "../../types/CommonItem";
 import {UserContext} from "../../components/context";
 import {updateTransitNetworkOrchestratorTable} from "../../graphql/mutation";
 import {ActionItemResultTable} from "../../components/table/ApplicationResultTable";
 import {columnDefinitions} from "../../components/table/ColumnDefinitions";
+
+const client = generateClient();
 
 
 const ActionItems = () => {
@@ -19,12 +21,12 @@ const ActionItems = () => {
     const [isLoading, setLoading] = useState<boolean>(false)
     const [isActionVisible, setActionVisible] = useState<boolean>(false)
 
-    const groups = user?.signInUserSession?.idToken?.payload["cognito:groups"] || ["none"];
+    const groups = user?.groups || [];
     const loadActionItems = async () => {
         setLoading(true)
-        const result = await API.graphql(
-            graphqlOperation(getActionItemsFromTransitNetworkOrchestratorTables)
-        )
+        const result = await client.graphql({
+            query: getActionItemsFromTransitNetworkOrchestratorTables
+        })
 
 
         // @ts-ignore
@@ -45,6 +47,10 @@ const ActionItems = () => {
             console.error('No items selected for update operation');
             return;
         }
+        if (!user) {
+            console.error('No authenticated user');
+            return;
+        }
         const currentTimeStamp = new Date();
         const UTCTimeStamp = currentTimeStamp.toISOString();
 
@@ -57,9 +63,10 @@ const ActionItems = () => {
             AdminAction: type,
         };
 
-        await API.graphql(
-            graphqlOperation(updateTransitNetworkOrchestratorTable, {input})
-        );
+        await client.graphql({
+            query: updateTransitNetworkOrchestratorTable,
+            variables: {input}
+        });
 
         loadActionItems().catch((error) => {
             console.log(error)

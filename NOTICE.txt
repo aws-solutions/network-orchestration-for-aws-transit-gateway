@@ -22,6 +22,8 @@ This software includes third party software subject to the following copyrights:
 @aws-amplify/auth under the Apache-2.0 license.
 @aws-amplify/cache under the Apache-2.0 license.
 @aws-amplify/core under the Apache-2.0 license.
+@aws-amplify/data-schema under the Apache-2.0 license.
+@aws-amplify/data-schema-types under the Apache-2.0 license.
 @aws-amplify/datastore under the Apache-2.0 license.
 @aws-amplify/geo under the Apache-2.0 license.
 @aws-amplify/interactions under the Apache-2.0 license.
@@ -174,6 +176,7 @@ This software includes third party software subject to the following copyrights:
 @babel/types under the MIT license.
 @bcoe/v8-coverage under the MIT license.
 @cloudscape-design/collection-hooks under the Apache-2.0 license.
+@cloudscape-design/component-toolkit under the Apache-2.0 license.
 @cloudscape-design/components under the Apache-2.0 license.
 @cloudscape-design/design-tokens under the Apache-2.0 license.
 @cloudscape-design/global-styles under the Apache-2.0 license.
@@ -251,6 +254,7 @@ This software includes third party software subject to the following copyrights:
 @open-draft/deferred-promise under the MIT license.
 @open-draft/logger under the MIT license.
 @open-draft/until under the MIT license.
+@pkgjs/parseargs under the MIT license.
 @reach/observe-rect under the MIT license.
 @react-native/assets-registry under the MIT license.
 @react-native/codegen under the MIT license.
@@ -358,6 +362,7 @@ This software includes third party software subject to the following copyrights:
 @turf/helpers under the MIT license.
 @turf/invariant under the MIT license.
 @types/aria-query under the MIT license.
+@types/aws-lambda under the MIT license.
 @types/babel__core under the MIT license.
 @types/babel__generator under the MIT license.
 @types/babel__template under the MIT license.
@@ -373,6 +378,7 @@ This software includes third party software subject to the following copyrights:
 @types/istanbul-reports under the MIT license.
 @types/jest under the MIT license.
 @types/js-levenshtein under the MIT license.
+@types/json-schema under the MIT license.
 @types/ms under the MIT license.
 @types/node under the MIT license.
 @types/node-fetch under the MIT license.
@@ -384,6 +390,7 @@ This software includes third party software subject to the following copyrights:
 @types/stack-utils under the MIT license.
 @types/statuses under the MIT license.
 @types/triple-beam under the MIT license.
+@types/uuid under the MIT license.
 @types/yargs under the MIT license.
 @types/yargs-parser under the MIT license.
 @vitejs/plugin-react under the MIT license.
@@ -488,6 +495,7 @@ connect under the MIT license.
 convert-source-map under the MIT license.
 cookie under the MIT license.
 coverage under the Apache-2.0 license.
+crc-32 under the Apache-2.0 license.
 create-jest under the MIT license.
 create-require under the MIT license.
 cross-spawn under the MIT license.
@@ -826,6 +834,7 @@ proxy-from-env under the MIT license.
 punycode under the MIT license.
 pure-rand under the MIT license.
 pycparser under the 0BSD license.
+pygments under the BSD-2-Clause license.
 pytest under the MIT license.
 pytest-mock under the MIT license.
 python-dateutil under the Apache-2.0 license.

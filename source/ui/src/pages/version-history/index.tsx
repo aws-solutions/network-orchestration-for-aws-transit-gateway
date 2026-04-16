@@ -6,10 +6,12 @@ import {BreadcrumbGroupProps} from "@cloudscape-design/components";
 import {useParams} from "react-router-dom";
 import {UserContext} from "../../components/context";
 import {VersionHistoryResultTable} from "../../components/table/ApplicationResultTable";
-import {API, graphqlOperation} from "aws-amplify";
+import {generateClient} from "aws-amplify/api";
 import {getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables} from "../../graphql/queries";
 import { CommonItem } from "../../types/CommonItem";
 import {columnDefinitions} from "../../components/table/ColumnDefinitions";
+
+const client = generateClient();
 
 
 const DashboardVersionHistory = () => {
@@ -21,12 +23,12 @@ const DashboardVersionHistory = () => {
 
     const getVersionHistory = async (subnetId?: string) => {
         setLoading(true)
-        const result = await API.graphql(
-            graphqlOperation(getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables, {
-                    "filter": {"SubnetId": {"eq": subnetId}, "Version": {"ne": "latest"}}
-                }
-            )
-        )
+        const result = await client.graphql({
+            query: getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables,
+            variables: {
+                "filter": {"SubnetId": {"eq": subnetId}, "Version": {"ne": "latest"}}
+            }
+        })
         // @ts-ignore
         setVersionHistory(result['data']['getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables']['items'] as CommonItem[])
         setLoading(false)
