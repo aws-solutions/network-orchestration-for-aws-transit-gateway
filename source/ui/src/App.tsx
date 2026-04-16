@@ -4,7 +4,7 @@
 import {applyDensity, Density} from "@cloudscape-design/global-styles";
 import {useContext} from "react";
 import {UserContext} from "./components/context";
-import Auth from "@aws-amplify/auth";
+import {signInWithRedirect} from "aws-amplify/auth";
 import CustomAppLayout from "./components/layout";
 import {Spinner} from "@cloudscape-design/components";
 
@@ -14,11 +14,10 @@ function App() {
     const {user} = useContext(UserContext)
 
     if (!user) {
-        Auth.federatedSignIn().catch((error) => {
+        signInWithRedirect().catch((error) => {
             console.error(error);
         })
     }
-
 
     if (!user)
         return <>

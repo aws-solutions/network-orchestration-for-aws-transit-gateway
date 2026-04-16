@@ -1,6 +1,6 @@
 {
   "name": "network-orchestrator-for-aws-transit-gateway",
-  "version": "3.3.24",
+  "version": "3.3.25",
   "description": "Network Orchestration for AWS Transit Gateway(SO0058)",
   "license": "Apache-2.0",
   "author": {
@@ -11,12 +11,11 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@aws-amplify/auth": "^5.4.0",
     "@cloudscape-design/collection-hooks": "^1.0.19",
     "@cloudscape-design/components": "3.0.194",
     "@cloudscape-design/design-tokens": "^3.0.3",
     "@cloudscape-design/global-styles": "^1.0.7",
-    "aws-amplify": "^5.3.30",
+    "aws-amplify": "^6.16.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.30.3"
@@ -46,13 +45,8 @@
   },
   "overrides": {
     "msw": {
-      "cookie": "~0.7.2"
-    },
-    "axios": "^1.7.9",
-    "glob": "^11.1.0",
-    "js-yaml": "^4.1.1",
-    "test-exclude": "^7.0.0",
-    "lodash": "^4.17.23",
-    "minimatch": "^10.2.1"
+      "cookie": "~0.7.2",
+      "@xmldom/xmldom": "^0.8.12"
+    }
   }
 }

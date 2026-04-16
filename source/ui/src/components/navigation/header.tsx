@@ -4,7 +4,7 @@
 import { TopNavigation, ButtonDropdownProps } from "@cloudscape-design/components";
 import { useContext } from "react";
 import { UserContext } from "../context";
-import Auth from '@aws-amplify/auth';
+import { signOut } from "aws-amplify/auth";
 
 
 const DOC_URL = "https://aws.amazon.com/solutions/implementations/network-orchestration-aws-transit-gateway/"
@@ -19,7 +19,7 @@ const CustomHeader = () => {
         const id = props.detail.id;
 
         if(id === 'signout') {
-            Auth.signOut().catch((error: Error) => {
+            signOut().catch((error: Error) => {
                 console.error(error)
             })
         }

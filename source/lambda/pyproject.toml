@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "solution"
-version = "3.3.24"
+version = "3.3.25"
 authors = [ { name = "Amazon Web Services" }]
 description = "solution packages for network-orchestration-for-tgw"
 license = "Apache-2.0"
@@ -21,13 +21,15 @@ aws-lambda-typing = "^2.20.0"
 
 [tool.poetry.group.dev.dependencies]
 moto = "^4.2.0"
-pytest = "^7.4.2"
+pytest = "^9.0.3"
 typing_extensions = "^4.8.0"
 aws_lambda_typing = "^2.18.0"
 freezegun = "^1.2.2"
 pytest-mock = "3.11.1"
 mock = "^5.2.0"
 coverage = "^7.8.2"
+cryptography = "^46.0.7"
+requests = "^2.33.0"
 
 [tool.coverage.run]
 omit = [

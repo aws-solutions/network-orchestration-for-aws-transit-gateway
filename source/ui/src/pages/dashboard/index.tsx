@@ -5,12 +5,15 @@ import {useContext, useEffect, useState} from "react";
 import {Button} from "@cloudscape-design/components";
 import {getDashboardItemsFromTransitNetworkOrchestratorTables} from "../../graphql/queries";
 
-import {API, graphqlOperation} from 'aws-amplify';
+import {generateClient} from 'aws-amplify/api';
 import {UserContext} from "../../components/context";
 import {DashboardResultTable } from "../../components/table/ApplicationResultTable";
 import { useNavigate} from 'react-router-dom';
 import { CommonItem } from "../../types/CommonItem";
 import {columnDefinitions} from "../../components/table/ColumnDefinitions";
+
+const client = generateClient();
+
 const Dashboard = () => {
 
     const {setBreadCrumb} = useContext(UserContext)
@@ -21,9 +24,9 @@ const Dashboard = () => {
     const getDashboardItems = async () => {
         setLoading(true)
         setDashboardItem([])
-        const result = await API.graphql(
-            graphqlOperation(getDashboardItemsFromTransitNetworkOrchestratorTables)
-        )
+        const result = await client.graphql({
+            query: getDashboardItemsFromTransitNetworkOrchestratorTables
+        })
 
         // @ts-ignore
         setDashboardItem(result['data']['getDashboardItemsFromTransitNetworkOrchestratorTables']['items'] as CommonItem[]);
