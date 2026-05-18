@@ -365,6 +365,10 @@ Mappings:
       AmazonSideAsn: 64542 # this must be changed by a network admin only
     eu-north-1:
       AmazonSideAsn: 64543 # this must be changed by a network admin only
+    af-south-1:
+      AmazonSideAsn: 64544 # this must be changed by a network admin only
+    me-south-1:
+      AmazonSideAsn: 64545 # this must be changed by a network admin only - should be unique and between numbers 64512 to 65534
   NotificationConfiguration:
     SNS:
       DisplayName: "AWS Transit Network Change Approval Notification"
