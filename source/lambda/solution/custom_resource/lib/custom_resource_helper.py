@@ -157,7 +157,8 @@ def cfn_handler(event: events.CloudFormationCustomResourceEvent, context: Lambda
             handle_cwe_permissions(event)
         elif resource_type == "Custom::ConsoleDeploy":
             s3_client = boto3.client("s3", config=boto3_config)
-            ConsoleDeployment(s3_client, open, path.exists).deploy(event)
+            cloudfront_client = boto3.client("cloudfront", region_name="us-east-1", config=boto3_config)  # NOSONAR - CloudFront API is always us-east-1
+            ConsoleDeployment(s3_client, open, path.exists, cloudfront_client).deploy(event)
         elif resource_type == "Custom::GetPrefixListArns":
             response_data = handle_prefix(event)
         elif resource_type == "Custom::CreateServiceLinkedRole":

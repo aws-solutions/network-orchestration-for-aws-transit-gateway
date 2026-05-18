@@ -1,10 +1,10 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import React, {useContext, useEffect, useState} from "react";
+import React, {useContext, useEffect, useRef, useState} from "react";
 import {Button, ButtonDropdown, SpaceBetween} from "@cloudscape-design/components";
 import {generateClient} from "aws-amplify/api";
-import {getActionItemsFromTransitNetworkOrchestratorTables} from "../../graphql/queries";
+import {getActionItemsFromTransitNetworkOrchestratorTables, getDashboardItemsFromTransitNetworkOrchestratorTables} from "../../graphql/queries";
 import {CommonItem} from "../../types/CommonItem";
 import {UserContext} from "../../components/context";
 import {updateTransitNetworkOrchestratorTable} from "../../graphql/mutation";
@@ -20,25 +20,35 @@ const ActionItems = () => {
     const [selectedItems, setSelectedItems] = useState<CommonItem[]>([])
     const [isLoading, setLoading] = useState<boolean>(false)
     const [isActionVisible, setActionVisible] = useState<boolean>(false)
+    const actionItemsRef = useRef<CommonItem[]>([])
+    const dashboardItemsRef = useRef<CommonItem[]>([])
 
     const groups = user?.groups || [];
     const loadActionItems = async () => {
         setLoading(true)
-        const result = await client.graphql({
-            query: getActionItemsFromTransitNetworkOrchestratorTables
-        })
-
+        const [actionResult, dashboardResult] = await Promise.all([
+            client.graphql({ query: getActionItemsFromTransitNetworkOrchestratorTables }),
+            client.graphql({ query: getDashboardItemsFromTransitNetworkOrchestratorTables })
+        ])
 
         // @ts-ignore
-        setActionItems(result['data']['getActionItemsFromTransitNetworkOrchestratorTables']['items'] as CommonItem[])
+        const items = actionResult['data']['getActionItemsFromTransitNetworkOrchestratorTables']['items'] as CommonItem[]
+        setActionItems(items)
+        actionItemsRef.current = items
+        // @ts-ignore
+        dashboardItemsRef.current = dashboardResult['data']['getDashboardItemsFromTransitNetworkOrchestratorTables']['items'] as CommonItem[]
 
         setLoading(false)
     }
 
     const onSelectItems = (item: CommonItem[]) => {
         const hasProcessing = item.some((i) => i.Status === 'processing');
-        const isVpcOnly = item.some((i) => i.TagEventSource === 'vpc' && (!i.SubnetId || i.SubnetId === i.VpcId || i.SubnetId === 'None'));
-        setActionVisible(!hasProcessing && !isVpcOnly);
+        const isVpcWithoutSubnet = item.some((i) =>
+            i.TagEventSource === 'vpc' &&
+            !actionItemsRef.current.some((ai) => ai.TagEventSource === 'subnet' && ai.VpcId === i.VpcId) &&
+            !dashboardItemsRef.current.some((di) => di.TagEventSource === 'subnet' && di.VpcId === i.VpcId)
+        );
+        setActionVisible(!hasProcessing && !isVpcWithoutSubnet);
         setSelectedItems(item)
     }
 
