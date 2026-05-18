@@ -48,23 +48,27 @@ export type UserInfo = {
 type UserContextType = {
     user: UserInfo | null;
     setUser: (user: UserInfo | null) => void;
+    signingOut: boolean;
     breadCrumb: BreadcrumbGroupProps.Item[];
     setBreadCrumb: (breadCrumb: BreadcrumbGroupProps.Item[]) => void;
 }
 
-export const UserContext = createContext<UserContextType>({ user: null, setUser: () => { }, breadCrumb: [], setBreadCrumb: () => { } });
+export const UserContext = createContext<UserContextType>({ user: null, setUser: () => { }, signingOut: false, breadCrumb: [], setBreadCrumb: () => { } });
 
 // User Context Provider component to wrap the application and make the user context available to all child components
 export const UserContextProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<UserInfo | null>(null);
     const [busy, setBusy] = useState(true);
+    const [signingOut, setSigningOut] = useState(false);
     const [breadCrumb, setBreadCrumb] = useState<BreadcrumbGroupProps.Item[]>([]);
 
     useEffect(() => {
         const unsubscribe = Hub.listen("auth", ({ payload }) => {
             if (payload.event === "signedIn") {
+                setSigningOut(false);
                 checkUser();
             } else if (payload.event === "signedOut") {
+                setSigningOut(true);
                 setUser(null);
             }
         });
@@ -85,7 +89,7 @@ export const UserContextProvider = ({ children }: { children: React.ReactNode })
         }
     };
 
-    const contextValue = useMemo(() => ({ user, setUser, breadCrumb, setBreadCrumb }), [user, setUser, breadCrumb, setBreadCrumb]);
+    const contextValue = useMemo(() => ({ user, setUser, signingOut, breadCrumb, setBreadCrumb }), [user, setUser, signingOut, breadCrumb, setBreadCrumb]);
 
     if (busy) {
         return <div>Loading...</div>

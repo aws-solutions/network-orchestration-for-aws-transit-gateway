@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.26] - 2026-05-18
+
+### Fixed
+
+- Fixed Action (Approve/Reject) button not appearing for VPC-type action items when subnets are tagged
+- Fixed web UI not reflecting updates after stack upgrade due to CloudFront serving stale cached assets
+- Fixed sign-out getting stuck on redirecting instead of redirecting to logout
+
+### Security
+
+- Bumped `@xmldom/xmldom` to ^0.9.10 to address [CVE-2026-41672](https://avd.aquasec.com/nvd/cve-2026-41672), [CVE-2026-41673](https://avd.aquasec.com/nvd/cve-2026-41673), [CVE-2026-41674](https://avd.aquasec.com/nvd/cve-2026-41674), [CVE-2026-41675](https://avd.aquasec.com/nvd/cve-2026-41675)
+- Bumped `fast-xml-parser` to 5.7.2 to address [CVE-2026-41650](https://avd.aquasec.com/nvd/cve-2026-41650)
+- Bumped `fast-xml-builder` to 1.2.0 to address [CVE-2026-44665](https://avd.aquasec.com/nvd/cve-2026-44665)
+- Bumped `postcss` to 8.5.14 to address [CVE-2026-41305](https://avd.aquasec.com/nvd/cve-2026-41305)
+- Bumped `uuid` to 11.1.1 to address [CVE-2026-41907](https://avd.aquasec.com/nvd/cve-2026-41907)
+- Bumped `urllib3` to 2.7.0 to address [CVE-2026-44431](https://avd.aquasec.com/nvd/cve-2026-44431), [CVE-2026-44432](https://avd.aquasec.com/nvd/cve-2026-44432)
+
 ## [3.3.25] - 2026-04-16
 
 ### Changed

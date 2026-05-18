@@ -1,9 +1,12 @@
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # SPDX-License-Identifier: Apache-2.0
 import json
+import mimetypes
 import os
+import time
 from os import environ, path
 
+import boto3
 from aws_lambda_powertools import Logger
 from aws_lambda_typing import events
 from botocore.exceptions import ClientError
@@ -12,11 +15,14 @@ from botocore.exceptions import ClientError
 class ConsoleDeployment:
     """Deploys the STNO Console web application to an S3 bucket"""
 
-    def __init__(self, s3_client, open_fn, exists_fn):
+    def __init__(self, s3_client, open_fn, exists_fn, cloudfront_client=None):
         self.logger = Logger(level=os.getenv('LOG_LEVEL'), service=self.__class__.__name__)
         self.s3_client = s3_client
         self.open_fn = open_fn
         self.exists_fn = exists_fn
+        self._cloudfront_client = cloudfront_client or boto3.client(
+            "cloudfront", region_name="us-east-1"  # NOSONAR - CloudFront is a global service, API is always us-east-1
+        )
 
     def deploy(self, event: events.CloudFormationCustomResourceEvent):
         """Handler for STNO web ui deployment
@@ -36,8 +42,10 @@ class ConsoleDeployment:
 
             if self.exists_fn(file_path):
                 properties = event["ResourceProperties"]
+                self.__clear_console_assets(properties)
                 self.__copy_ui_files_to_console_bucket(file_path, properties)
                 self.__create_stno_config_file(properties)
+                self.__invalidate_cloudfront(properties)
             else:
                 self.logger.error("console manifest file not found")
                 raise FileNotFoundError("console manifest file not found")
@@ -122,6 +130,27 @@ class ConsoleDeployment:
             self.logger.error(str(err))
             raise
 
+    def __clear_console_assets(self, properties):
+        """Delete old UI assets from the console bucket before copying new ones."""
+        console_bucket = properties.get("ConsoleBucket")
+        prefix = "console/assets/"
+        try:
+            paginator_token = None
+            while True:
+                list_kwargs = {"Bucket": console_bucket, "Prefix": prefix}
+                if paginator_token:
+                    list_kwargs["ContinuationToken"] = paginator_token
+                response = self.s3_client.list_objects_v2(**list_kwargs)
+                for obj in response.get("Contents", []):
+                    if obj["Key"] != "console/assets/stno_config.js":
+                        self.s3_client.delete_object(Bucket=console_bucket, Key=obj["Key"])
+                if not response.get("IsTruncated"):
+                    break
+                paginator_token = response.get("NextContinuationToken")
+            self.logger.info(f"Cleared old assets from {console_bucket}/{prefix}")
+        except ClientError as err:
+            self.logger.warning(f"Failed to clear old assets: {err}")
+
     def __copy_ui_files_to_console_bucket(self, file_path, properties):
         with self.open_fn(file_path, "r") as json_data:
             console_manifest = json.load(json_data)
@@ -130,6 +159,8 @@ class ConsoleDeployment:
         key_prefix = properties.get("SrcPath") + "/"
         for file in console_manifest["files"]:
             key = "console/" + file
+            content_type = mimetypes.guess_type(file)[0] or "application/octet-stream"
+
             self.s3_client.copy_object(
                 CopySource={
                     "Bucket": source_bucket,
@@ -137,7 +168,29 @@ class ConsoleDeployment:
                 },
                 Bucket=console_bucket,
                 Key=key,
+                CacheControl="no-store, no-cache",
+                ContentType=content_type,
+                MetadataDirective="REPLACE",
             )
             self.logger.info(f"copying of Console assets successful "
                              f"from {source_bucket}/{key_prefix}{key} "
-                             f"to {console_bucket}{key}")
+                             f"to {console_bucket}/{key}")
+
+    def __invalidate_cloudfront(self, properties):
+        """Invalidate CloudFront cache after deploying new UI files."""
+        distribution_id = properties.get("CloudFrontDistributionId", "")
+        if not distribution_id:
+            self.logger.info("No CloudFront distribution ID provided, skipping invalidation")
+            return
+
+        try:
+            self._cloudfront_client.create_invalidation(
+                DistributionId=distribution_id,
+                InvalidationBatch={
+                    "Paths": {"Quantity": 1, "Items": ["/*"]},
+                    "CallerReference": f"{int(time.time())}-{os.urandom(4).hex()}"
+                }
+            )
+            self.logger.info(f"CloudFront invalidation created for distribution {distribution_id}")
+        except ClientError as err:
+            self.logger.warning(f"CloudFront invalidation failed: {err}")

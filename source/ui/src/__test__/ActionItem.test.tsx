@@ -47,6 +47,11 @@ function mockServerToReturnItems(items: any) {
                 ctx.data({getActionItemsFromTransitNetworkOrchestratorTables: {items: items, nextToken: null}})
             );
         }),
+        graphql.query("getDashboardItemsFromTransitNetworkOrchestratorTables", (req, res, ctx) => {
+            return res(
+                ctx.data({getDashboardItemsFromTransitNetworkOrchestratorTables: {items: [], nextToken: null}})
+            );
+        }),
         graphql.query("GetVersionHistoryForSubnetFromTransitNetworkOrchestratorTables", (req, res, ctx) => {
             return res(
                 ctx.data({getVersionHistoryForSubnetFromTransitNetworkOrchestratorTables: {items: [], nextToken: null}})
@@ -123,7 +128,7 @@ describe("Action Items", () => {
 
         it("does not show the action button in the screen", async () => {
             await waitFor(async () => {
-                expect(await screen.queryByRole("button", {name: (/action/i)})).not.toBeInTheDocument();
+                expect(screen.queryByRole("button", {name: (/action/i)})).not.toBeInTheDocument();
             })
         });
 
@@ -168,6 +173,63 @@ describe("Action Items", () => {
             await waitFor(async () => {
                 expect(await screen.getByText(/Action Items/i)).toBeInTheDocument();
             })
+        });
+    });
+
+    describe("Action Items VPC button visibility", () => {
+        it("should show action button when VPC item is selected and subnet exists for same VPC", async () => {
+            // @ts-ignore
+            useContext.mockReturnValue(getUserContext(["AdminGroup"]));
+
+            const vpcItem = {
+                ...actionItem2,
+                VpcId: "vpc-shared",
+                SubnetId: "vpc-shared",
+                TagEventSource: "vpc",
+                Status: "requested"
+            };
+            const subnetItem = {
+                ...actionItem1,
+                VpcId: "vpc-shared",
+                SubnetId: "subnet-123",
+                TagEventSource: "subnet",
+                Status: "requested"
+            };
+
+            mockServerToReturnItems([subnetItem, vpcItem]);
+            render(<ActionItems/>);
+
+            const table = await screen.findAllByRole("radio");
+            await act(async () => {
+                await userEvent.click(table[0]);
+            });
+            await waitFor(() => {
+                expect(screen.queryByRole("button", {name: (/action/i)})).toBeInTheDocument();
+            });
+        });
+
+        it("should hide action button when VPC item is selected and no subnet exists", async () => {
+            // @ts-ignore
+            useContext.mockReturnValue(getUserContext(["AdminGroup"]));
+
+            const vpcItem = {
+                ...actionItem2,
+                VpcId: "vpc-no-subnet",
+                SubnetId: "vpc-no-subnet",
+                TagEventSource: "vpc",
+                Status: "requested"
+            };
+
+            mockServerToReturnItems([vpcItem]);
+            render(<ActionItems/>);
+
+            const table = await screen.findAllByRole("radio");
+            await act(async () => {
+                await userEvent.click(table[0]);
+            });
+            await waitFor(() => {
+                expect(screen.queryByRole("button", {name: (/action/i)})).not.toBeInTheDocument();
+            });
         });
     });
 

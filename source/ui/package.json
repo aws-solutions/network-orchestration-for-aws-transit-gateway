@@ -1,6 +1,6 @@
 {
   "name": "network-orchestrator-for-aws-transit-gateway",
-  "version": "3.3.25",
+  "version": "3.3.26",
   "description": "Network Orchestration for AWS Transit Gateway(SO0058)",
   "license": "Apache-2.0",
   "author": {
@@ -45,8 +45,8 @@
   },
   "overrides": {
     "msw": {
-      "cookie": "~0.7.2",
-      "@xmldom/xmldom": "^0.8.12"
-    }
+      "cookie": "~0.7.2"
+    },
+    "@xmldom/xmldom": "^0.9.10"
   }
 }

@@ -11,9 +11,9 @@ import {Spinner} from "@cloudscape-design/components";
 applyDensity(Density.Comfortable)
 
 function App() {
-    const {user} = useContext(UserContext)
+    const {user, signingOut} = useContext(UserContext)
 
-    if (!user) {
+    if (!user && !signingOut) {
         signInWithRedirect().catch((error) => {
             console.error(error);
         })
@@ -22,7 +22,7 @@ function App() {
     if (!user)
         return <>
             <Spinner></Spinner>
-            <div>Redirecting to login...</div>
+            <div>{signingOut ? "Signing out..." : "Redirecting to login..."}</div>
         </>
 
     else {

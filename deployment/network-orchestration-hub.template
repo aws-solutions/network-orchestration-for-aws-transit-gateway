@@ -1044,6 +1044,8 @@ Resources:
           - Effect: "Allow"
             Action:
               - "s3:PutObject"
+              - "s3:DeleteObject"
+              - "s3:ListBucket"
             Resource:
               - !Sub ${ConsoleBucket.Arn}
               - !Sub ${ConsoleBucket.Arn}/*
@@ -1053,6 +1055,11 @@ Resources:
             Resource:
               - !Join [ "", [ !Sub "arn:${AWS::Partition}:s3:::", !FindInMap [ "SourceCode", "General", "S3Bucket" ], "-", !Ref "AWS::Region" ] ]
               - !Join [ "", [ !Sub "arn:${AWS::Partition}:s3:::", !FindInMap [ "SourceCode", "General", "S3Bucket" ], "-", !Ref "AWS::Region", "/*" ] ]
+          - Effect: "Allow"
+            Action:
+              - "cloudfront:CreateInvalidation"
+            Resource:
+              - !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${ConsoleCloudFront}"
 
   CreateUniqueID:
     Type: "Custom::CreateUUID"
@@ -3222,6 +3229,14 @@ Resources:
       ResponseHeadersPolicyConfig:
         Name: !Sub CSP-for-Network-Orchestrator-${AWS::Region}
         Comment: "Security headers for CSP"
+        CustomHeadersConfig:
+          Items:
+            - Header: "Cache-Control"
+              Value: "no-store, no-cache"
+              Override: true
+            - Header: "Pragma"
+              Value: "no-cache"
+              Override: true
         SecurityHeadersConfig:
           ContentSecurityPolicy:
             ContentSecurityPolicy: !Sub
@@ -3263,6 +3278,7 @@ Resources:
   CopyWebConsoleArtifacts:
     Type: "Custom::ConsoleDeploy"
     Condition: DeployWebUiCondition
+    DependsOn: PolicyConsole
     Properties:
       ServiceToken: !Sub ${CustomResourceLambda.Arn}
       SrcBucket: !Join ["-", [!FindInMap ["SourceCode", "General", "S3Bucket"], Ref: "AWS::Region"]]
@@ -3275,6 +3291,7 @@ Resources:
       AwsContentDeliveryBucket: !Ref ConsoleBucket
       AwsContentDeliveryUrl: !Sub "https://${ConsoleCloudFront.DomainName}"
       AwsCognitoDomainPrefix: !Ref CognitoDomainPrefixParameter
+      CloudFrontDistributionId: !Ref ConsoleCloudFront
 
   SendCloudFormationParameters:
     Type: Custom::SendCFNParameters

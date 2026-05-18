@@ -36,6 +36,7 @@ describe('renders App Component', () => {
     let userContext = {
         setUser: () => {
         },
+        signingOut: false,
         breadCrumb: [],
         setBreadCrumb: () => {
         }
