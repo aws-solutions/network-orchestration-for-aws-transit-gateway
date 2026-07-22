@@ -1,6 +1,6 @@
 {
   "name": "cognito-trigger",
-  "version": "3.3.26",
+  "version": "3.3.27",
   "description": "Triggered when a new user is confirmed in the user pool to allow for custom actions to be taken",
   "author": {
     "name": "Amazon Web Services",
@@ -33,9 +33,9 @@
   },
   "license": "Apache-2.0",
   "overrides": {
-    "brace-expansion": "^5.0.2",
+    "brace-expansion": "5.0.7",
     "glob": "^11.1.0",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "4.3.0",
     "minimatch": "^10.2.1"
   }
 }
