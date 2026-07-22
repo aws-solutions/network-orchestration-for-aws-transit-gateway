@@ -562,6 +562,9 @@ expect-type under the Apache-2.0 license.
 exponential-backoff under the Apache-2.0 license.
 fast-base64-decode under the MIT license.
 fast-json-stable-stringify under the MIT license.
+fast-string-truncated-width under the MIT license.
+fast-string-width under the MIT license.
+fast-wrap-ansi under the MIT license.
 fast-xml-builder under the MIT license.
 fast-xml-parser under the MIT license.
 fastparse under the MIT license.

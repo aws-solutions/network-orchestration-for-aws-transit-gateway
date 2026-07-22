@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.27] - 2026-07-22
+
+### Security
+
+- Bumped `vite` to ^6.4.3 to address [CVE-2026-53571](https://avd.aquasec.com/nvd/cve-2026-53571) and [CVE-2026-53632](https://avd.aquasec.com/nvd/cve-2026-53632)
+- Bumped `cryptography` to ^49.0.0 to address [GHSA-537c-gmf6-5ccf](https://github.com/advisories/GHSA-537c-gmf6-5ccf)
+- Bumped `js-yaml` to ^4.2.0 to address [CVE-2026-53550](https://avd.aquasec.com/nvd/cve-2026-53550)
+- Bumped `form-data` to 4.0.6 to address [CVE-2026-12143](https://avd.aquasec.com/nvd/cve-2026-12143)
+- Bumped `@babel/core` to 7.29.7 to address [CVE-2026-49356](https://avd.aquasec.com/nvd/cve-2026-49356)
+- Bumped `brace-expansion` to 5.0.7 to address [CVE-2026-13149](https://avd.aquasec.com/nvd/cve-2026-13149)
+- Bumped `js-yaml` to 4.3.0 to address [CVE-2026-59869](https://avd.aquasec.com/nvd/2026/cve-2026-59869/)
+
 ## [3.3.26] - 2026-05-18
 
 ### Fixed
